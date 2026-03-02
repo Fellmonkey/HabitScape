@@ -10,6 +10,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../providers/habit_providers.dart';
+import '../../domain/scheduling.dart';
 import '../widgets/habit_card.dart';
 
 /// Main daily screen — the "Greenhouse" (Теплица).
@@ -152,16 +153,17 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
                   ),
                 ),
               ),
-              // "Mark all" button
-              TextButton.icon(
-                key: K.markAllGroup(group.label),
-                onPressed: () => _markAllInGroup(items),
-                icon: Icon(Icons.done_all_rounded, size: 16, color: group.color),
-                label: Text(
-                  'Всё',
-                  style: theme.textTheme.labelSmall?.copyWith(color: group.color),
+              // "Mark all" button (only for scheduled groups)
+              if (group.showMarkAll)
+                TextButton.icon(
+                  key: K.markAllGroup(group.label),
+                  onPressed: () => _markAllInGroup(items),
+                  icon: Icon(Icons.done_all_rounded, size: 16, color: group.color),
+                  label: Text(
+                    'Всё',
+                    style: theme.textTheme.labelSmall?.copyWith(color: group.color),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -192,12 +194,18 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
   }
 
   List<_HabitGroup> _groupByTimeOfDay(List<Habit> habits, List<HabitLog> logs) {
+    final today = DateTime.now();
     final morning = <Habit>[];
     final afternoon = <Habit>[];
     final evening = <Habit>[];
     final anytime = <Habit>[];
+    final notToday = <Habit>[];
 
     for (final h in habits) {
+      if (!isExpectedToday(h, today)) {
+        notToday.add(h);
+        continue;
+      }
       switch (enums.TimeOfDay.fromString(h.timeOfDay)) {
         case enums.TimeOfDay.morning:
           morning.add(h);
@@ -238,6 +246,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
           icon: Icons.schedule_outlined,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           habits: anytime,
+        ),
+      if (notToday.isNotEmpty)
+        _HabitGroup(
+          label: 'Не сегодня',
+          icon: Icons.event_busy_outlined,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+          habits: notToday,
+          showMarkAll: false,
         ),
     ];
   }
@@ -316,12 +332,14 @@ class _HabitGroup {
     required this.icon,
     required this.color,
     required this.habits,
+    this.showMarkAll = true,
   });
 
   final String label;
   final IconData icon;
   final Color color;
   final List<Habit> habits;
+  final bool showMarkAll;
 }
 
 // ── Quick Create Habit Sheet ─────────────────────────────────

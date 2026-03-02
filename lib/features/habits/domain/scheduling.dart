@@ -51,3 +51,37 @@ int parseXValue(String json) {
   } catch (_) {}
   return 1;
 }
+
+// ── Human-readable labels ────────────────────────────────────
+
+const _kShortDays = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+/// Returns a short human-readable description of a habit's frequency,
+/// including the actual values (e.g. "Пн, Ср, Пт", "3× в нед", "Каждые 5 дн").
+String frequencyLabel(Habit habit) {
+  final type = FrequencyType.fromString(habit.frequencyType);
+  return switch (type) {
+    FrequencyType.daily => 'Каждый день',
+    FrequencyType.weekdays =>
+      parseWeekdays(habit.frequencyValue)
+          .map((d) => _kShortDays[d])
+          .join(', '),
+    FrequencyType.xPerWeek =>
+      '${parseXValue(habit.frequencyValue)}× в нед',
+    FrequencyType.everyXDays =>
+      _everyXLabel(parseXValue(habit.frequencyValue)),
+    FrequencyType.negative => 'Негативная',
+  };
+}
+
+String _everyXLabel(int x) {
+  if (x == 1) return 'Каждый день';
+  final mod10 = x % 10;
+  final mod100 = x % 100;
+  if (mod10 == 1 && mod100 != 11) return 'Каждый $x день';
+  if ((mod10 == 2 || mod10 == 3 || mod10 == 4) &&
+      (mod100 < 11 || mod100 > 14)) {
+    return 'Каждые $x дня';
+  }
+  return 'Каждые $x дней';
+}

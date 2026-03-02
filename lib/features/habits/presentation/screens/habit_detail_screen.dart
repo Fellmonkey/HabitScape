@@ -222,16 +222,9 @@ class _HabitInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final archetype = SeedArchetype.fromString(habit.seedArchetype);
-    final freq = FrequencyType.fromString(habit.frequencyType);
     final tod = TimeOfDay.fromString(habit.timeOfDay);
 
-    final freqLabel = switch (freq) {
-      FrequencyType.daily => 'Каждый день',
-      FrequencyType.weekdays => 'По дням недели',
-      FrequencyType.xPerWeek => 'Несколько раз в неделю',
-      FrequencyType.everyXDays => 'Каждые N дней',
-      FrequencyType.negative => 'Негативная привычка',
-    };
+    final freqLabel = frequencyLabel(habit);
 
     final todLabel = switch (tod) {
       TimeOfDay.morning => 'Утро',

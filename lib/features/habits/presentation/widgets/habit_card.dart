@@ -8,6 +8,7 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
 /// A single habit row in the Greenhouse list.
@@ -36,6 +37,13 @@ class _HabitCardState extends ConsumerState<HabitCard>
 
   bool get _isDone =>
       widget.log != null && widget.log!.status == LogStatus.done.name;
+
+  bool get _showFreqBadge {
+    final type = FrequencyType.fromString(widget.habit.frequencyType);
+    return type == FrequencyType.weekdays ||
+        type == FrequencyType.xPerWeek ||
+        type == FrequencyType.everyXDays;
+  }
 
   @override
   void initState() {
@@ -136,6 +144,19 @@ class _HabitCardState extends ConsumerState<HabitCard>
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+                          // Frequency badge (weekdays / x-per-week / every-x-days)
+                          if (_showFreqBadge)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                frequencyLabel(widget.habit),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.45),
+                                ),
                               ),
                             ),
                         ],
