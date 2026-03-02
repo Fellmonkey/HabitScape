@@ -57,6 +57,7 @@ enum GardenObjectType {
   moss,
   bush,
   tree,
+  grass,
   sleepingBulb;
 
   static GardenObjectType fromString(String value) =>

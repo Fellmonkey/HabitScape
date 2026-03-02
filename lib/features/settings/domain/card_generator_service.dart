@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../garden/domain/generator/bush_painter.dart';
+import '../../garden/domain/generator/grass_painter.dart';
 import '../../garden/domain/generator/moss_painter.dart';
 import '../../garden/domain/generator/plant_params.dart';
 import '../../garden/domain/generator/tree_painter.dart';
@@ -216,6 +217,7 @@ class CardGeneratorService {
     return switch (params.objectType) {
       GardenObjectType.tree => TreePainter(params: params),
       GardenObjectType.bush => BushPainter(params: params),
+      GardenObjectType.grass => GrassPainter(params: params),
       GardenObjectType.moss || GardenObjectType.sleepingBulb =>
         MossPainter(params: params),
     };

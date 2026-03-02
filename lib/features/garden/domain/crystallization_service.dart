@@ -14,6 +14,7 @@ import '../../habits/data/habits_dao.dart';
 import '../../habits/domain/habit_engine.dart';
 import '../data/garden_objects_dao.dart';
 import '../domain/generator/bush_painter.dart';
+import '../domain/generator/grass_painter.dart';
 import '../domain/generator/moss_painter.dart';
 import '../domain/generator/plant_params.dart';
 import '../domain/generator/tree_painter.dart';
@@ -194,6 +195,7 @@ class CrystallizationService {
     return switch (params.objectType) {
       GardenObjectType.tree => TreePainter(params: params),
       GardenObjectType.bush => BushPainter(params: params),
+      GardenObjectType.grass => GrassPainter(params: params),
       GardenObjectType.moss || GardenObjectType.sleepingBulb =>
         MossPainter(params: params),
     };

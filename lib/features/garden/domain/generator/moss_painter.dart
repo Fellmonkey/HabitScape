@@ -7,12 +7,11 @@ import 'plant_params.dart';
 
 /// CustomPainter for moss/pebble landscape (0-39% completion).
 ///
-/// Instead of a naïve random scatter the moss is built in layers:
-/// 1. **Organic patches** — coherent elliptical regions with soft edges.
-/// 2. **Texture layer** — small varied-shape elements biased toward centres.
-/// 3. **Detail layer** — tiny leaf / frond paths for fine organic feel.
-/// 4. **Pebbles** — 3-D shaded ovals with highlight and shadow.
-/// 5. **Connecting tendrils** — thin curved paths between patches.
+/// Uses fractal techniques for organic, natural-looking results:
+/// 1. **Fractal moss** — recursive subdivision creates natural branching textures.
+/// 2. **Fractal stones** — subdivision-based polygon shapes with realistic shading.
+/// 3. **Lichen patches** — circular fractal growth patterns.
+/// 4. **Connecting runners** — organic bezier vines between moss clusters.
 class MossPainter extends CustomPainter {
   MossPainter({required this.params});
 
@@ -37,243 +36,345 @@ class MossPainter extends CustomPainter {
       );
     }
 
-    // ── 1. Generate patch centres ────────────────────────
-    final numPatches =
+    // ── 1. Fractal stones ────────────────────────────
+    _drawFractalStones(canvas, centerX, baseY, size, rng, scale);
+
+    // ── 2. Fractal moss clusters ─────────────────────
+    final numClusters =
         (2 + (params.absoluteCompletions * 0.15).round()).clamp(2, 5);
-    final patches = <_MossPatch>[];
-    for (var i = 0; i < numPatches; i++) {
-      patches.add(_MossPatch(
-        cx: centerX + (rng.nextDouble() - 0.5) * size.width * 0.5,
-        cy: baseY + (rng.nextDouble() - 0.5) * size.height * 0.12,
-        rx: (18 + rng.nextDouble() * 22) * scale,
-        ry: (10 + rng.nextDouble() * 12) * scale,
-      ));
+    final centers = <Offset>[];
+    for (var i = 0; i < numClusters; i++) {
+      final cx = centerX + (rng.nextDouble() - 0.5) * size.width * 0.5;
+      final cy = baseY + (rng.nextDouble() - 0.5) * size.height * 0.12;
+      centers.add(Offset(cx, cy));
+      _drawFractalMoss(canvas, cx, cy, (16 + rng.nextDouble() * 14) * scale,
+          0, 3 + (params.absoluteCompletions * 0.1).round().clamp(0, 2), rng, scale);
     }
 
-    // ── 2. Connecting tendrils between patches ───────────
-    _drawTendrils(canvas, patches, rng, scale);
+    // ── 3. Connecting runners ────────────────────────
+    _drawRunners(canvas, centers, rng, scale);
 
-    // ── 3. Pebbles ───────────────────────────────────────
-    _drawPebbles(canvas, centerX, baseY, size, rng, scale);
+    // ── 4. Lichen rings ──────────────────────────────
+    _drawLichenPatches(canvas, centerX, baseY, size, rng, scale);
 
-    // ── 4. Moss patches (layered rendering) ──────────────
-    for (final patch in patches) {
-      _drawMossPatch(canvas, patch, rng, scale);
-    }
-
-    // ── 5. Sleeping bulb if 0 completions ────────────────
+    // ── 5. Sleeping bulb if 0 completions ────────────
     if (params.absoluteCompletions == 0) {
       _drawSleepingBulb(canvas, size, centerX, baseY, scale);
     }
   }
 
-  // ── Moss patch rendering ─────────────────────────────
+  // ── Fractal moss — recursive branching cluster ─────
 
-  void _drawMossPatch(
-      Canvas canvas, _MossPatch patch, Random rng, double scale) {
-    // --- Base layer: large soft blurred fill ---
-    final basePaint = Paint()
-      ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+  void _drawFractalMoss(Canvas canvas, double cx, double cy, double radius,
+      int depth, int maxDepth, Random rng, double scale) {
+    if (depth > maxDepth || radius < 2) return;
 
-    for (var i = 0; i < 3; i++) {
-      final ox = (rng.nextDouble() - 0.5) * patch.rx * 0.4;
-      final oy = (rng.nextDouble() - 0.5) * patch.ry * 0.3;
-      final color = rng.nextBool()
-          ? ColorResolver.mossGreen
-          : ColorResolver.mossGreenLight;
-      basePaint.color = color.withValues(alpha: 0.18 + rng.nextDouble() * 0.12);
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(patch.cx + ox, patch.cy + oy),
-          width: patch.rx * (1.6 + rng.nextDouble() * 0.4),
-          height: patch.ry * (1.4 + rng.nextDouble() * 0.4),
-        ),
-        basePaint,
-      );
+    // At each level: draw a soft blurred ellipse, then subdivide
+    final color = depth.isEven
+        ? ColorResolver.mossGreen
+        : ColorResolver.mossGreenLight;
+    final alpha = 0.15 + (depth / maxDepth) * 0.25 + rng.nextDouble() * 0.10;
+
+    // Soft base
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(cx, cy),
+        width: radius * (1.8 + rng.nextDouble() * 0.4),
+        height: radius * (1.2 + rng.nextDouble() * 0.4),
+      ),
+      Paint()
+        ..color = color.withValues(alpha: alpha)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, max(1, 6.0 - depth * 1.5)),
+    );
+
+    // Detailed texture at deeper levels
+    if (depth >= maxDepth - 1) {
+      _drawMossTexture(canvas, cx, cy, radius, rng, scale);
     }
 
-    // --- Mid layer: small clumps biased toward centre ---
-    final midPaint = Paint()..style = PaintingStyle.fill;
-    final midCount = (8 + params.absoluteCompletions * 0.6).round().clamp(6, 22);
-    for (var i = 0; i < midCount; i++) {
-      final angle = rng.nextDouble() * 2 * pi;
-      final dist = rng.nextDouble() * rng.nextDouble(); // centre bias
-      final mx = patch.cx + cos(angle) * dist * patch.rx;
-      final my = patch.cy + sin(angle) * dist * patch.ry;
-      final r = (3 + rng.nextDouble() * 6) * scale * (1 - dist * 0.5);
-
-      final color = rng.nextBool()
-          ? ColorResolver.mossGreen
-          : ColorResolver.mossGreenLight;
-      midPaint.color = color.withValues(alpha: 0.30 + rng.nextDouble() * 0.35);
-
-      // Slightly irregular shapes: use a rounded rect with random radii
-      canvas.drawRRect(
-        RRect.fromRectAndCorners(
-          Rect.fromCenter(
-            center: Offset(mx, my),
-            width: r * (1.2 + rng.nextDouble() * 0.6),
-            height: r * (0.8 + rng.nextDouble() * 0.5),
-          ),
-          topLeft: Radius.circular(r * (0.3 + rng.nextDouble() * 0.7)),
-          topRight: Radius.circular(r * (0.3 + rng.nextDouble() * 0.7)),
-          bottomLeft: Radius.circular(r * (0.3 + rng.nextDouble() * 0.7)),
-          bottomRight: Radius.circular(r * (0.3 + rng.nextDouble() * 0.7)),
-        ),
-        midPaint,
+    // Subdivide into 2-4 child clusters
+    final nChildren = 2 + rng.nextInt(2);
+    for (var i = 0; i < nChildren; i++) {
+      final angle = (i / nChildren) * 2 * pi + (rng.nextDouble() - 0.5) * 1.2;
+      final dist = radius * (0.5 + rng.nextDouble() * 0.4);
+      final childR = radius * (0.45 + rng.nextDouble() * 0.15);
+      _drawFractalMoss(
+        canvas,
+        cx + cos(angle) * dist,
+        cy + sin(angle) * dist,
+        childR,
+        depth + 1,
+        maxDepth,
+        rng,
+        scale,
       );
     }
+  }
 
-    // --- Detail layer: tiny leaf / frond shapes at edges ---
-    final detailPaint = Paint()..style = PaintingStyle.fill;
-    final detailCount =
-        (4 + params.absoluteCompletions * 0.3).round().clamp(3, 14);
-    for (var i = 0; i < detailCount; i++) {
+  /// Fine texture: tiny leaf/frond shapes for organic detail
+  void _drawMossTexture(Canvas canvas, double cx, double cy, double radius,
+      Random rng, double scale) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    final count = (4 + params.absoluteCompletions * 0.3).round().clamp(3, 10);
+
+    for (var i = 0; i < count; i++) {
       final angle = rng.nextDouble() * 2 * pi;
-      final dist = 0.4 + rng.nextDouble() * 0.6; // toward edge
-      final dx = patch.cx + cos(angle) * dist * patch.rx;
-      final dy = patch.cy + sin(angle) * dist * patch.ry;
-      final leafAngle = angle + pi + (rng.nextDouble() - 0.5) * 1.2;
-      final leafLen = (3 + rng.nextDouble() * 5) * scale;
+      final dist = rng.nextDouble() * radius * 0.8;
+      final dx = cx + cos(angle) * dist;
+      final dy = cy + sin(angle) * dist;
+      final leafAngle = angle + pi + (rng.nextDouble() - 0.5) * 1.0;
+      final leafLen = (2 + rng.nextDouble() * 4) * scale;
 
       final color = Color.lerp(
         ColorResolver.mossGreen,
         ColorResolver.mossGreenLight,
         rng.nextDouble(),
       )!;
-      detailPaint.color = color.withValues(alpha: 0.4 + rng.nextDouble() * 0.4);
+      paint.color = color.withValues(alpha: 0.4 + rng.nextDouble() * 0.4);
 
       // Tiny leaf shape (pointed oval)
       canvas.drawPath(
         Path()
           ..moveTo(dx, dy)
           ..quadraticBezierTo(
-            dx + cos(leafAngle - 0.35) * leafLen * 0.65,
-            dy + sin(leafAngle - 0.35) * leafLen * 0.65,
+            dx + cos(leafAngle - 0.4) * leafLen * 0.6,
+            dy + sin(leafAngle - 0.4) * leafLen * 0.6,
             dx + cos(leafAngle) * leafLen,
             dy + sin(leafAngle) * leafLen,
           )
           ..quadraticBezierTo(
-            dx + cos(leafAngle + 0.35) * leafLen * 0.65,
-            dy + sin(leafAngle + 0.35) * leafLen * 0.65,
+            dx + cos(leafAngle + 0.4) * leafLen * 0.6,
+            dy + sin(leafAngle + 0.4) * leafLen * 0.6,
             dx,
             dy,
           ),
-        detailPaint,
+        paint,
       );
     }
 
-    // --- Highlight dots (dew / light reflections) ---
+    // Dew highlights
     final hlPaint = Paint()..style = PaintingStyle.fill;
-    final hlCount = 2 + rng.nextInt(3);
+    final hlCount = 1 + rng.nextInt(2);
     for (var i = 0; i < hlCount; i++) {
-      final hx =
-          patch.cx + (rng.nextDouble() - 0.5) * patch.rx * 1.2;
-      final hy =
-          patch.cy + (rng.nextDouble() - 0.5) * patch.ry * 0.8;
+      final hx = cx + (rng.nextDouble() - 0.5) * radius;
+      final hy = cy + (rng.nextDouble() - 0.5) * radius * 0.6;
       hlPaint.color = const Color(0xFFDDFFDD)
           .withValues(alpha: 0.12 + rng.nextDouble() * 0.12);
       canvas.drawCircle(
         Offset(hx, hy),
-        (1 + rng.nextDouble() * 2) * scale,
+        (1 + rng.nextDouble() * 1.5) * scale,
         hlPaint,
       );
     }
   }
 
-  // ── Tendrils ─────────────────────────────────────────
+  // ── Fractal stones — subdivision polygon shapes ────
 
-  void _drawTendrils(
-      Canvas canvas, List<_MossPatch> patches, Random rng, double scale) {
-    if (patches.length < 2) return;
+  void _drawFractalStones(Canvas canvas, double centerX, double baseY,
+      Size size, Random rng, double scale) {
+    final count =
+        (3 + params.absoluteCompletions * 0.4).round().clamp(2, 8);
+
+    for (var i = 0; i < count; i++) {
+      final px = centerX + (rng.nextDouble() - 0.5) * size.width * 0.5;
+      final py = baseY + (rng.nextDouble() - 0.5) * size.height * 0.10;
+      final stoneSize = (8 + rng.nextDouble() * 14) * scale;
+
+      _drawFractalStone(canvas, px, py, stoneSize, rng, scale);
+    }
+  }
+
+  void _drawFractalStone(Canvas canvas, double cx, double cy, double radius,
+      Random rng, double scale) {
+    // Generate irregular polygon using angular subdivision
+    final numVerts = 6 + rng.nextInt(4);
+    final vertices = <Offset>[];
+    for (var i = 0; i < numVerts; i++) {
+      final baseAngle = (i / numVerts) * 2 * pi;
+      final angle = baseAngle + (rng.nextDouble() - 0.5) * (2 * pi / numVerts) * 0.4;
+      final r = radius * (0.6 + rng.nextDouble() * 0.4);
+      vertices.add(Offset(cx + cos(angle) * r, cy + sin(angle) * r * 0.6));
+    }
+
+    // Apply one level of fractal subdivision — midpoint displacement
+    final subdivided = <Offset>[];
+    for (var i = 0; i < vertices.length; i++) {
+      final next = vertices[(i + 1) % vertices.length];
+      subdivided.add(vertices[i]);
+      final midX = (vertices[i].dx + next.dx) / 2 +
+          (rng.nextDouble() - 0.5) * radius * 0.15;
+      final midY = (vertices[i].dy + next.dy) / 2 +
+          (rng.nextDouble() - 0.5) * radius * 0.10;
+      subdivided.add(Offset(midX, midY));
+    }
+
+    final stonePath = Path()..moveTo(subdivided.first.dx, subdivided.first.dy);
+    for (var i = 1; i < subdivided.length; i++) {
+      stonePath.lineTo(subdivided[i].dx, subdivided[i].dy);
+    }
+    stonePath.close();
+
+    // Shadow
+    canvas.save();
+    canvas.translate(1.5 * scale, 2.0 * scale);
+    canvas.drawPath(
+      stonePath,
+      Paint()
+        ..color = const Color(0x1A000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.restore();
+
+    // Main body with gradient
+    final rect = Rect.fromCenter(
+        center: Offset(cx, cy), width: radius * 2, height: radius * 1.4);
+    canvas.drawPath(
+      stonePath,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [ColorResolver.pebbleLight, ColorResolver.pebbleGrey],
+        ).createShader(rect),
+    );
+
+    // Edge darkening for 3D
+    canvas.drawPath(
+      stonePath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.6 * scale
+        ..color = ColorResolver.pebbleGrey.withValues(alpha: 0.3),
+    );
+
+    // Inner lighter spot (highlight)
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(cx - radius * 0.15, cy - radius * 0.1),
+        width: radius * 0.5,
+        height: radius * 0.3,
+      ),
+      Paint()
+        ..color = const Color(0x22FFFFFF)
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+    );
+
+    // Tiny cracks / texture lines
+    final crackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.4 * scale
+      ..color = ColorResolver.pebbleGrey.withValues(alpha: 0.25);
+    for (var c = 0; c < 2; c++) {
+      final sx = cx + (rng.nextDouble() - 0.5) * radius * 0.6;
+      final sy = cy + (rng.nextDouble() - 0.5) * radius * 0.3;
+      final ex = sx + (rng.nextDouble() - 0.5) * radius * 0.5;
+      final ey = sy + (rng.nextDouble() - 0.5) * radius * 0.3;
+      canvas.drawLine(Offset(sx, sy), Offset(ex, ey), crackPaint);
+    }
+  }
+
+  // ── Lichen rings — circular fractal-like growth ────
+
+  void _drawLichenPatches(Canvas canvas, double centerX, double baseY,
+      Size size, Random rng, double scale) {
+    final count = (1 + params.absoluteCompletions * 0.08).round().clamp(0, 3);
+    for (var i = 0; i < count; i++) {
+      final lx = centerX + (rng.nextDouble() - 0.5) * size.width * 0.45;
+      final ly = baseY + (rng.nextDouble() - 0.5) * size.height * 0.08;
+      final r = (5 + rng.nextDouble() * 8) * scale;
+      _drawLichenRing(canvas, lx, ly, r, rng, scale);
+    }
+  }
+
+  void _drawLichenRing(Canvas canvas, double cx, double cy, double radius,
+      Random rng, double scale) {
+    // Soft ring made of overlapping small circles around a center
+    final paint = Paint()..style = PaintingStyle.fill;
+    final numDots = 8 + rng.nextInt(6);
+    for (var i = 0; i < numDots; i++) {
+      final angle = (i / numDots) * 2 * pi + (rng.nextDouble() - 0.5) * 0.3;
+      final dist = radius * (0.7 + rng.nextDouble() * 0.3);
+      final dotR = radius * (0.25 + rng.nextDouble() * 0.2);
+
+      final color = Color.lerp(
+        const Color(0xFFC8D89A),
+        const Color(0xFFB0C878),
+        rng.nextDouble(),
+      )!;
+      paint.color = color.withValues(alpha: 0.20 + rng.nextDouble() * 0.15);
+
+      canvas.drawCircle(
+        Offset(cx + cos(angle) * dist, cy + sin(angle) * dist),
+        dotR,
+        paint,
+      );
+    }
+
+    // Center darker spot
+    paint.color = const Color(0xFF8B9B6B).withValues(alpha: 0.15);
+    canvas.drawCircle(Offset(cx, cy), radius * 0.3, paint);
+  }
+
+  // ── Connecting runners — organic bezier vines ──────
+
+  void _drawRunners(
+      Canvas canvas, List<Offset> centers, Random rng, double scale) {
+    if (centers.length < 2) return;
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = (0.8 + rng.nextDouble() * 0.6) * scale
+      ..strokeWidth = (0.6 + rng.nextDouble() * 0.5) * scale
       ..strokeCap = StrokeCap.round
-      ..color = ColorResolver.mossGreen.withValues(alpha: 0.18);
+      ..color = ColorResolver.mossGreen.withValues(alpha: 0.20);
 
-    for (var i = 0; i < patches.length - 1; i++) {
-      final a = patches[i];
-      final b = patches[i + 1];
-      final midX = (a.cx + b.cx) / 2 + (rng.nextDouble() - 0.5) * 15 * scale;
-      final midY = (a.cy + b.cy) / 2 + (rng.nextDouble() - 0.5) * 8 * scale;
+    for (var i = 0; i < centers.length - 1; i++) {
+      final a = centers[i];
+      final b = centers[i + 1];
+      final midX = (a.dx + b.dx) / 2 + (rng.nextDouble() - 0.5) * 18 * scale;
+      final midY = (a.dy + b.dy) / 2 + (rng.nextDouble() - 0.5) * 10 * scale;
 
       canvas.drawPath(
         Path()
-          ..moveTo(a.cx, a.cy)
-          ..quadraticBezierTo(midX, midY, b.cx, b.cy),
+          ..moveTo(a.dx, a.dy)
+          ..quadraticBezierTo(midX, midY, b.dx, b.dy),
         paint,
       );
 
-      // Small dots along tendril
-      final dotPaint = Paint()
-        ..style = PaintingStyle.fill
-        ..color = ColorResolver.mossGreenLight.withValues(alpha: 0.2);
-      for (var t = 0.2; t < 0.85; t += 0.15 + rng.nextDouble() * 0.15) {
+      // Tiny leaf sprouts along the runner
+      final leafPaint = Paint()..style = PaintingStyle.fill;
+      for (var t = 0.2; t < 0.85; t += 0.2 + rng.nextDouble() * 0.15) {
         final u = 1 - t;
-        final px = u * u * a.cx + 2 * u * t * midX + t * t * b.cx;
-        final py = u * u * a.cy + 2 * u * t * midY + t * t * b.cy;
-        canvas.drawCircle(
-          Offset(px + (rng.nextDouble() - 0.5) * 3, py),
-          (1.5 + rng.nextDouble() * 2) * scale,
-          dotPaint,
+        final px = u * u * a.dx + 2 * u * t * midX + t * t * b.dx;
+        final py = u * u * a.dy + 2 * u * t * midY + t * t * b.dy;
+        final leafAngle = rng.nextDouble() * 2 * pi;
+        final leafLen = (2 + rng.nextDouble() * 3) * scale;
+
+        leafPaint.color = ColorResolver.mossGreenLight
+            .withValues(alpha: 0.25 + rng.nextDouble() * 0.20);
+        canvas.drawPath(
+          Path()
+            ..moveTo(px, py)
+            ..quadraticBezierTo(
+              px + cos(leafAngle - 0.3) * leafLen * 0.6,
+              py + sin(leafAngle - 0.3) * leafLen * 0.6,
+              px + cos(leafAngle) * leafLen,
+              py + sin(leafAngle) * leafLen,
+            )
+            ..quadraticBezierTo(
+              px + cos(leafAngle + 0.3) * leafLen * 0.6,
+              py + sin(leafAngle + 0.3) * leafLen * 0.6,
+              px,
+              py,
+            ),
+          leafPaint,
         );
       }
     }
   }
 
-  // ── Pebbles ──────────────────────────────────────────
-
-  void _drawPebbles(Canvas canvas, double centerX, double baseY, Size size,
-      Random rng, double scale) {
-    final count =
-        (3 + params.absoluteCompletions * 0.4).round().clamp(2, 10);
-
-    for (var i = 0; i < count; i++) {
-      final px = centerX + (rng.nextDouble() - 0.5) * size.width * 0.55;
-      final py = baseY + (rng.nextDouble() - 0.5) * size.height * 0.10;
-      final pw = (7 + rng.nextDouble() * 14) * scale;
-      final ph = pw * (0.45 + rng.nextDouble() * 0.25);
-
-      final rect = Rect.fromCenter(center: Offset(px, py), width: pw, height: ph);
-
-      // Shadow
-      canvas.drawOval(
-        rect.shift(Offset(1.5 * scale, 1.5 * scale)),
-        Paint()
-          ..color = const Color(0x18000000)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
-      );
-
-      // Main body with gradient (3-D roundness)
-      canvas.drawOval(
-        rect,
-        Paint()
-          ..style = PaintingStyle.fill
-          ..shader = LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [ColorResolver.pebbleLight, ColorResolver.pebbleGrey],
-          ).createShader(rect),
-      );
-
-      // Highlight spot
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(px - pw * 0.15, py - ph * 0.15),
-          width: pw * 0.3,
-          height: ph * 0.25,
-        ),
-        Paint()
-          ..color = const Color(0x20FFFFFF)
-          ..style = PaintingStyle.fill,
-      );
-    }
-  }
-
-  // ── Sleeping bulb ────────────────────────────────────
+  // ── Sleeping bulb ────────────────────────────────
 
   void _drawSleepingBulb(
       Canvas canvas, Size size, double cx, double cy, double scale) {
@@ -339,17 +440,4 @@ class MossPainter extends CustomPainter {
   bool shouldRepaint(MossPainter oldDelegate) =>
       params.seed != oldDelegate.params.seed ||
       params.absoluteCompletions != oldDelegate.params.absoluteCompletions;
-}
-
-/// Internal data class for a moss patch region.
-class _MossPatch {
-  const _MossPatch({
-    required this.cx,
-    required this.cy,
-    required this.rx,
-    required this.ry,
-  });
-
-  final double cx, cy; // centre
-  final double rx, ry; // radii
 }

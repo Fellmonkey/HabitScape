@@ -104,6 +104,7 @@ abstract final class DebugProfiles {
         GardenObjectType.moss => '🌿',
         GardenObjectType.bush => '🌳',
         GardenObjectType.tree => '🌲',
+        GardenObjectType.grass => '🌾',
       };
 
   static String _levelRu(String name) => switch (name) {

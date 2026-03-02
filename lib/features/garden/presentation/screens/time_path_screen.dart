@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,7 +101,7 @@ class TimePathScreen extends ConsumerWidget {
 }
 
 /// A single month's section on the Time Path.
-class _MonthSegment extends StatelessWidget {
+class _MonthSegment extends ConsumerWidget {
   const _MonthSegment({
     required this.year,
     required this.month,
@@ -118,14 +119,22 @@ class _MonthSegment extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final screenH = MediaQuery.of(context).size.height;
+    final habitNames = ref.watch(habitNamesProvider).value ?? {};
 
     // Separate focus (Layer 1) and background (Layer 0) objects
-    final focus = objects.where((o) => o.completionPct >= 80).toList();
+    var focus = objects.where((o) => o.completionPct >= 80).toList();
     final background = objects.where((o) => o.completionPct < 80).toList();
 
-    final segmentHeight = 200.0 + focus.length * 60.0;
+    // If many habits (>30 total), limit displayed focus plants to 8
+    if (objects.length > 30 && focus.length > 8) {
+      focus = focus.sublist(0, 8);
+    }
+
+    // Each month takes at least full screen height
+    final segmentHeight = max(screenH, 300.0 + focus.length * 80.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,40 +153,134 @@ class _MonthSegment extends StatelessWidget {
         // Garden segment
         SizedBox(
           height: segmentHeight,
-          child: Stack(
-            children: [
-              // Trail path in background
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: PathTrailPainter(
-                    segmentCount: 1,
-                    isDark: isDark,
-                  ),
-                ),
-              ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final segW = constraints.maxWidth;
+              const amplitude = 60.0;
+              final centerX = segW / 2;
 
-              // Background forest (Layer 0) — clustered small images
-              if (background.isNotEmpty)
-                Positioned.fill(
-                  child: _ForestCanopy(objects: background),
-                ),
-
-              // Focus plants (Layer 1) — along the path
-              for (var i = 0; i < focus.length; i++)
-                Positioned(
-                  left: i.isEven ? 20 : null,
-                  right: i.isEven ? null : 20,
-                  top: 30.0 + i * 60.0,
-                  child: GestureDetector(
-                    onTap: () => _showMemoryCard(context, focus[i]),
-                    child: _PlantThumbnail(object: focus[i], size: 100),
+              return Stack(
+                children: [
+                  // Trail path in background
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: PathTrailPainter(
+                        segmentCount: 1,
+                        isDark: isDark,
+                      ),
+                    ),
                   ),
-                ),
-            ],
+
+                  // Background forest (Layer 0) — small plants near the path
+                  if (background.isNotEmpty)
+                    Positioned.fill(
+                      child: _ForestCanopy(
+                        objects: background,
+                        segmentHeight: segmentHeight,
+                      ),
+                    ),
+
+                  // Decorative grass fill elements along the path
+                  ..._buildPathGrass(segW, segmentHeight, centerX, amplitude),
+
+                  // Focus plants (Layer 1) — positioned along the winding path
+                  for (var i = 0; i < focus.length; i++)
+                    Builder(
+                      builder: (_) {
+                        // Distribute evenly across the full segment height
+                        final spacing = segmentHeight / (focus.length + 1);
+                        final posY = spacing * (i + 1) - 70;
+                        final t = posY / segmentHeight;
+                        final pathX = centerX +
+                            sin(t * 3.14159 * 2) * amplitude;
+                        // Alternate left/right of the trail with small offset
+                        final offset = i.isEven ? -75.0 : 5.0;
+                        final posX =
+                            (pathX + offset).clamp(5.0, segW - 145.0);
+
+                        final habitName =
+                            habitNames[focus[i].habitId] ?? '';
+
+                        return Positioned(
+                          left: posX,
+                          top: posY,
+                          child: GestureDetector(
+                            onTap: () => _showMemoryCard(context, focus[i]),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _PlantThumbnail(object: focus[i], size: 140),
+                                if (habitName.isNotEmpty)
+                                  Container(
+                                    width: 140,
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      habitName,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontSize: 10,
+                                        color: theme.colorScheme.onSurface
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ],
     );
+  }
+
+  /// Decorative grass filler widgets scattered along the path edges.
+  List<Widget> _buildPathGrass(
+      double segW, double segH, double centerX, double amplitude) {
+    final rng = Random(year * 100 + month);
+    final widgets = <Widget>[];
+    final numGrass = 3 + rng.nextInt(4);
+
+    for (var i = 0; i < numGrass; i++) {
+      final t = (rng.nextDouble() * 0.8 + 0.1);
+      final pathX = centerX + sin(t * 3.14159 * 2) * amplitude;
+      final side = rng.nextBool() ? -1.0 : 1.0;
+      final gx = (pathX + side * (35 + rng.nextDouble() * 30))
+          .clamp(5.0, segW - 40.0);
+      final gy = t * segH;
+      final seed = rng.nextInt(100000);
+
+      widgets.add(Positioned(
+        left: gx,
+        top: gy,
+        child: Opacity(
+          opacity: 0.4,
+          child: PlantWidget(
+            params: GenerationParams(
+              archetype: SeedArchetype.oak,
+              completionPct: 30,
+              absoluteCompletions: 5,
+              maxStreak: 3,
+              morningRatio: 0.33,
+              afternoonRatio: 0.33,
+              eveningRatio: 0.34,
+              seed: seed,
+              isShortPerfect: false,
+              objectType: GardenObjectType.grass,
+            ),
+            size: 50,
+          ),
+        ),
+      ));
+    }
+    return widgets;
   }
 
   void _showMemoryCard(BuildContext context, GardenObject obj) {
@@ -191,25 +294,31 @@ class _MonthSegment extends StatelessWidget {
   }
 }
 
-/// Background forest canopy (Layer 0) — a cluster of small plant images.
+/// Background forest canopy (Layer 0) — plants clustered near the winding path.
 class _ForestCanopy extends StatelessWidget {
-  const _ForestCanopy({required this.objects});
+  const _ForestCanopy({required this.objects, required this.segmentHeight});
 
   final List<GardenObject> objects;
+  final double segmentHeight;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final segW = constraints.maxWidth;
+        final segH = constraints.maxHeight;
+        const amplitude = 60.0;
+        final centerX = segW / 2;
+
         return Stack(
           children: [
             for (var i = 0; i < objects.length && i < 10; i++)
               Positioned(
-                left: _canopyX(i, constraints.maxWidth),
-                top: _canopyY(i, constraints.maxHeight),
+                left: _pathAlignedX(i, centerX, amplitude, segW, segH),
+                top: _pathAlignedY(i, segH),
                 child: Opacity(
                   opacity: 0.5,
-                  child: _PlantThumbnail(object: objects[i], size: 50),
+                  child: _PlantThumbnail(object: objects[i], size: 70),
                 ),
               ),
           ],
@@ -218,14 +327,24 @@ class _ForestCanopy extends StatelessWidget {
     );
   }
 
-  double _canopyX(int index, double maxWidth) {
+  /// Position X near the winding path with a small random offset.
+  double _pathAlignedX(
+      int index, double centerX, double amplitude, double maxW, double maxH) {
     final seed = objects[index].generationSeed;
-    return (seed % maxWidth.toInt()).toDouble().clamp(10, maxWidth - 60);
+    final rng = Random(seed);
+    final y = _pathAlignedY(index, maxH);
+    final t = y / maxH;
+    final pathX = centerX + sin(t * 3.14159 * 2) * amplitude;
+    // Offset from path: ±30-80 pixels
+    final side = rng.nextBool() ? -1.0 : 1.0;
+    final offset = side * (30 + rng.nextDouble() * 50);
+    return (pathX + offset).clamp(5.0, maxW - 55.0);
   }
 
-  double _canopyY(int index, double maxHeight) {
+  double _pathAlignedY(int index, double maxH) {
     final seed = objects[index].generationSeed;
-    return ((seed ~/ 100) % maxHeight.toInt()).toDouble().clamp(10, maxHeight - 60);
+    final rng = Random(seed + 7);
+    return (20 + rng.nextDouble() * (maxH - 80)).clamp(10.0, maxH - 60.0);
   }
 }
 
@@ -273,13 +392,15 @@ class _PlantThumbnail extends StatelessWidget {
   }
 
   /// Map object type back to an archetype for rendering.
-  /// In a real scenario we'd store the archetype in GardenObject,
-  /// but for now default to oak for trees.
+  /// Uses the generation seed to deterministically assign an archetype.
   SeedArchetype _resolveArchetype(GardenObjectType type) {
     return switch (type) {
-      GardenObjectType.tree => SeedArchetype.oak,
-      GardenObjectType.bush => SeedArchetype.oak,
+      GardenObjectType.tree => SeedArchetype.values[
+          object.generationSeed % SeedArchetype.values.length],
+      GardenObjectType.bush => SeedArchetype.values[
+          object.generationSeed % SeedArchetype.values.length],
       GardenObjectType.moss => SeedArchetype.oak,
+      GardenObjectType.grass => SeedArchetype.oak,
       GardenObjectType.sleepingBulb => SeedArchetype.oak,
     };
   }
@@ -304,6 +425,7 @@ class _MemoryCard extends StatelessWidget {
     final typeLabel = switch (objectType) {
       GardenObjectType.tree => 'Дерево',
       GardenObjectType.bush => 'Куст',
+      GardenObjectType.grass => 'Трава',
       GardenObjectType.moss => 'Мох',
       GardenObjectType.sleepingBulb => 'Спящая луковица',
     };

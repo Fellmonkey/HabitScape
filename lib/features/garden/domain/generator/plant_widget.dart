@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/database/enums.dart';
 import 'bush_painter.dart';
+import 'grass_painter.dart';
 import 'moss_painter.dart';
 import 'plant_params.dart';
 import 'tree_painter.dart';
@@ -32,6 +33,7 @@ class PlantWidget extends StatelessWidget {
     return switch (params.objectType) {
       GardenObjectType.tree => TreePainter(params: params),
       GardenObjectType.bush => BushPainter(params: params),
+      GardenObjectType.grass => GrassPainter(params: params),
       GardenObjectType.moss || GardenObjectType.sleepingBulb =>
         MossPainter(params: params),
     };

@@ -33,6 +33,16 @@ final gardenByMonthProvider =
   return grouped;
 });
 
+// ── Habit name lookup for Time Path labels ───────────────────
+
+/// Maps habitId → habit name for displaying labels on the Time Path.
+/// Includes all habits (active + archived) so archived habits still show names.
+final habitNamesProvider = FutureProvider<Map<int, String>>((ref) async {
+  final habitsDao = ref.watch(habitsDaoProvider);
+  final habits = await habitsDao.getAllHabits();
+  return {for (final h in habits) h.id: h.name};
+});
+
 // ── Crystallization ──────────────────────────────────────────
 
 /// Runs crystallization on app startup if a new month has begun.
