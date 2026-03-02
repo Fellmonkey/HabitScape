@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -336,6 +338,9 @@ class _CreateHabitSheetState extends ConsumerState<_CreateHabitSheet> {
   enums.FrequencyType _frequency = enums.FrequencyType.daily;
   enums.TimeOfDay _timeOfDay = enums.TimeOfDay.anytime;
   enums.SeedArchetype _archetype = enums.SeedArchetype.oak;
+  final _selectedWeekdays = <int>{1, 2, 3, 4, 5};
+  int _xValue = 3;
+  int _everyXDays = 7;
 
   @override
   void dispose() {
@@ -417,8 +422,33 @@ class _CreateHabitSheetState extends ConsumerState<_CreateHabitSheet> {
                 _freqChip('Каждый день', enums.FrequencyType.daily),
                 _freqChip('Дни недели', enums.FrequencyType.weekdays),
                 _freqChip('X раз/нед', enums.FrequencyType.xPerWeek),
+                _freqChip('Каждые N дней', enums.FrequencyType.everyXDays),
                 _freqChip('Негативная', enums.FrequencyType.negative),
               ],
+            ),
+            const SizedBox(height: 8),
+
+            // Weekday selector
+            if (_frequency == enums.FrequencyType.weekdays) ..._buildWeekdaySelector(theme),
+
+            // X per week stepper
+            if (_frequency == enums.FrequencyType.xPerWeek) ..._buildXStepper(
+              theme,
+              label: '$_xValue раз в неделю',
+              value: _xValue,
+              min: 1,
+              max: 7,
+              onChanged: (v) => setState(() => _xValue = v),
+            ),
+
+            // Every X days stepper
+            if (_frequency == enums.FrequencyType.everyXDays) ..._buildXStepper(
+              theme,
+              label: 'Каждые $_everyXDays дней',
+              value: _everyXDays,
+              min: 2,
+              max: 30,
+              onChanged: (v) => setState(() => _everyXDays = v),
             ),
             const SizedBox(height: 16),
 
@@ -499,6 +529,62 @@ class _CreateHabitSheetState extends ConsumerState<_CreateHabitSheet> {
     );
   }
 
+  List<Widget> _buildWeekdaySelector(ThemeData theme) {
+    const days = [
+      (1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'),
+      (5, 'Пт'), (6, 'Сб'), (7, 'Вс'),
+    ];
+    return [
+      Wrap(
+        spacing: 6,
+        children: days.map(((int n, String label) r) {
+          final selected = _selectedWeekdays.contains(r.$1);
+          return FilterChip(
+            label: Text(r.$2),
+            selected: selected,
+            onSelected: (_) => setState(() {
+              if (selected) {
+                if (_selectedWeekdays.length > 1) _selectedWeekdays.remove(r.$1);
+              } else {
+                _selectedWeekdays.add(r.$1);
+              }
+            }),
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
+  List<Widget> _buildXStepper(
+    ThemeData theme, {
+    required String label,
+    required int value,
+    required int min,
+    required int max,
+    required ValueChanged<int> onChanged,
+  }) {
+    return [
+      Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: value > min ? () => onChanged(value - 1) : null,
+          ),
+          Expanded(
+            child: Text(label, textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: value < max ? () => onChanged(value + 1) : null,
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+    ];
+  }
+
   IconData _archetypeIcon(enums.SeedArchetype arch) => switch (arch) {
         enums.SeedArchetype.oak => Icons.park_rounded,
         enums.SeedArchetype.sakura => Icons.filter_vintage_rounded,
@@ -512,12 +598,20 @@ class _CreateHabitSheetState extends ConsumerState<_CreateHabitSheet> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
+    final freqValue = switch (_frequency) {
+      enums.FrequencyType.weekdays =>
+        jsonEncode({'days': _selectedWeekdays.toList()..sort()}),
+      enums.FrequencyType.xPerWeek => jsonEncode({'x': _xValue}),
+      enums.FrequencyType.everyXDays => jsonEncode({'x': _everyXDays}),
+      _ => '{}',
+    };
+
     ref.read(habitActionsProvider.notifier).createHabit(
           name: name,
           category: 'general',
           seedArchetype: _archetype,
           frequencyType: _frequency,
-          frequencyValue: '{}',
+          frequencyValue: freqValue,
           timeOfDay: _timeOfDay,
         );
 

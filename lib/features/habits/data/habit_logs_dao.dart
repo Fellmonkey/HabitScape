@@ -118,4 +118,12 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
           ..where((l) => l.date.isSmallerThanValue(cutoffTimestamp)))
         .go();
   }
+
+  /// Get ALL logs for a specific habit ordered newest first.
+  Future<List<HabitLog>> getAllLogsForHabit(int habitId) {
+    return (select(habitLogs)
+          ..where((l) => l.habitId.equals(habitId))
+          ..orderBy([(l) => OrderingTerm.desc(l.date)]))
+        .get();
+  }
 }

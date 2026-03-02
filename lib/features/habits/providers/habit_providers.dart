@@ -193,4 +193,27 @@ class HabitActions extends Notifier<void> {
     await _habitsDao.toggleFocus(habitId, isFocus: isFocus);
     return true;
   }
-}
+
+  /// Update a habit's mutable fields (name, archetype, frequency, timeOfDay).
+  Future<void> updateHabit({
+    required int habitId,
+    required String name,
+    required SeedArchetype seedArchetype,
+    required FrequencyType frequencyType,
+    required String frequencyValue,
+    required TimeOfDay timeOfDay,
+  }) async {
+    final existing = await _habitsDao.getHabit(habitId);
+    await _habitsDao.updateHabit(HabitsCompanion(
+      id: Value(habitId),
+      name: Value(name),
+      category: Value(existing.category),
+      seedArchetype: Value(seedArchetype.name),
+      frequencyType: Value(frequencyType.name),
+      frequencyValue: Value(frequencyValue),
+      timeOfDay: Value(timeOfDay.name),
+      isFocus: Value(existing.isFocus),
+      isArchived: Value(existing.isArchived),
+      createdAt: Value(existing.createdAt),
+    ));
+  }}
