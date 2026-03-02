@@ -124,9 +124,19 @@ class _MonthSegment extends ConsumerWidget {
     final screenH = MediaQuery.of(context).size.height;
     final habitNames = ref.watch(habitNamesProvider).value ?? {};
 
-    // Separate focus (Layer 1) and background (Layer 0) objects
-    var focus = objects.where((o) => o.completionPct >= 80).toList();
-    final background = objects.where((o) => o.completionPct < 80).toList();
+    // Trees (Layer 1) follow the main path — large, labelled, interactive.
+    // Bushes/moss/sleeping bulbs (Layer 0) scatter as background forest —
+    // smaller and dimmed, but still tappable to see monthly stats.
+    var focus = objects
+        .where((o) =>
+            GardenObjectType.fromString(o.objectType) ==
+            GardenObjectType.tree)
+        .toList();
+    final background = objects
+        .where((o) =>
+            GardenObjectType.fromString(o.objectType) !=
+            GardenObjectType.tree)
+        .toList();
 
     // If many habits (>30 total), limit displayed focus plants to 8
     if (objects.length > 30 && focus.length > 8) {
@@ -171,12 +181,14 @@ class _MonthSegment extends ConsumerWidget {
                     ),
                   ),
 
-                  // Background forest (Layer 0) — small plants near the path
+                  // Background forest (Layer 0) — smaller plants near path, tappable
                   if (background.isNotEmpty)
                     Positioned.fill(
                       child: _ForestCanopy(
                         objects: background,
-                        segmentHeight: segmentHeight,
+                        habitNames: habitNames,
+                        onTap: (obj, name) =>
+                            _showMemoryCard(context, obj, name),
                       ),
                     ),
 
@@ -205,7 +217,8 @@ class _MonthSegment extends ConsumerWidget {
                           left: posX,
                           top: posY,
                           child: GestureDetector(
-                            onTap: () => _showMemoryCard(context, focus[i]),
+                            onTap: () => _showMemoryCard(
+                                context, focus[i], habitName),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -283,23 +296,38 @@ class _MonthSegment extends ConsumerWidget {
     return widgets;
   }
 
-  void _showMemoryCard(BuildContext context, GardenObject obj) {
+  void _showMemoryCard(
+      BuildContext context, GardenObject obj, String habitName) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _MemoryCard(object: obj, theme: theme),
+      builder: (_) =>
+          _MemoryCard(object: obj, theme: theme, habitName: habitName),
     );
   }
 }
 
-/// Background forest canopy (Layer 0) — plants clustered near the winding path.
+/// Background forest canopy (Layer 0) — smaller plants scattered near the path.
+/// Each plant is placed so its bounding slot doesn't overlap any earlier plant.
+/// The first attempt uses a path-aligned position (same visual style as before);
+/// up to 40 random fallback positions are tried before the plant is skipped.
 class _ForestCanopy extends StatelessWidget {
-  const _ForestCanopy({required this.objects, required this.segmentHeight});
+  const _ForestCanopy({
+    required this.objects,
+    required this.habitNames,
+    required this.onTap,
+  });
 
   final List<GardenObject> objects;
-  final double segmentHeight;
+  final Map<int, String> habitNames;
+  final void Function(GardenObject, String) onTap;
+
+  static const double _amplitude = 60.0;
+  // Clearance zone per plant: thumbnail + label area + a little breathing room
+  static const double _slotW = 108.0;
+  static const double _slotH = 116.0;
 
   @override
   Widget build(BuildContext context) {
@@ -307,18 +335,18 @@ class _ForestCanopy extends StatelessWidget {
       builder: (context, constraints) {
         final segW = constraints.maxWidth;
         final segH = constraints.maxHeight;
-        const amplitude = 60.0;
-        final centerX = segW / 2;
+        final positions = _placeItems(segW, segH);
 
         return Stack(
           children: [
-            for (var i = 0; i < objects.length && i < 10; i++)
+            for (final (obj, pos) in positions)
               Positioned(
-                left: _pathAlignedX(i, centerX, amplitude, segW, segH),
-                top: _pathAlignedY(i, segH),
-                child: Opacity(
-                  opacity: 0.5,
-                  child: _PlantThumbnail(object: objects[i], size: 70),
+                left: pos.dx,
+                top: pos.dy,
+                child: _BackgroundItem(
+                  object: obj,
+                  habitName: habitNames[obj.habitId] ?? '',
+                  onTap: onTap,
                 ),
               ),
           ],
@@ -327,24 +355,99 @@ class _ForestCanopy extends StatelessWidget {
     );
   }
 
-  /// Position X near the winding path with a small random offset.
-  double _pathAlignedX(
-      int index, double centerX, double amplitude, double maxW, double maxH) {
-    final seed = objects[index].generationSeed;
-    final rng = Random(seed);
-    final y = _pathAlignedY(index, maxH);
-    final t = y / maxH;
-    final pathX = centerX + sin(t * 3.14159 * 2) * amplitude;
-    // Offset from path: ±30-80 pixels
-    final side = rng.nextBool() ? -1.0 : 1.0;
-    final offset = side * (30 + rng.nextDouble() * 50);
-    return (pathX + offset).clamp(5.0, maxW - 55.0);
-  }
+  List<(GardenObject, Offset)> _placeItems(double segW, double segH) {
+    final result = <(GardenObject, Offset)>[];
+    final placed = <Rect>[];
+    final centerX = segW / 2;
+    final limit = objects.length.clamp(0, 10);
 
-  double _pathAlignedY(int index, double maxH) {
-    final seed = objects[index].generationSeed;
-    final rng = Random(seed + 7);
-    return (20 + rng.nextDouble() * (maxH - 80)).clamp(10.0, maxH - 60.0);
+    for (var i = 0; i < limit; i++) {
+      final obj = objects[i];
+      final seed = obj.generationSeed;
+      Offset? chosen;
+
+      for (var attempt = 0; attempt < 40; attempt++) {
+        double x, y;
+
+        if (attempt == 0) {
+          // Attempt 0: deterministic path-aligned position
+          final rng = Random(seed);
+          final yFrac = 0.05 + rng.nextDouble() * 0.88;
+          y = (yFrac * (segH - _slotH)).clamp(4.0, segH - _slotH);
+          final t = (y + _slotH / 2) / segH;
+          final pathX = centerX + sin(t * 3.14159 * 2) * _amplitude;
+          final side = rng.nextBool() ? -1.0 : 1.0;
+          final off = side * (30 + rng.nextDouble() * 50);
+          x = (pathX + off).clamp(4.0, segW - _slotW);
+        } else {
+          // Subsequent attempts: seeded-random positions spread through segment
+          final rng = Random(seed ^ (attempt * 0x9e3779b9));
+          x = (rng.nextDouble() * (segW - _slotW)).clamp(4.0, segW - _slotW);
+          y = (rng.nextDouble() * (segH - _slotH)).clamp(4.0, segH - _slotH);
+        }
+
+        final candidate = Rect.fromLTWH(x, y, _slotW, _slotH);
+        if (placed.every((r) => !r.overlaps(candidate))) {
+          chosen = Offset(x, y);
+          placed.add(candidate);
+          break;
+        }
+      }
+
+      // chosen is null only when the segment is extremely crowded — skip plant
+      if (chosen != null) result.add((obj, chosen));
+    }
+
+    return result;
+  }
+}
+
+// ── Single background plant widget ───────────────────────────
+
+class _BackgroundItem extends StatelessWidget {
+  const _BackgroundItem({
+    required this.object,
+    required this.habitName,
+    required this.onTap,
+  });
+
+  final GardenObject object;
+  final String habitName;
+  final void Function(GardenObject, String) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => onTap(object, habitName),
+      child: SizedBox(
+        width: 100,
+        child: Opacity(
+          opacity: 0.72,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PlantThumbnail(object: object, size: 70),
+              if (habitName.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    habitName,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 9,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -406,12 +509,17 @@ class _PlantThumbnail extends StatelessWidget {
   }
 }
 
-/// Memory Card bottom sheet — shown when tapping a plant on the path.
+/// Memory Card bottom sheet — shown when tapping a tree on the path.
 class _MemoryCard extends StatelessWidget {
-  const _MemoryCard({required this.object, required this.theme});
+  const _MemoryCard({
+    required this.object,
+    required this.theme,
+    required this.habitName,
+  });
 
   final GardenObject object;
   final ThemeData theme;
+  final String habitName;
 
   static const _months = [
     '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -422,18 +530,18 @@ class _MemoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = object.completionPct.round();
     final objectType = GardenObjectType.fromString(object.objectType);
-    final typeLabel = switch (objectType) {
-      GardenObjectType.tree => 'Дерево',
-      GardenObjectType.bush => 'Куст',
-      GardenObjectType.grass => 'Трава',
-      GardenObjectType.moss => 'Мох',
-      GardenObjectType.sleepingBulb => 'Спящая луковица',
-    };
+    final archetype = _resolveArchetype(objectType, object.generationSeed);
+
+    // Derived stats
+    final daysInMonth =
+        DateUtils.getDaysInMonth(object.year, object.month);
+    final avgPerWeek =
+        (object.absoluteCompletions / (daysInMonth / 7.0)).toStringAsFixed(1);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.45,
-      minChildSize: 0.3,
-      maxChildSize: 0.7,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.88,
       expand: false,
       builder: (_, controller) => Container(
         decoration: BoxDecoration(
@@ -442,7 +550,7 @@ class _MemoryCard extends StatelessWidget {
         ),
         child: ListView(
           controller: controller,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           children: [
             // Handle bar
             Center(
@@ -457,34 +565,96 @@ class _MemoryCard extends StatelessWidget {
               ),
             ),
 
-            // Title
-            Text(
-              '${_months[object.month]} ${object.year}',
-              style: theme.textTheme.headlineMedium,
+            // Plant thumbnail + habit name + month
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _PlantThumbnail(object: object, size: 88),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (habitName.isNotEmpty)
+                        Text(
+                          habitName,
+                          style: theme.textTheme.titleLarge,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_months[object.month]} ${object.year}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          _ArchetypeChip(archetype: archetype, theme: theme),
+                          _TypeChip(
+                              objectType: GardenObjectType.fromString(
+                                  object.objectType),
+                              theme: theme),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              typeLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.primary,
+            const SizedBox(height: 24),
+
+            // Completion ring
+            Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 88,
+                    height: 88,
+                    child: CircularProgressIndicator(
+                      value: object.completionPct / 100,
+                      strokeWidth: 8,
+                      backgroundColor:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                          theme.colorScheme.primary),
+                    ),
+                  ),
+                  Text(
+                    '$pct%',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             // Stats grid
             Row(
               children: [
-                _StatChip(label: 'Выполнение', value: '$pct%', theme: theme),
-                const SizedBox(width: 12),
                 _StatChip(
                   label: 'Выполнений',
                   value: '${object.absoluteCompletions}',
                   theme: theme,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 _StatChip(
                   label: 'Макс. серия',
-                  value: '${object.maxStreak}',
+                  value: '${object.maxStreak} дн',
+                  theme: theme,
+                ),
+                const SizedBox(width: 10),
+                _StatChip(
+                  label: 'Ср. в нед',
+                  value: avgPerWeek,
                   theme: theme,
                 ),
               ],
@@ -492,33 +662,35 @@ class _MemoryCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Short perfect badge
-            if (object.isShortPerfect)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0x20FFD700),
-                  borderRadius: AppRadius.borderM,
-                  border: Border.all(color: const Color(0x40FFD700)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Аура идеального старта',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFFFFD700),
+            if (object.isShortPerfect) ...
+              [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0x20FFD700),
+                    borderRadius: AppRadius.borderM,
+                    border: Border.all(color: const Color(0x40FFD700)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.auto_awesome,
+                          color: Color(0xFFFFD700), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Аура идеального старта',
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: const Color(0xFFFFD700)),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-
-            const SizedBox(height: 20),
+                const SizedBox(height: 16),
+              ],
 
             // Time-of-day distribution
-            Text('Время отметок', style: theme.textTheme.labelLarge),
+            Text('Время выполнения', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             _TimeDistribution(
               morningRatio: object.morningRatio,
@@ -531,6 +703,14 @@ class _MemoryCard extends StatelessWidget {
       ),
     );
   }
+
+  SeedArchetype _resolveArchetype(GardenObjectType type, int seed) =>
+      switch (type) {
+        GardenObjectType.tree ||
+        GardenObjectType.bush =>
+          SeedArchetype.values[seed % SeedArchetype.values.length],
+        _ => SeedArchetype.oak,
+      };
 }
 
 class _StatChip extends StatelessWidget {
@@ -563,6 +743,63 @@ class _StatChip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Archetype chip for Memory Card ──────────────────────────
+
+class _ArchetypeChip extends StatelessWidget {
+  const _ArchetypeChip({required this.archetype, required this.theme});
+
+  final SeedArchetype archetype;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: AppRadius.borderS,
+      ),
+      child: Text(
+        archetype.displayName,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Object-type chip ─────────────────────────────────────────
+
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({required this.objectType, required this.theme});
+
+  final GardenObjectType objectType;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (objectType) {
+      GardenObjectType.tree => ('Дерево', const Color(0xFF5A9B5A)),
+      GardenObjectType.bush => ('Куст', const Color(0xFF8FAF7A)),
+      GardenObjectType.moss => ('Мох', const Color(0xFF8FAF7A)),
+      GardenObjectType.grass => ('Трава', const Color(0xFF8FAF7A)),
+      GardenObjectType.sleepingBulb => ('Спящая луковица', const Color(0xFFB8A9D4)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: AppRadius.borderS,
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(color: color),
       ),
     );
   }
