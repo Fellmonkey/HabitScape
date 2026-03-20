@@ -20,7 +20,17 @@ bool isExpectedToday(Habit habit, DateTime today) {
       final x = parseXValue(habit.frequencyValue);
       final created = dateFromUnix(habit.createdAt);
       final diff = today.toMidnight.difference(created.toMidnight).inDays;
+      if (diff < 0) return false;
       return diff % x == 0;
+    case FrequencyType.cycle:
+      final cycle = parseCycle(habit.frequencyValue);
+      final refDate = cycle.startDate != null 
+          ? dateFromUnix(cycle.startDate!) 
+          : dateFromUnix(habit.createdAt);
+      final diff = today.toMidnight.difference(refDate.toMidnight).inDays;
+      if (diff < 0) return false;
+      final currentDayOfCycle = (diff % cycle.length) + 1;
+      return cycle.days.contains(currentDayOfCycle);
     case FrequencyType.negative:
       return true;
   }
@@ -52,6 +62,44 @@ int parseXValue(String json) {
   return 1;
 }
 
+/// Parse cycle configuration.
+/// Returns a record with length, active days, and optional labels for days.
+({int length, List<int> days, Map<int, String> labels, int? startDate}) parseCycle(String json) {
+  try {
+    final decoded = jsonDecode(json);
+    if (decoded is Map && decoded.containsKey('length') && decoded.containsKey('days')) {
+      final length = decoded['length'] as int;
+      final days = (decoded['days'] as List).cast<int>();
+      final labels = <int, String>{};
+      if (decoded.containsKey('labels')) {
+        final rawLabels = decoded['labels'] as Map;
+        for (final entry in rawLabels.entries) {
+          labels[int.parse(entry.key.toString())] = entry.value.toString();
+        }
+      }
+      final startDate = decoded['startDate'] as int?;
+      return (length: length, days: days, labels: labels, startDate: startDate);
+    }
+  } catch (_) {}
+  return (length: 5, days: [1], labels: {}, startDate: null); // fallback
+}
+
+/// Returns the label for the current cycle day, if any.
+String? getCycleLabelForDate(Habit habit, DateTime date) {
+  final freqType = FrequencyType.fromString(habit.frequencyType);
+  if (freqType != FrequencyType.cycle) return null;
+
+  final cycle = parseCycle(habit.frequencyValue);
+  final refDate = cycle.startDate != null 
+      ? dateFromUnix(cycle.startDate!) 
+      : dateFromUnix(habit.createdAt);
+  final diff = date.toMidnight.difference(refDate.toMidnight).inDays;
+  if (diff < 0) return null;
+  final currentDayOfCycle = (diff % cycle.length) + 1;
+  
+  return cycle.labels[currentDayOfCycle];
+}
+
 // ── Human-readable labels ────────────────────────────────────
 
 const _kShortDays = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -70,8 +118,14 @@ String frequencyLabel(Habit habit) {
       '${parseXValue(habit.frequencyValue)}× в нед',
     FrequencyType.everyXDays =>
       _everyXLabel(parseXValue(habit.frequencyValue)),
+    FrequencyType.cycle => _cycleLabel(habit.frequencyValue),
     FrequencyType.negative => 'Негативная',
   };
+}
+
+String _cycleLabel(String json) {
+  final cycle = parseCycle(json);
+  return 'Цикл ${cycle.length} дн. (дни: ${cycle.days.join(',')})';
 }
 
 String _everyXLabel(int x) {

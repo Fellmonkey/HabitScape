@@ -46,6 +46,21 @@ class HabitEngine {
         final x = parseXValue(habit.frequencyValue);
         return (activeDays / x).ceil();
 
+      case FrequencyType.cycle:
+        final cycle = parseCycle(habit.frequencyValue);
+        var expected = 0;
+        final refDate = cycle.startDate != null 
+            ? dateFromUnix(cycle.startDate!) 
+            : createdAt;
+        final startDiff = effectiveStart.toMidnight.difference(refDate.toMidnight).inDays;
+        for (var i = 0; i < activeDays; i++) {
+          final diff = startDiff + i;
+          if (diff < 0) continue;
+          final currentDay = (diff % cycle.length) + 1;
+          if (cycle.days.contains(currentDay)) expected++;
+        }
+        return expected;
+
       case FrequencyType.negative:
         // For negative habits, the base = all active days
         return activeDays;

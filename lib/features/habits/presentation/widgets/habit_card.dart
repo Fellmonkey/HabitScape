@@ -42,7 +42,22 @@ class _HabitCardState extends ConsumerState<HabitCard>
     final type = FrequencyType.fromString(widget.habit.frequencyType);
     return type == FrequencyType.weekdays ||
         type == FrequencyType.xPerWeek ||
-        type == FrequencyType.everyXDays;
+        type == FrequencyType.everyXDays ||
+        type == FrequencyType.cycle;
+  }
+
+  String _buildTitle() {
+    final name = widget.habit.name;
+    final type = FrequencyType.fromString(widget.habit.frequencyType);
+    if (type != FrequencyType.cycle) return name;
+    
+    // We assume the card is showing for "today" (Greenhouse view).
+    // If you need exact date, it should be passed from parent, but here we use now.
+    final label = getCycleLabelForDate(widget.habit, DateTime.now());
+    if (label != null && label.isNotEmpty) {
+      return '$name: $label';
+    }
+    return name;
   }
 
   @override
@@ -117,7 +132,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.habit.name,
+                            _buildTitle(),
                             style: theme.textTheme.titleMedium?.copyWith(
                               decoration:
                                   _isDone ? TextDecoration.lineThrough : null,
@@ -306,17 +321,9 @@ class _SeedIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = SeedArchetype.fromString(archetype);
-    final IconData icon = switch (type) {
-      SeedArchetype.oak => Icons.park_rounded,
-      SeedArchetype.sakura => Icons.filter_vintage_rounded,
-      SeedArchetype.pine => Icons.nature_rounded,
-      SeedArchetype.willow => Icons.grass_rounded,
-      SeedArchetype.baobab => Icons.forest_rounded,
-      SeedArchetype.palm => Icons.beach_access_rounded,
-    };
 
     return Icon(
-      icon,
+      type.icon,
       size: 20,
       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
     );

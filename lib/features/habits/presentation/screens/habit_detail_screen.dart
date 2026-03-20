@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +10,7 @@ import '../../../../core/utils/date_helpers.dart';
 import '../../domain/habit_engine.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
+import '../widgets/habit_form_sheet.dart';
 
 /// Habit detail screen — shows stats, heatmap, streak info, time distribution.
 class HabitDetailScreen extends ConsumerWidget {
@@ -160,7 +159,7 @@ class HabitDetailScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _EditHabitSheet(habit: habit),
+      builder: (_) => HabitFormSheet(habit: habit),
     );
   }
 
@@ -226,20 +225,13 @@ class _HabitInfoRow extends StatelessWidget {
 
     final freqLabel = frequencyLabel(habit);
 
-    final todLabel = switch (tod) {
-      TimeOfDay.morning => 'Утро',
-      TimeOfDay.afternoon => 'День',
-      TimeOfDay.evening => 'Вечер',
-      TimeOfDay.anytime => 'Весь день',
-    };
-
     return Wrap(
       spacing: 8,
       runSpacing: 6,
       children: [
-        _InfoChip(icon: Icons.eco_outlined, label: archetype.displayName),
+        _InfoChip(icon: archetype.icon, label: archetype.displayName),
         _InfoChip(icon: Icons.repeat, label: freqLabel),
-        _InfoChip(icon: Icons.schedule, label: todLabel),
+        _InfoChip(icon: Icons.schedule, label: tod.localizedName),
         if (habit.category.isNotEmpty)
           _InfoChip(icon: Icons.label_outline, label: habit.category),
       ],
@@ -694,314 +686,6 @@ class _TimeBar extends StatelessWidget {
   }
 }
 // ── Edit Habit Sheet ────────────────────────────────────────
-
-class _EditHabitSheet extends ConsumerStatefulWidget {
-  const _EditHabitSheet({required this.habit});
-
-  final Habit habit;
-
-  @override
-  ConsumerState<_EditHabitSheet> createState() => _EditHabitSheetState();
-}
-
-class _EditHabitSheetState extends ConsumerState<_EditHabitSheet> {
-  late final TextEditingController _nameController;
-  late FrequencyType _frequency;
-  late TimeOfDay _timeOfDay;
-  late SeedArchetype _archetype;
-  late final Set<int> _selectedWeekdays;
-  late int _xValue;
-  late int _everyXDays;
-
-  @override
-  void initState() {
-    super.initState();
-    final h = widget.habit;
-    _nameController = TextEditingController(text: h.name);
-    _frequency = FrequencyType.fromString(h.frequencyType);
-    _timeOfDay = TimeOfDay.fromString(h.timeOfDay);
-    _archetype = SeedArchetype.fromString(h.seedArchetype);
-    _selectedWeekdays = parseWeekdays(h.frequencyValue).toSet();
-    final parsedX = parseXValue(h.frequencyValue);
-    _xValue = _frequency == FrequencyType.xPerWeek && parsedX > 1 ? parsedX : 3;
-    _everyXDays =
-        _frequency == FrequencyType.everyXDays && parsedX > 1 ? parsedX : 7;
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  String _buildFrequencyValue() => switch (_frequency) {
-        FrequencyType.weekdays =>
-          jsonEncode({'days': _selectedWeekdays.toList()..sort()}),
-        FrequencyType.xPerWeek => jsonEncode({'x': _xValue}),
-        FrequencyType.everyXDays => jsonEncode({'x': _everyXDays}),
-        _ => '{}',
-      };
-
-  Future<void> _save() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-    await ref.read(habitActionsProvider.notifier).updateHabit(
-          habitId: widget.habit.id,
-          name: name,
-          seedArchetype: _archetype,
-          frequencyType: _frequency,
-          frequencyValue: _buildFrequencyValue(),
-          timeOfDay: _timeOfDay,
-        );
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (_, controller) => Container(
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(24),
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: AppRadius.borderS,
-                ),
-              ),
-            ),
-            Text('Редактировать', style: theme.textTheme.headlineMedium),
-            const SizedBox(height: 20),
-
-            // ── Name ──
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Название',
-                border:
-                    OutlineInputBorder(borderRadius: AppRadius.borderM),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Time of Day ──
-            Text('Время дня', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: TimeOfDay.values.map((t) {
-                final label = switch (t) {
-                  TimeOfDay.morning => 'Утро',
-                  TimeOfDay.afternoon => 'День',
-                  TimeOfDay.evening => 'Вечер',
-                  TimeOfDay.anytime => 'Весь день',
-                };
-                return ChoiceChip(
-                  label: Text(label),
-                  selected: _timeOfDay == t,
-                  onSelected: (_) => setState(() => _timeOfDay = t),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Frequency ──
-            Text('Частота', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                _freqChip('Каждый день', FrequencyType.daily),
-                _freqChip('Дни недели', FrequencyType.weekdays),
-                _freqChip('X раз/нед', FrequencyType.xPerWeek),
-                _freqChip('Каждые N дней', FrequencyType.everyXDays),
-                _freqChip('Негативная', FrequencyType.negative),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (_frequency == FrequencyType.weekdays) ..._buildWeekdaySelector(theme),
-            if (_frequency == FrequencyType.xPerWeek) ..._buildXStepper(
-              theme,
-              label: '$_xValue раз в неделю',
-              value: _xValue,
-              min: 1,
-              max: 7,
-              onChanged: (v) => setState(() => _xValue = v),
-            ),
-            if (_frequency == FrequencyType.everyXDays) ..._buildXStepper(
-              theme,
-              label: 'Каждые $_everyXDays дней',
-              value: _everyXDays,
-              min: 2,
-              max: 30,
-              onChanged: (v) => setState(() => _everyXDays = v),
-            ),
-            const SizedBox(height: 8),
-
-            // ── Seed Archetype ──
-            Text('Семечко (растение)', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: SeedArchetype.values.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final arch = SeedArchetype.values[i];
-                  final selected = _archetype == arch;
-                  return GestureDetector(
-                    onTap: () => setState(() => _archetype = arch),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                            : theme.colorScheme.surface,
-                        borderRadius: AppRadius.borderM,
-                        border: Border.all(
-                          color: selected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.12),
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _archetypeIcon(arch),
-                            color: selected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            arch.displayName,
-                            style: theme.textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // ── Save Button ──
-            FilledButton(
-              onPressed: _save,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.borderM),
-              ),
-              child: const Text('Сохранить'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _freqChip(String label, FrequencyType type) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: _frequency == type,
-      onSelected: (_) => setState(() => _frequency = type),
-    );
-  }
-
-  List<Widget> _buildWeekdaySelector(ThemeData theme) {
-    const days = [
-      (1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'),
-      (5, 'Пт'), (6, 'Сб'), (7, 'Вс'),
-    ];
-    return [
-      Wrap(
-        spacing: 6,
-        children: days.map(((int n, String label) r) {
-          final selected = _selectedWeekdays.contains(r.$1);
-          return FilterChip(
-            label: Text(r.$2),
-            selected: selected,
-            onSelected: (_) => setState(() {
-              if (selected) {
-                if (_selectedWeekdays.length > 1) _selectedWeekdays.remove(r.$1);
-              } else {
-                _selectedWeekdays.add(r.$1);
-              }
-            }),
-          );
-        }).toList(),
-      ),
-      const SizedBox(height: 8),
-    ];
-  }
-
-  List<Widget> _buildXStepper(
-    ThemeData theme, {
-    required String label,
-    required int value,
-    required int min,
-    required int max,
-    required ValueChanged<int> onChanged,
-  }) {
-    return [
-      Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: value > min ? () => onChanged(value - 1) : null,
-          ),
-          Expanded(
-            child: Text(label,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: value < max ? () => onChanged(value + 1) : null,
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-    ];
-  }
-
-  IconData _archetypeIcon(SeedArchetype arch) => switch (arch) {
-        SeedArchetype.oak => Icons.park_rounded,
-        SeedArchetype.sakura => Icons.filter_vintage_rounded,
-        SeedArchetype.pine => Icons.nature_rounded,
-        SeedArchetype.willow => Icons.grass_rounded,
-        SeedArchetype.baobab => Icons.forest_rounded,
-        SeedArchetype.palm => Icons.beach_access_rounded,
-      };
-}
-
-// ── All-Time Logs Section ───────────────────────────────────
-
 class _AllLogsSection extends ConsumerWidget {
   const _AllLogsSection({required this.habitId});
 
@@ -1156,20 +840,12 @@ class _LogTile extends StatelessWidget {
     final d = dateFromUnix(log.date);
     final status = LogStatus.fromString(log.status);
 
-    final (icon, color) = switch (status) {
-      LogStatus.done => (Icons.check_circle_outline, AppColors.sageGreen),
-      LogStatus.skip => (Icons.pause_circle_outline, AppColors.coolGreyBlue),
-      LogStatus.fail => (Icons.cancel_outlined, AppColors.dustyRose),
-      LogStatus.pending => (Icons.radio_button_unchecked,
-          theme.colorScheme.onSurface.withValues(alpha: 0.3)),
-    };
+    final icon = status.icon;
+    final color = status == LogStatus.pending
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+        : status.color;
 
-    final statusLabel = switch (status) {
-      LogStatus.done => 'Выполнено',
-      LogStatus.skip => 'Пропуск',
-      LogStatus.fail => 'Срыв',
-      LogStatus.pending => 'В ожидании',
-    };
+    final statusLabel = status.localizedName;
 
     final hourStr = log.loggedHour != null ? '  ${log.loggedHour}:00' : '';
 

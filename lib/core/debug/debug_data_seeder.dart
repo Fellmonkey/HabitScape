@@ -345,6 +345,8 @@ class DebugDataSeeder {
         final x = _parseX(meta.freq.value);
         final diff = date.difference(meta.createdAt.toMidnight).inDays;
         return diff % x == 0;
+      case FrequencyType.cycle:
+        return true;
     }
   }
 

@@ -194,30 +194,12 @@ class _ArchetypeIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.15),
+        color: archetype.color.withValues(alpha: 0.15),
         borderRadius: AppRadius.borderS,
       ),
       child: Center(
-        child: Text(_emoji, style: const TextStyle(fontSize: 20)),
+        child: Icon(archetype.icon, color: archetype.color),
       ),
     );
   }
-
-  String get _emoji => switch (archetype) {
-        SeedArchetype.oak => '🌳',
-        SeedArchetype.sakura => '🌸',
-        SeedArchetype.pine => '🌲',
-        SeedArchetype.willow => '🍃',
-        SeedArchetype.baobab => '🌴',
-        SeedArchetype.palm => '🌴',
-      };
-
-  Color get _color => switch (archetype) {
-        SeedArchetype.oak => AppColors.sageGreen,
-        SeedArchetype.sakura => AppColors.dustyRose,
-        SeedArchetype.pine => AppColors.sageGreen,
-        SeedArchetype.willow => AppColors.softLavender,
-        SeedArchetype.baobab => AppColors.warmAmber,
-        SeedArchetype.palm => AppColors.warmAmber,
-      };
 }
