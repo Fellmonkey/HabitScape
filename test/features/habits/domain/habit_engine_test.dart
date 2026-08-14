@@ -181,7 +181,6 @@ void main() {
 
       expect(m.completionPct, 0.0);
       expect(m.absoluteCompletions, 0);
-      expect(m.objectType, GardenObjectType.sleepingBulb);
       expect(m.requiredBase, 31);
       expect(m.adjustedBase, 31);
     });
@@ -193,7 +192,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           loggedHour: 8,
         ),
       );
@@ -202,7 +201,6 @@ void main() {
 
       expect(m.completionPct, 100.0);
       expect(m.absoluteCompletions, 31);
-      expect(m.objectType, GardenObjectType.tree);
     });
 
     test('15 done / 31 required gives pct close to 48.39', () {
@@ -212,7 +210,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           loggedHour: 8,
         ),
       );
@@ -231,10 +229,15 @@ void main() {
         final logs = <HabitLog>[
           // 10 done logs (days 1-10)
           for (var i = 1; i <= 10; i++)
-            makeLog(id: i, date: janDay(i), status: 'done', loggedHour: 8),
+            makeLog(
+              id: i,
+              date: janDay(i),
+              status: LogStatus.done,
+              loggedHour: 8,
+            ),
           // 5 skip logs (days 11-15)
           for (var i = 11; i <= 15; i++)
-            makeLog(id: i, date: janDay(i), status: 'skip'),
+            makeLog(id: i, date: janDay(i), status: LogStatus.skip),
         ];
 
         final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -242,7 +245,6 @@ void main() {
         expect(m.adjustedBase, 26); // max(1, 31 - 5)
         // 10 / 26 * 100 = 38.4615...
         expect(m.completionPct, closeTo(38.46, 0.1));
-        expect(m.objectType, GardenObjectType.moss); // pct < 40, abs > 0
         expect(m.skipCount, 5);
       },
     );
@@ -251,7 +253,7 @@ void main() {
       final habit = makeHabit(createdAt: jan1);
       final logs = List.generate(
         31,
-        (i) => makeLog(id: i + 1, date: janDay(i + 1), status: 'skip'),
+        (i) => makeLog(id: i + 1, date: janDay(i + 1), status: LogStatus.skip),
       );
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -270,7 +272,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           loggedHour: 8,
         ),
       );
@@ -280,20 +282,19 @@ void main() {
       expect(m.maxStreak, 31);
     });
 
-    test('done-done-fail-done-done gives maxStreak=2', () {
+    test('streak grows across the month, skip does not reset it', () {
       final habit = makeHabit(createdAt: jan1);
       final logs = [
-        makeLog(id: 1, date: janDay(1), status: 'done', loggedHour: 8),
-        makeLog(id: 2, date: janDay(2), status: 'done', loggedHour: 8),
-        makeLog(id: 3, date: janDay(3), status: 'fail'),
-        makeLog(id: 4, date: janDay(4), status: 'done', loggedHour: 8),
-        makeLog(id: 5, date: janDay(5), status: 'done', loggedHour: 8),
+        makeLog(id: 1, date: janDay(1), status: LogStatus.done, loggedHour: 8),
+        makeLog(id: 2, date: janDay(2), status: LogStatus.done, loggedHour: 8),
+        makeLog(id: 3, date: janDay(3), status: LogStatus.skip),
+        makeLog(id: 4, date: janDay(4), status: LogStatus.done, loggedHour: 8),
+        makeLog(id: 5, date: janDay(5), status: LogStatus.done, loggedHour: 8),
       ];
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
 
-      expect(m.maxStreak, 2);
-      expect(m.failCount, 1);
+      expect(m.maxStreak, 4);
     });
 
     test(
@@ -301,11 +302,31 @@ void main() {
       () {
         final habit = makeHabit(createdAt: jan1);
         final logs = [
-          makeLog(id: 1, date: janDay(1), status: 'done', loggedHour: 8),
-          makeLog(id: 2, date: janDay(2), status: 'done', loggedHour: 8),
-          makeLog(id: 3, date: janDay(3), status: 'skip'),
-          makeLog(id: 4, date: janDay(4), status: 'done', loggedHour: 8),
-          makeLog(id: 5, date: janDay(5), status: 'done', loggedHour: 8),
+          makeLog(
+            id: 1,
+            date: janDay(1),
+            status: LogStatus.done,
+            loggedHour: 8,
+          ),
+          makeLog(
+            id: 2,
+            date: janDay(2),
+            status: LogStatus.done,
+            loggedHour: 8,
+          ),
+          makeLog(id: 3, date: janDay(3), status: LogStatus.skip),
+          makeLog(
+            id: 4,
+            date: janDay(4),
+            status: LogStatus.done,
+            loggedHour: 8,
+          ),
+          makeLog(
+            id: 5,
+            date: janDay(5),
+            status: LogStatus.done,
+            loggedHour: 8,
+          ),
         ];
 
         final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -318,9 +339,9 @@ void main() {
     test('0 done gives maxStreak=0', () {
       final habit = makeHabit(createdAt: jan1);
       final logs = [
-        makeLog(id: 1, date: janDay(1), status: 'fail'),
-        makeLog(id: 2, date: janDay(2), status: 'skip'),
-        makeLog(id: 3, date: janDay(3), status: 'fail'),
+        makeLog(id: 1, date: janDay(1), status: LogStatus.skip),
+        makeLog(id: 2, date: janDay(2), status: LogStatus.pending),
+        makeLog(id: 3, date: janDay(3), status: LogStatus.skip),
       ];
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -337,7 +358,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           loggedHour: 8,
         ),
       );
@@ -356,7 +377,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           loggedHour: 21,
         ),
       );
@@ -373,13 +394,28 @@ void main() {
       final logs = <HabitLog>[
         // 5 morning (h=8)
         for (var i = 1; i <= 5; i++)
-          makeLog(id: i, date: janDay(i), status: 'done', loggedHour: 8),
+          makeLog(
+            id: i,
+            date: janDay(i),
+            status: LogStatus.done,
+            loggedHour: 8,
+          ),
         // 3 afternoon (h=14)
         for (var i = 6; i <= 8; i++)
-          makeLog(id: i, date: janDay(i), status: 'done', loggedHour: 14),
+          makeLog(
+            id: i,
+            date: janDay(i),
+            status: LogStatus.done,
+            loggedHour: 14,
+          ),
         // 2 evening (h=21)
         for (var i = 9; i <= 10; i++)
-          makeLog(id: i, date: janDay(i), status: 'done', loggedHour: 21),
+          makeLog(
+            id: i,
+            date: janDay(i),
+            status: LogStatus.done,
+            loggedHour: 21,
+          ),
       ];
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -397,7 +433,7 @@ void main() {
         (i) => makeLog(
           id: i + 1,
           date: janDay(i + 1),
-          status: 'done',
+          status: LogStatus.done,
           // loggedHour is null by default in makeLog
         ),
       );
@@ -412,9 +448,9 @@ void main() {
     test('boundary: h=12 is afternoon, h=18 is evening, h=4 is evening', () {
       final habit = makeHabit(createdAt: jan1);
       final logs = [
-        makeLog(id: 1, date: janDay(1), status: 'done', loggedHour: 12),
-        makeLog(id: 2, date: janDay(2), status: 'done', loggedHour: 18),
-        makeLog(id: 3, date: janDay(3), status: 'done', loggedHour: 4),
+        makeLog(id: 1, date: janDay(1), status: LogStatus.done, loggedHour: 12),
+        makeLog(id: 2, date: janDay(2), status: LogStatus.done, loggedHour: 18),
+        makeLog(id: 3, date: janDay(3), status: LogStatus.done, loggedHour: 4),
       ];
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
@@ -426,130 +462,6 @@ void main() {
       expect(m.afternoonRatio, closeTo(1 / 3, 0.01));
       expect(m.eveningRatio, closeTo(2 / 3, 0.01));
       expect(m.morningRatio, closeTo(0.0, 0.01));
-    });
-
-    // ── isShortPerfect ─────────────────────────────────────────
-
-    test('isShortPerfect: activeDays=4, pct=100% is true', () {
-      // Created Jan 28: effective Jan 28-31 = 4 active days
-      final createdAt = DateTime.utc(2026, 1, 28).unixSeconds;
-      final habit = makeHabit(createdAt: createdAt);
-      final logs = [
-        for (var d = 28; d <= 31; d++)
-          makeLog(id: d, date: janDay(d), status: 'done', loggedHour: 8),
-      ];
-
-      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
-
-      expect(m.completionPct, 100.0);
-      expect(m.isShortPerfect, isTrue);
-    });
-
-    test('isShortPerfect: activeDays=31, pct=100% is false', () {
-      final habit = makeHabit(createdAt: jan1);
-      final logs = List.generate(
-        31,
-        (i) => makeLog(
-          id: i + 1,
-          date: janDay(i + 1),
-          status: 'done',
-          loggedHour: 8,
-        ),
-      );
-
-      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
-
-      expect(m.completionPct, 100.0);
-      expect(m.isShortPerfect, isFalse); // 31 >= 7
-    });
-
-    test('isShortPerfect: activeDays=6, pct=100% is true', () {
-      // Created Jan 26: effective Jan 26-31 = 6 active days
-      final createdAt = DateTime.utc(2026, 1, 26).unixSeconds;
-      final habit = makeHabit(createdAt: createdAt);
-      final logs = [
-        for (var d = 26; d <= 31; d++)
-          makeLog(id: d, date: janDay(d), status: 'done', loggedHour: 8),
-      ];
-
-      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
-
-      expect(m.completionPct, 100.0);
-      expect(m.isShortPerfect, isTrue); // 6 < 7
-    });
-
-    test('isShortPerfect: activeDays=7, pct=100% is false', () {
-      // Created Jan 25: effective Jan 25-31 = 7 active days
-      final createdAt = DateTime.utc(2026, 1, 25).unixSeconds;
-      final habit = makeHabit(createdAt: createdAt);
-      final logs = [
-        for (var d = 25; d <= 31; d++)
-          makeLog(id: d, date: janDay(d), status: 'done', loggedHour: 8),
-      ];
-
-      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
-
-      expect(m.completionPct, 100.0);
-      expect(m.isShortPerfect, isFalse); // 7 is NOT < 7
-    });
-
-    test('isShortPerfect: activeDays=3, pct<100% is false', () {
-      // Created Jan 29: effective Jan 29-31 = 3 active days, base=3
-      final createdAt = DateTime.utc(2026, 1, 29).unixSeconds;
-      final habit = makeHabit(createdAt: createdAt);
-      // 2 done + 1 fail → pct = 2/3*100 = 66.67%
-      final logs = [
-        makeLog(id: 1, date: janDay(29), status: 'done', loggedHour: 8),
-        makeLog(id: 2, date: janDay(30), status: 'done', loggedHour: 8),
-        makeLog(id: 3, date: janDay(31), status: 'fail'),
-      ];
-
-      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
-
-      expect(m.completionPct, lessThan(100.0));
-      expect(m.isShortPerfect, isFalse); // pct < 100
-    });
-  });
-
-  // ══════════════════════════════════════════════════════════════
-  // getObjectType
-  // ══════════════════════════════════════════════════════════════
-
-  group('getObjectType', () {
-    test('(0, 0) returns sleepingBulb', () {
-      expect(HabitEngine.getObjectType(0, 0), GardenObjectType.sleepingBulb);
-    });
-
-    test('(20, 3) returns moss', () {
-      expect(HabitEngine.getObjectType(20, 3), GardenObjectType.moss);
-    });
-
-    test('(39.9, 5) returns moss', () {
-      expect(HabitEngine.getObjectType(39.9, 5), GardenObjectType.moss);
-    });
-
-    test('(40, 5) returns bush', () {
-      expect(HabitEngine.getObjectType(40, 5), GardenObjectType.bush);
-    });
-
-    test('(79.9, 15) returns bush', () {
-      expect(HabitEngine.getObjectType(79.9, 15), GardenObjectType.bush);
-    });
-
-    test('(80, 4) returns bush (effort threshold: need >= 5)', () {
-      expect(HabitEngine.getObjectType(80, 4), GardenObjectType.bush);
-    });
-
-    test('(80, 5) returns tree', () {
-      expect(HabitEngine.getObjectType(80, 5), GardenObjectType.tree);
-    });
-
-    test('(100, 30) returns tree', () {
-      expect(HabitEngine.getObjectType(100, 30), GardenObjectType.tree);
-    });
-
-    test('(85, 3) returns bush (effort threshold: need >= 5)', () {
-      expect(HabitEngine.getObjectType(85, 3), GardenObjectType.bush);
     });
   });
 }

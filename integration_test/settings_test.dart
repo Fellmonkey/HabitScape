@@ -29,18 +29,11 @@ void main() {
       // Top tiles visible without scrolling.
       expect(find.byKey(K.settingsExport), findsOneWidget);
       expect(find.byKey(K.settingsImport), findsOneWidget);
-      expect(find.byKey(K.settingsFriendShare), findsOneWidget);
-      expect(find.byKey(K.settingsFriendImport), findsOneWidget);
 
       // Descriptive subtitles (top half).
-      expect(find.text('Сохранить все привычки и сад в файл'), findsOneWidget);
+      expect(find.text('Сохранить все привычки в файл'), findsOneWidget);
       expect(
         find.text('Восстановить из файла (заменит текущие данные)'),
-        findsOneWidget,
-      );
-      expect(find.text('Сгенерировать код для друзей'), findsOneWidget);
-      expect(
-        find.text('Посмотреть чужой сад и получить новые семена'),
         findsOneWidget,
       );
 
@@ -48,13 +41,8 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(K.settingsCard), findsOneWidget);
-      expect(
-        find.text('Создать красивую картинку с растениями'),
-        findsOneWidget,
-      );
-
-      // Version/about.
+      // Archive + about.
+      expect(find.text('Архивные привычки'), findsOneWidget);
       expect(find.text('Rythm'), findsOneWidget);
       expect(find.text('Версия 1.0.0'), findsOneWidget);
     });
@@ -87,58 +75,6 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('friend code import shows input dialog', (tester) async {
-      db = await pumpApp(tester);
-
-      await tester.tap(find.text('Ещё'));
-      await tester.pumpAndSettle();
-
-      // Tap "Ввести код друга".
-      await tester.tap(find.byKey(K.settingsFriendImport));
-      await tester.pumpAndSettle();
-
-      // Dialog with text field should appear.
-      expect(find.text('Ввести код друга'), findsNWidgets(2)); // title + tile
-      expect(find.text('Вставьте код сюда...'), findsOneWidget);
-      expect(find.text('Применить'), findsOneWidget);
-      expect(find.text('Отмена'), findsOneWidget);
-
-      // Submit an invalid code.
-      await tester.enterText(find.byType(TextField), 'INVALID_CODE');
-      await tester.tap(find.text('Применить'));
-      await tester.pumpAndSettle();
-
-      // Should show error snackbar.
-      expect(
-        find.text('Неверный код. Проверьте и попробуйте снова.'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'card generation shows snackbar when no crystallized months exist',
-      (tester) async {
-        db = await pumpApp(tester);
-
-        await tester.tap(find.text('Ещё'));
-        await tester.pumpAndSettle();
-
-        // Scroll down to reveal the card tile.
-        await tester.drag(find.byType(ListView), const Offset(0, -300));
-        await tester.pumpAndSettle();
-
-        // Tap "Карточка месяца" with empty DB.
-        await tester.tap(find.byKey(K.settingsCard));
-        await tester.pumpAndSettle();
-
-        // Should show "no data" snackbar.
-        expect(
-          find.text('Пока нет завершённых месяцев для генерации карточки.'),
-          findsOneWidget,
-        );
-      },
-    );
-
     testWidgets('backup export → import round-trip via DAO layer', (
       tester,
     ) async {
@@ -154,10 +90,9 @@ void main() {
         ),
       );
 
-      // Export via BackupService (programmatic check, not UI — because
+      // Verify data exists (programmatic check, not UI — because
       // SharePlus is platform-dependent and can't be tested in integration).
-      final backupService = db.habitsDao; // to verify data exists
-      final habits = await backupService.getAllHabits();
+      final habits = await db.habitsDao.getAllHabits();
       expect(habits.length, 1);
       expect(habits.first.name, 'Round-Trip Habit');
     });

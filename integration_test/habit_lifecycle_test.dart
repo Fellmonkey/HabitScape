@@ -86,23 +86,6 @@ void main() {
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
     });
 
-    testWidgets('swipe left → fail via bottom sheet', (tester) async {
-      db = await pumpApp(tester);
-      await createHabit(tester, name: 'Без сахара');
-
-      final dismissible = find.byKey(const ValueKey('habit_1'));
-      await tester.fling(dismissible, const Offset(-500, 0), 1500);
-      await tester.pumpAndSettle();
-
-      // Tap "Срыв" (fail).
-      expect(find.byKey(K.swipeFail), findsOneWidget);
-      await tester.tap(find.byKey(K.swipeFail));
-      await tester.pumpAndSettle();
-
-      // Close icon should appear (fail state).
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-    });
-
     testWidgets('swipe left → delete removes habit from list', (tester) async {
       db = await pumpApp(tester);
       await createHabit(tester, name: 'Удали меня');

@@ -10,7 +10,6 @@ import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
-import '../domain/schrodinger_checker.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -73,7 +72,7 @@ final dayProgressProvider = Provider<double>((ref) {
     if (isExpectedToday(habit, now)) {
       expected++;
       final log = logs.where((l) => l.habitId == habit.id).firstOrNull;
-      if (log != null && log.status == LogStatus.done.name) {
+      if (log != null && log.status == LogStatus.done) {
         done++;
       }
     }
@@ -109,26 +108,6 @@ final habitMetricsProvider =
         params.year,
         params.month,
       );
-    });
-
-// ── Schrödinger Checker ──────────────────────────────────────
-
-final schrodingerCheckerProvider = FutureProvider<SchrodingerChecker>((
-  ref,
-) async {
-  final prefs = await ref.watch(sharedPrefsProvider.future);
-  return SchrodingerChecker(
-    habitsDao: ref.watch(habitsDaoProvider),
-    habitLogsDao: ref.watch(habitLogsDaoProvider),
-    prefs: prefs,
-  );
-});
-
-/// Pending negative habits that need user confirmation.
-final pendingNegativeHabitsProvider =
-    FutureProvider<List<PendingNegativeHabit>>((ref) async {
-      final checker = await ref.watch(schrodingerCheckerProvider.future);
-      return checker.checkPendingNegativeHabits();
     });
 
 // ── Habit actions (mutations) ────────────────────────────────
@@ -179,11 +158,6 @@ class HabitActions extends Notifier<void> {
   /// Mark a habit as skipped for today.
   Future<void> markSkip(int habitId) async {
     await _logsDao.markSkip(habitId, todayTimestamp());
-  }
-
-  /// Mark a habit as failed for today.
-  Future<void> markFail(int habitId) async {
-    await _logsDao.markFail(habitId, todayTimestamp());
   }
 
   /// Archive a habit.

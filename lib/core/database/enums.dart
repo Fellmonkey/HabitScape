@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -100,41 +101,42 @@ enum SeedArchetype {
 enum LogStatus {
   done,
   skip,
-  fail,
   pending;
 
-  static LogStatus fromString(String value) =>
-      LogStatus.values.firstWhere((e) => e.name == value);
+  /// Parse a stored status string. Unknown values (e.g. legacy "fail")
+  /// fall back to [LogStatus.pending] so old data never crashes the app.
+  static LogStatus fromString(String value) => LogStatus.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => LogStatus.pending,
+  );
 
   String get localizedName => switch (this) {
     LogStatus.done => 'Выполнено',
     LogStatus.skip => 'Уважительный пропуск',
-    LogStatus.fail => 'Срыв',
     LogStatus.pending => 'В ожидании',
   };
 
   IconData get icon => switch (this) {
     LogStatus.done => Icons.check_circle_outline,
     LogStatus.skip => Icons.pause_circle_outline,
-    LogStatus.fail => Icons.cancel_outlined,
     LogStatus.pending => Icons.radio_button_unchecked,
   };
 
   Color get color => switch (this) {
     LogStatus.done => AppColors.sageGreen,
     LogStatus.skip => AppColors.coolGreyBlue,
-    LogStatus.fail => AppColors.dustyRose,
     LogStatus.pending => AppColors.coolGreyBlue,
   };
 }
 
-enum GardenObjectType {
-  moss,
-  bush,
-  tree,
-  grass,
-  sleepingBulb;
+/// Drift type converter between the [LogStatus] enum and its stored string
+/// value. Keeps `LogStatus` the single source of truth for log statuses.
+class LogStatusConverter extends TypeConverter<LogStatus, String> {
+  const LogStatusConverter();
 
-  static GardenObjectType fromString(String value) =>
-      GardenObjectType.values.firstWhere((e) => e.name == value);
+  @override
+  LogStatus fromSql(String fromDb) => LogStatus.fromString(fromDb);
+
+  @override
+  String toSql(LogStatus value) => value.name;
 }

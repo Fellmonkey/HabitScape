@@ -653,16 +653,16 @@ class $HabitLogsTable extends HabitLogs
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('pending'),
-  );
+  late final GeneratedColumnWithTypeConverter<LogStatus, String> status =
+      GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('pending'),
+      ).withConverter<LogStatus>($HabitLogsTable.$converterstatus);
   static const VerificationMeta _loggedHourMeta = const VerificationMeta(
     'loggedHour',
   );
@@ -707,12 +707,6 @@ class $HabitLogsTable extends HabitLogs
     } else if (isInserting) {
       context.missing(_dateMeta);
     }
-    if (data.containsKey('status')) {
-      context.handle(
-        _statusMeta,
-        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
-      );
-    }
     if (data.containsKey('logged_hour')) {
       context.handle(
         _loggedHourMeta,
@@ -740,10 +734,12 @@ class $HabitLogsTable extends HabitLogs
         DriftSqlType.int,
         data['${effectivePrefix}date'],
       )!,
-      status: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}status'],
-      )!,
+      status: $HabitLogsTable.$converterstatus.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}status'],
+        )!,
+      ),
       loggedHour: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}logged_hour'],
@@ -755,13 +751,16 @@ class $HabitLogsTable extends HabitLogs
   $HabitLogsTable createAlias(String alias) {
     return $HabitLogsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<LogStatus, String> $converterstatus =
+      const LogStatusConverter();
 }
 
 class HabitLog extends DataClass implements Insertable<HabitLog> {
   final int id;
   final int habitId;
   final int date;
-  final String status;
+  final LogStatus status;
   final int? loggedHour;
   const HabitLog({
     required this.id,
@@ -776,7 +775,11 @@ class HabitLog extends DataClass implements Insertable<HabitLog> {
     map['id'] = Variable<int>(id);
     map['habit_id'] = Variable<int>(habitId);
     map['date'] = Variable<int>(date);
-    map['status'] = Variable<String>(status);
+    {
+      map['status'] = Variable<String>(
+        $HabitLogsTable.$converterstatus.toSql(status),
+      );
+    }
     if (!nullToAbsent || loggedHour != null) {
       map['logged_hour'] = Variable<int>(loggedHour);
     }
@@ -804,7 +807,7 @@ class HabitLog extends DataClass implements Insertable<HabitLog> {
       id: serializer.fromJson<int>(json['id']),
       habitId: serializer.fromJson<int>(json['habitId']),
       date: serializer.fromJson<int>(json['date']),
-      status: serializer.fromJson<String>(json['status']),
+      status: serializer.fromJson<LogStatus>(json['status']),
       loggedHour: serializer.fromJson<int?>(json['loggedHour']),
     );
   }
@@ -815,7 +818,7 @@ class HabitLog extends DataClass implements Insertable<HabitLog> {
       'id': serializer.toJson<int>(id),
       'habitId': serializer.toJson<int>(habitId),
       'date': serializer.toJson<int>(date),
-      'status': serializer.toJson<String>(status),
+      'status': serializer.toJson<LogStatus>(status),
       'loggedHour': serializer.toJson<int?>(loggedHour),
     };
   }
@@ -824,7 +827,7 @@ class HabitLog extends DataClass implements Insertable<HabitLog> {
     int? id,
     int? habitId,
     int? date,
-    String? status,
+    LogStatus? status,
     Value<int?> loggedHour = const Value.absent(),
   }) => HabitLog(
     id: id ?? this.id,
@@ -874,7 +877,7 @@ class HabitLogsCompanion extends UpdateCompanion<HabitLog> {
   final Value<int> id;
   final Value<int> habitId;
   final Value<int> date;
-  final Value<String> status;
+  final Value<LogStatus> status;
   final Value<int?> loggedHour;
   const HabitLogsCompanion({
     this.id = const Value.absent(),
@@ -911,7 +914,7 @@ class HabitLogsCompanion extends UpdateCompanion<HabitLog> {
     Value<int>? id,
     Value<int>? habitId,
     Value<int>? date,
-    Value<String>? status,
+    Value<LogStatus>? status,
     Value<int?>? loggedHour,
   }) {
     return HabitLogsCompanion(
@@ -936,7 +939,9 @@ class HabitLogsCompanion extends UpdateCompanion<HabitLog> {
       map['date'] = Variable<int>(date.value);
     }
     if (status.present) {
-      map['status'] = Variable<String>(status.value);
+      map['status'] = Variable<String>(
+        $HabitLogsTable.$converterstatus.toSql(status.value),
+      );
     }
     if (loggedHour.present) {
       map['logged_hour'] = Variable<int>(loggedHour.value);
@@ -957,842 +962,18 @@ class HabitLogsCompanion extends UpdateCompanion<HabitLog> {
   }
 }
 
-class $GardenObjectsTable extends GardenObjects
-    with TableInfo<$GardenObjectsTable, GardenObject> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $GardenObjectsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _habitIdMeta = const VerificationMeta(
-    'habitId',
-  );
-  @override
-  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
-    'habit_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES habits (id) ON DELETE CASCADE',
-    ),
-  );
-  static const VerificationMeta _yearMeta = const VerificationMeta('year');
-  @override
-  late final GeneratedColumn<int> year = GeneratedColumn<int>(
-    'year',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _monthMeta = const VerificationMeta('month');
-  @override
-  late final GeneratedColumn<int> month = GeneratedColumn<int>(
-    'month',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _completionPctMeta = const VerificationMeta(
-    'completionPct',
-  );
-  @override
-  late final GeneratedColumn<double> completionPct = GeneratedColumn<double>(
-    'completion_pct',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _absoluteCompletionsMeta =
-      const VerificationMeta('absoluteCompletions');
-  @override
-  late final GeneratedColumn<int> absoluteCompletions = GeneratedColumn<int>(
-    'absolute_completions',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _maxStreakMeta = const VerificationMeta(
-    'maxStreak',
-  );
-  @override
-  late final GeneratedColumn<int> maxStreak = GeneratedColumn<int>(
-    'max_streak',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _morningRatioMeta = const VerificationMeta(
-    'morningRatio',
-  );
-  @override
-  late final GeneratedColumn<double> morningRatio = GeneratedColumn<double>(
-    'morning_ratio',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _afternoonRatioMeta = const VerificationMeta(
-    'afternoonRatio',
-  );
-  @override
-  late final GeneratedColumn<double> afternoonRatio = GeneratedColumn<double>(
-    'afternoon_ratio',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _eveningRatioMeta = const VerificationMeta(
-    'eveningRatio',
-  );
-  @override
-  late final GeneratedColumn<double> eveningRatio = GeneratedColumn<double>(
-    'evening_ratio',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _objectTypeMeta = const VerificationMeta(
-    'objectType',
-  );
-  @override
-  late final GeneratedColumn<String> objectType = GeneratedColumn<String>(
-    'object_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('moss'),
-  );
-  static const VerificationMeta _generationSeedMeta = const VerificationMeta(
-    'generationSeed',
-  );
-  @override
-  late final GeneratedColumn<int> generationSeed = GeneratedColumn<int>(
-    'generation_seed',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _pngPathMeta = const VerificationMeta(
-    'pngPath',
-  );
-  @override
-  late final GeneratedColumn<String> pngPath = GeneratedColumn<String>(
-    'png_path',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _isShortPerfectMeta = const VerificationMeta(
-    'isShortPerfect',
-  );
-  @override
-  late final GeneratedColumn<bool> isShortPerfect = GeneratedColumn<bool>(
-    'is_short_perfect',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_short_perfect" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    habitId,
-    year,
-    month,
-    completionPct,
-    absoluteCompletions,
-    maxStreak,
-    morningRatio,
-    afternoonRatio,
-    eveningRatio,
-    objectType,
-    generationSeed,
-    pngPath,
-    isShortPerfect,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'garden_objects';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<GardenObject> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('habit_id')) {
-      context.handle(
-        _habitIdMeta,
-        habitId.isAcceptableOrUnknown(data['habit_id']!, _habitIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_habitIdMeta);
-    }
-    if (data.containsKey('year')) {
-      context.handle(
-        _yearMeta,
-        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_yearMeta);
-    }
-    if (data.containsKey('month')) {
-      context.handle(
-        _monthMeta,
-        month.isAcceptableOrUnknown(data['month']!, _monthMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_monthMeta);
-    }
-    if (data.containsKey('completion_pct')) {
-      context.handle(
-        _completionPctMeta,
-        completionPct.isAcceptableOrUnknown(
-          data['completion_pct']!,
-          _completionPctMeta,
-        ),
-      );
-    }
-    if (data.containsKey('absolute_completions')) {
-      context.handle(
-        _absoluteCompletionsMeta,
-        absoluteCompletions.isAcceptableOrUnknown(
-          data['absolute_completions']!,
-          _absoluteCompletionsMeta,
-        ),
-      );
-    }
-    if (data.containsKey('max_streak')) {
-      context.handle(
-        _maxStreakMeta,
-        maxStreak.isAcceptableOrUnknown(data['max_streak']!, _maxStreakMeta),
-      );
-    }
-    if (data.containsKey('morning_ratio')) {
-      context.handle(
-        _morningRatioMeta,
-        morningRatio.isAcceptableOrUnknown(
-          data['morning_ratio']!,
-          _morningRatioMeta,
-        ),
-      );
-    }
-    if (data.containsKey('afternoon_ratio')) {
-      context.handle(
-        _afternoonRatioMeta,
-        afternoonRatio.isAcceptableOrUnknown(
-          data['afternoon_ratio']!,
-          _afternoonRatioMeta,
-        ),
-      );
-    }
-    if (data.containsKey('evening_ratio')) {
-      context.handle(
-        _eveningRatioMeta,
-        eveningRatio.isAcceptableOrUnknown(
-          data['evening_ratio']!,
-          _eveningRatioMeta,
-        ),
-      );
-    }
-    if (data.containsKey('object_type')) {
-      context.handle(
-        _objectTypeMeta,
-        objectType.isAcceptableOrUnknown(data['object_type']!, _objectTypeMeta),
-      );
-    }
-    if (data.containsKey('generation_seed')) {
-      context.handle(
-        _generationSeedMeta,
-        generationSeed.isAcceptableOrUnknown(
-          data['generation_seed']!,
-          _generationSeedMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_generationSeedMeta);
-    }
-    if (data.containsKey('png_path')) {
-      context.handle(
-        _pngPathMeta,
-        pngPath.isAcceptableOrUnknown(data['png_path']!, _pngPathMeta),
-      );
-    }
-    if (data.containsKey('is_short_perfect')) {
-      context.handle(
-        _isShortPerfectMeta,
-        isShortPerfect.isAcceptableOrUnknown(
-          data['is_short_perfect']!,
-          _isShortPerfectMeta,
-        ),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  GardenObject map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return GardenObject(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      habitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}habit_id'],
-      )!,
-      year: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}year'],
-      )!,
-      month: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}month'],
-      )!,
-      completionPct: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}completion_pct'],
-      )!,
-      absoluteCompletions: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}absolute_completions'],
-      )!,
-      maxStreak: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}max_streak'],
-      )!,
-      morningRatio: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}morning_ratio'],
-      )!,
-      afternoonRatio: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}afternoon_ratio'],
-      )!,
-      eveningRatio: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}evening_ratio'],
-      )!,
-      objectType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}object_type'],
-      )!,
-      generationSeed: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}generation_seed'],
-      )!,
-      pngPath: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}png_path'],
-      ),
-      isShortPerfect: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_short_perfect'],
-      )!,
-    );
-  }
-
-  @override
-  $GardenObjectsTable createAlias(String alias) {
-    return $GardenObjectsTable(attachedDatabase, alias);
-  }
-}
-
-class GardenObject extends DataClass implements Insertable<GardenObject> {
-  final int id;
-  final int habitId;
-  final int year;
-  final int month;
-  final double completionPct;
-  final int absoluteCompletions;
-  final int maxStreak;
-  final double morningRatio;
-  final double afternoonRatio;
-  final double eveningRatio;
-  final String objectType;
-  final int generationSeed;
-  final String? pngPath;
-  final bool isShortPerfect;
-  const GardenObject({
-    required this.id,
-    required this.habitId,
-    required this.year,
-    required this.month,
-    required this.completionPct,
-    required this.absoluteCompletions,
-    required this.maxStreak,
-    required this.morningRatio,
-    required this.afternoonRatio,
-    required this.eveningRatio,
-    required this.objectType,
-    required this.generationSeed,
-    this.pngPath,
-    required this.isShortPerfect,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['habit_id'] = Variable<int>(habitId);
-    map['year'] = Variable<int>(year);
-    map['month'] = Variable<int>(month);
-    map['completion_pct'] = Variable<double>(completionPct);
-    map['absolute_completions'] = Variable<int>(absoluteCompletions);
-    map['max_streak'] = Variable<int>(maxStreak);
-    map['morning_ratio'] = Variable<double>(morningRatio);
-    map['afternoon_ratio'] = Variable<double>(afternoonRatio);
-    map['evening_ratio'] = Variable<double>(eveningRatio);
-    map['object_type'] = Variable<String>(objectType);
-    map['generation_seed'] = Variable<int>(generationSeed);
-    if (!nullToAbsent || pngPath != null) {
-      map['png_path'] = Variable<String>(pngPath);
-    }
-    map['is_short_perfect'] = Variable<bool>(isShortPerfect);
-    return map;
-  }
-
-  GardenObjectsCompanion toCompanion(bool nullToAbsent) {
-    return GardenObjectsCompanion(
-      id: Value(id),
-      habitId: Value(habitId),
-      year: Value(year),
-      month: Value(month),
-      completionPct: Value(completionPct),
-      absoluteCompletions: Value(absoluteCompletions),
-      maxStreak: Value(maxStreak),
-      morningRatio: Value(morningRatio),
-      afternoonRatio: Value(afternoonRatio),
-      eveningRatio: Value(eveningRatio),
-      objectType: Value(objectType),
-      generationSeed: Value(generationSeed),
-      pngPath: pngPath == null && nullToAbsent
-          ? const Value.absent()
-          : Value(pngPath),
-      isShortPerfect: Value(isShortPerfect),
-    );
-  }
-
-  factory GardenObject.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return GardenObject(
-      id: serializer.fromJson<int>(json['id']),
-      habitId: serializer.fromJson<int>(json['habitId']),
-      year: serializer.fromJson<int>(json['year']),
-      month: serializer.fromJson<int>(json['month']),
-      completionPct: serializer.fromJson<double>(json['completionPct']),
-      absoluteCompletions: serializer.fromJson<int>(
-        json['absoluteCompletions'],
-      ),
-      maxStreak: serializer.fromJson<int>(json['maxStreak']),
-      morningRatio: serializer.fromJson<double>(json['morningRatio']),
-      afternoonRatio: serializer.fromJson<double>(json['afternoonRatio']),
-      eveningRatio: serializer.fromJson<double>(json['eveningRatio']),
-      objectType: serializer.fromJson<String>(json['objectType']),
-      generationSeed: serializer.fromJson<int>(json['generationSeed']),
-      pngPath: serializer.fromJson<String?>(json['pngPath']),
-      isShortPerfect: serializer.fromJson<bool>(json['isShortPerfect']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'habitId': serializer.toJson<int>(habitId),
-      'year': serializer.toJson<int>(year),
-      'month': serializer.toJson<int>(month),
-      'completionPct': serializer.toJson<double>(completionPct),
-      'absoluteCompletions': serializer.toJson<int>(absoluteCompletions),
-      'maxStreak': serializer.toJson<int>(maxStreak),
-      'morningRatio': serializer.toJson<double>(morningRatio),
-      'afternoonRatio': serializer.toJson<double>(afternoonRatio),
-      'eveningRatio': serializer.toJson<double>(eveningRatio),
-      'objectType': serializer.toJson<String>(objectType),
-      'generationSeed': serializer.toJson<int>(generationSeed),
-      'pngPath': serializer.toJson<String?>(pngPath),
-      'isShortPerfect': serializer.toJson<bool>(isShortPerfect),
-    };
-  }
-
-  GardenObject copyWith({
-    int? id,
-    int? habitId,
-    int? year,
-    int? month,
-    double? completionPct,
-    int? absoluteCompletions,
-    int? maxStreak,
-    double? morningRatio,
-    double? afternoonRatio,
-    double? eveningRatio,
-    String? objectType,
-    int? generationSeed,
-    Value<String?> pngPath = const Value.absent(),
-    bool? isShortPerfect,
-  }) => GardenObject(
-    id: id ?? this.id,
-    habitId: habitId ?? this.habitId,
-    year: year ?? this.year,
-    month: month ?? this.month,
-    completionPct: completionPct ?? this.completionPct,
-    absoluteCompletions: absoluteCompletions ?? this.absoluteCompletions,
-    maxStreak: maxStreak ?? this.maxStreak,
-    morningRatio: morningRatio ?? this.morningRatio,
-    afternoonRatio: afternoonRatio ?? this.afternoonRatio,
-    eveningRatio: eveningRatio ?? this.eveningRatio,
-    objectType: objectType ?? this.objectType,
-    generationSeed: generationSeed ?? this.generationSeed,
-    pngPath: pngPath.present ? pngPath.value : this.pngPath,
-    isShortPerfect: isShortPerfect ?? this.isShortPerfect,
-  );
-  GardenObject copyWithCompanion(GardenObjectsCompanion data) {
-    return GardenObject(
-      id: data.id.present ? data.id.value : this.id,
-      habitId: data.habitId.present ? data.habitId.value : this.habitId,
-      year: data.year.present ? data.year.value : this.year,
-      month: data.month.present ? data.month.value : this.month,
-      completionPct: data.completionPct.present
-          ? data.completionPct.value
-          : this.completionPct,
-      absoluteCompletions: data.absoluteCompletions.present
-          ? data.absoluteCompletions.value
-          : this.absoluteCompletions,
-      maxStreak: data.maxStreak.present ? data.maxStreak.value : this.maxStreak,
-      morningRatio: data.morningRatio.present
-          ? data.morningRatio.value
-          : this.morningRatio,
-      afternoonRatio: data.afternoonRatio.present
-          ? data.afternoonRatio.value
-          : this.afternoonRatio,
-      eveningRatio: data.eveningRatio.present
-          ? data.eveningRatio.value
-          : this.eveningRatio,
-      objectType: data.objectType.present
-          ? data.objectType.value
-          : this.objectType,
-      generationSeed: data.generationSeed.present
-          ? data.generationSeed.value
-          : this.generationSeed,
-      pngPath: data.pngPath.present ? data.pngPath.value : this.pngPath,
-      isShortPerfect: data.isShortPerfect.present
-          ? data.isShortPerfect.value
-          : this.isShortPerfect,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('GardenObject(')
-          ..write('id: $id, ')
-          ..write('habitId: $habitId, ')
-          ..write('year: $year, ')
-          ..write('month: $month, ')
-          ..write('completionPct: $completionPct, ')
-          ..write('absoluteCompletions: $absoluteCompletions, ')
-          ..write('maxStreak: $maxStreak, ')
-          ..write('morningRatio: $morningRatio, ')
-          ..write('afternoonRatio: $afternoonRatio, ')
-          ..write('eveningRatio: $eveningRatio, ')
-          ..write('objectType: $objectType, ')
-          ..write('generationSeed: $generationSeed, ')
-          ..write('pngPath: $pngPath, ')
-          ..write('isShortPerfect: $isShortPerfect')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    habitId,
-    year,
-    month,
-    completionPct,
-    absoluteCompletions,
-    maxStreak,
-    morningRatio,
-    afternoonRatio,
-    eveningRatio,
-    objectType,
-    generationSeed,
-    pngPath,
-    isShortPerfect,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is GardenObject &&
-          other.id == this.id &&
-          other.habitId == this.habitId &&
-          other.year == this.year &&
-          other.month == this.month &&
-          other.completionPct == this.completionPct &&
-          other.absoluteCompletions == this.absoluteCompletions &&
-          other.maxStreak == this.maxStreak &&
-          other.morningRatio == this.morningRatio &&
-          other.afternoonRatio == this.afternoonRatio &&
-          other.eveningRatio == this.eveningRatio &&
-          other.objectType == this.objectType &&
-          other.generationSeed == this.generationSeed &&
-          other.pngPath == this.pngPath &&
-          other.isShortPerfect == this.isShortPerfect);
-}
-
-class GardenObjectsCompanion extends UpdateCompanion<GardenObject> {
-  final Value<int> id;
-  final Value<int> habitId;
-  final Value<int> year;
-  final Value<int> month;
-  final Value<double> completionPct;
-  final Value<int> absoluteCompletions;
-  final Value<int> maxStreak;
-  final Value<double> morningRatio;
-  final Value<double> afternoonRatio;
-  final Value<double> eveningRatio;
-  final Value<String> objectType;
-  final Value<int> generationSeed;
-  final Value<String?> pngPath;
-  final Value<bool> isShortPerfect;
-  const GardenObjectsCompanion({
-    this.id = const Value.absent(),
-    this.habitId = const Value.absent(),
-    this.year = const Value.absent(),
-    this.month = const Value.absent(),
-    this.completionPct = const Value.absent(),
-    this.absoluteCompletions = const Value.absent(),
-    this.maxStreak = const Value.absent(),
-    this.morningRatio = const Value.absent(),
-    this.afternoonRatio = const Value.absent(),
-    this.eveningRatio = const Value.absent(),
-    this.objectType = const Value.absent(),
-    this.generationSeed = const Value.absent(),
-    this.pngPath = const Value.absent(),
-    this.isShortPerfect = const Value.absent(),
-  });
-  GardenObjectsCompanion.insert({
-    this.id = const Value.absent(),
-    required int habitId,
-    required int year,
-    required int month,
-    this.completionPct = const Value.absent(),
-    this.absoluteCompletions = const Value.absent(),
-    this.maxStreak = const Value.absent(),
-    this.morningRatio = const Value.absent(),
-    this.afternoonRatio = const Value.absent(),
-    this.eveningRatio = const Value.absent(),
-    this.objectType = const Value.absent(),
-    required int generationSeed,
-    this.pngPath = const Value.absent(),
-    this.isShortPerfect = const Value.absent(),
-  }) : habitId = Value(habitId),
-       year = Value(year),
-       month = Value(month),
-       generationSeed = Value(generationSeed);
-  static Insertable<GardenObject> custom({
-    Expression<int>? id,
-    Expression<int>? habitId,
-    Expression<int>? year,
-    Expression<int>? month,
-    Expression<double>? completionPct,
-    Expression<int>? absoluteCompletions,
-    Expression<int>? maxStreak,
-    Expression<double>? morningRatio,
-    Expression<double>? afternoonRatio,
-    Expression<double>? eveningRatio,
-    Expression<String>? objectType,
-    Expression<int>? generationSeed,
-    Expression<String>? pngPath,
-    Expression<bool>? isShortPerfect,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (habitId != null) 'habit_id': habitId,
-      if (year != null) 'year': year,
-      if (month != null) 'month': month,
-      if (completionPct != null) 'completion_pct': completionPct,
-      if (absoluteCompletions != null)
-        'absolute_completions': absoluteCompletions,
-      if (maxStreak != null) 'max_streak': maxStreak,
-      if (morningRatio != null) 'morning_ratio': morningRatio,
-      if (afternoonRatio != null) 'afternoon_ratio': afternoonRatio,
-      if (eveningRatio != null) 'evening_ratio': eveningRatio,
-      if (objectType != null) 'object_type': objectType,
-      if (generationSeed != null) 'generation_seed': generationSeed,
-      if (pngPath != null) 'png_path': pngPath,
-      if (isShortPerfect != null) 'is_short_perfect': isShortPerfect,
-    });
-  }
-
-  GardenObjectsCompanion copyWith({
-    Value<int>? id,
-    Value<int>? habitId,
-    Value<int>? year,
-    Value<int>? month,
-    Value<double>? completionPct,
-    Value<int>? absoluteCompletions,
-    Value<int>? maxStreak,
-    Value<double>? morningRatio,
-    Value<double>? afternoonRatio,
-    Value<double>? eveningRatio,
-    Value<String>? objectType,
-    Value<int>? generationSeed,
-    Value<String?>? pngPath,
-    Value<bool>? isShortPerfect,
-  }) {
-    return GardenObjectsCompanion(
-      id: id ?? this.id,
-      habitId: habitId ?? this.habitId,
-      year: year ?? this.year,
-      month: month ?? this.month,
-      completionPct: completionPct ?? this.completionPct,
-      absoluteCompletions: absoluteCompletions ?? this.absoluteCompletions,
-      maxStreak: maxStreak ?? this.maxStreak,
-      morningRatio: morningRatio ?? this.morningRatio,
-      afternoonRatio: afternoonRatio ?? this.afternoonRatio,
-      eveningRatio: eveningRatio ?? this.eveningRatio,
-      objectType: objectType ?? this.objectType,
-      generationSeed: generationSeed ?? this.generationSeed,
-      pngPath: pngPath ?? this.pngPath,
-      isShortPerfect: isShortPerfect ?? this.isShortPerfect,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (habitId.present) {
-      map['habit_id'] = Variable<int>(habitId.value);
-    }
-    if (year.present) {
-      map['year'] = Variable<int>(year.value);
-    }
-    if (month.present) {
-      map['month'] = Variable<int>(month.value);
-    }
-    if (completionPct.present) {
-      map['completion_pct'] = Variable<double>(completionPct.value);
-    }
-    if (absoluteCompletions.present) {
-      map['absolute_completions'] = Variable<int>(absoluteCompletions.value);
-    }
-    if (maxStreak.present) {
-      map['max_streak'] = Variable<int>(maxStreak.value);
-    }
-    if (morningRatio.present) {
-      map['morning_ratio'] = Variable<double>(morningRatio.value);
-    }
-    if (afternoonRatio.present) {
-      map['afternoon_ratio'] = Variable<double>(afternoonRatio.value);
-    }
-    if (eveningRatio.present) {
-      map['evening_ratio'] = Variable<double>(eveningRatio.value);
-    }
-    if (objectType.present) {
-      map['object_type'] = Variable<String>(objectType.value);
-    }
-    if (generationSeed.present) {
-      map['generation_seed'] = Variable<int>(generationSeed.value);
-    }
-    if (pngPath.present) {
-      map['png_path'] = Variable<String>(pngPath.value);
-    }
-    if (isShortPerfect.present) {
-      map['is_short_perfect'] = Variable<bool>(isShortPerfect.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('GardenObjectsCompanion(')
-          ..write('id: $id, ')
-          ..write('habitId: $habitId, ')
-          ..write('year: $year, ')
-          ..write('month: $month, ')
-          ..write('completionPct: $completionPct, ')
-          ..write('absoluteCompletions: $absoluteCompletions, ')
-          ..write('maxStreak: $maxStreak, ')
-          ..write('morningRatio: $morningRatio, ')
-          ..write('afternoonRatio: $afternoonRatio, ')
-          ..write('eveningRatio: $eveningRatio, ')
-          ..write('objectType: $objectType, ')
-          ..write('generationSeed: $generationSeed, ')
-          ..write('pngPath: $pngPath, ')
-          ..write('isShortPerfect: $isShortPerfect')
-          ..write(')'))
-        .toString();
-  }
-}
-
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $HabitsTable habits = $HabitsTable(this);
   late final $HabitLogsTable habitLogs = $HabitLogsTable(this);
-  late final $GardenObjectsTable gardenObjects = $GardenObjectsTable(this);
   late final HabitsDao habitsDao = HabitsDao(this as AppDatabase);
   late final HabitLogsDao habitLogsDao = HabitLogsDao(this as AppDatabase);
-  late final GardenObjectsDao gardenObjectsDao = GardenObjectsDao(
-    this as AppDatabase,
-  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-    habits,
-    habitLogs,
-    gardenObjects,
-  ];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [habits, habitLogs];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
@@ -1801,13 +982,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('habit_logs', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'habits',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('garden_objects', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -1856,24 +1030,6 @@ final class $$HabitsTableReferences
     ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_habitLogsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$GardenObjectsTable, List<GardenObject>>
-  _gardenObjectsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.gardenObjects,
-    aliasName: $_aliasNameGenerator(db.habits.id, db.gardenObjects.habitId),
-  );
-
-  $$GardenObjectsTableProcessedTableManager get gardenObjectsRefs {
-    final manager = $$GardenObjectsTableTableManager(
-      $_db,
-      $_db.gardenObjects,
-    ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_gardenObjectsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -1955,31 +1111,6 @@ class $$HabitsTableFilterComposer
           }) => $$HabitLogsTableFilterComposer(
             $db: $db,
             $table: $db.habitLogs,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> gardenObjectsRefs(
-    Expression<bool> Function($$GardenObjectsTableFilterComposer f) f,
-  ) {
-    final $$GardenObjectsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.gardenObjects,
-      getReferencedColumn: (t) => t.habitId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GardenObjectsTableFilterComposer(
-            $db: $db,
-            $table: $db.gardenObjects,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2121,31 +1252,6 @@ class $$HabitsTableAnnotationComposer
     );
     return f(composer);
   }
-
-  Expression<T> gardenObjectsRefs<T extends Object>(
-    Expression<T> Function($$GardenObjectsTableAnnotationComposer a) f,
-  ) {
-    final $$GardenObjectsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.gardenObjects,
-      getReferencedColumn: (t) => t.habitId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GardenObjectsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.gardenObjects,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$HabitsTableTableManager
@@ -2161,7 +1267,7 @@ class $$HabitsTableTableManager
           $$HabitsTableUpdateCompanionBuilder,
           (Habit, $$HabitsTableReferences),
           Habit,
-          PrefetchHooks Function({bool habitLogsRefs, bool gardenObjectsRefs})
+          PrefetchHooks Function({bool habitLogsRefs})
         > {
   $$HabitsTableTableManager(_$AppDatabase db, $HabitsTable table)
     : super(
@@ -2228,63 +1334,28 @@ class $$HabitsTableTableManager
                     (e.readTable(table), $$HabitsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback:
-              ({habitLogsRefs = false, gardenObjectsRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (habitLogsRefs) db.habitLogs,
-                    if (gardenObjectsRefs) db.gardenObjects,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (habitLogsRefs)
-                        await $_getPrefetchedData<
-                          Habit,
-                          $HabitsTable,
-                          HabitLog
-                        >(
-                          currentTable: table,
-                          referencedTable: $$HabitsTableReferences
-                              ._habitLogsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$HabitsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).habitLogsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.habitId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (gardenObjectsRefs)
-                        await $_getPrefetchedData<
-                          Habit,
-                          $HabitsTable,
-                          GardenObject
-                        >(
-                          currentTable: table,
-                          referencedTable: $$HabitsTableReferences
-                              ._gardenObjectsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$HabitsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).gardenObjectsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.habitId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
+          prefetchHooksCallback: ({habitLogsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (habitLogsRefs) db.habitLogs],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (habitLogsRefs)
+                    await $_getPrefetchedData<Habit, $HabitsTable, HabitLog>(
+                      currentTable: table,
+                      referencedTable: $$HabitsTableReferences
+                          ._habitLogsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$HabitsTableReferences(db, table, p0).habitLogsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.habitId == item.id),
+                      typedResults: items,
+                    ),
+                ];
               },
+            );
+          },
         ),
       );
 }
@@ -2301,14 +1372,14 @@ typedef $$HabitsTableProcessedTableManager =
       $$HabitsTableUpdateCompanionBuilder,
       (Habit, $$HabitsTableReferences),
       Habit,
-      PrefetchHooks Function({bool habitLogsRefs, bool gardenObjectsRefs})
+      PrefetchHooks Function({bool habitLogsRefs})
     >;
 typedef $$HabitLogsTableCreateCompanionBuilder =
     HabitLogsCompanion Function({
       Value<int> id,
       required int habitId,
       required int date,
-      Value<String> status,
+      Value<LogStatus> status,
       Value<int?> loggedHour,
     });
 typedef $$HabitLogsTableUpdateCompanionBuilder =
@@ -2316,7 +1387,7 @@ typedef $$HabitLogsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> habitId,
       Value<int> date,
-      Value<String> status,
+      Value<LogStatus> status,
       Value<int?> loggedHour,
     });
 
@@ -2362,10 +1433,11 @@ class $$HabitLogsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<LogStatus, LogStatus, String> get status =>
+      $composableBuilder(
+        column: $table.status,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<int> get loggedHour => $composableBuilder(
     column: $table.loggedHour,
@@ -2464,7 +1536,7 @@ class $$HabitLogsTableAnnotationComposer
   GeneratedColumn<int> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
-  GeneratedColumn<String> get status =>
+  GeneratedColumnWithTypeConverter<LogStatus, String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
   GeneratedColumn<int> get loggedHour => $composableBuilder(
@@ -2527,7 +1599,7 @@ class $$HabitLogsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> habitId = const Value.absent(),
                 Value<int> date = const Value.absent(),
-                Value<String> status = const Value.absent(),
+                Value<LogStatus> status = const Value.absent(),
                 Value<int?> loggedHour = const Value.absent(),
               }) => HabitLogsCompanion(
                 id: id,
@@ -2541,7 +1613,7 @@ class $$HabitLogsTableTableManager
                 Value<int> id = const Value.absent(),
                 required int habitId,
                 required int date,
-                Value<String> status = const Value.absent(),
+                Value<LogStatus> status = const Value.absent(),
                 Value<int?> loggedHour = const Value.absent(),
               }) => HabitLogsCompanion.insert(
                 id: id,
@@ -2617,509 +1689,6 @@ typedef $$HabitLogsTableProcessedTableManager =
       HabitLog,
       PrefetchHooks Function({bool habitId})
     >;
-typedef $$GardenObjectsTableCreateCompanionBuilder =
-    GardenObjectsCompanion Function({
-      Value<int> id,
-      required int habitId,
-      required int year,
-      required int month,
-      Value<double> completionPct,
-      Value<int> absoluteCompletions,
-      Value<int> maxStreak,
-      Value<double> morningRatio,
-      Value<double> afternoonRatio,
-      Value<double> eveningRatio,
-      Value<String> objectType,
-      required int generationSeed,
-      Value<String?> pngPath,
-      Value<bool> isShortPerfect,
-    });
-typedef $$GardenObjectsTableUpdateCompanionBuilder =
-    GardenObjectsCompanion Function({
-      Value<int> id,
-      Value<int> habitId,
-      Value<int> year,
-      Value<int> month,
-      Value<double> completionPct,
-      Value<int> absoluteCompletions,
-      Value<int> maxStreak,
-      Value<double> morningRatio,
-      Value<double> afternoonRatio,
-      Value<double> eveningRatio,
-      Value<String> objectType,
-      Value<int> generationSeed,
-      Value<String?> pngPath,
-      Value<bool> isShortPerfect,
-    });
-
-final class $$GardenObjectsTableReferences
-    extends BaseReferences<_$AppDatabase, $GardenObjectsTable, GardenObject> {
-  $$GardenObjectsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $HabitsTable _habitIdTable(_$AppDatabase db) => db.habits.createAlias(
-    $_aliasNameGenerator(db.gardenObjects.habitId, db.habits.id),
-  );
-
-  $$HabitsTableProcessedTableManager get habitId {
-    final $_column = $_itemColumn<int>('habit_id')!;
-
-    final manager = $$HabitsTableTableManager(
-      $_db,
-      $_db.habits,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_habitIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$GardenObjectsTableFilterComposer
-    extends Composer<_$AppDatabase, $GardenObjectsTable> {
-  $$GardenObjectsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get year => $composableBuilder(
-    column: $table.year,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get month => $composableBuilder(
-    column: $table.month,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get completionPct => $composableBuilder(
-    column: $table.completionPct,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get absoluteCompletions => $composableBuilder(
-    column: $table.absoluteCompletions,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get maxStreak => $composableBuilder(
-    column: $table.maxStreak,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get morningRatio => $composableBuilder(
-    column: $table.morningRatio,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get afternoonRatio => $composableBuilder(
-    column: $table.afternoonRatio,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get eveningRatio => $composableBuilder(
-    column: $table.eveningRatio,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get objectType => $composableBuilder(
-    column: $table.objectType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get generationSeed => $composableBuilder(
-    column: $table.generationSeed,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get pngPath => $composableBuilder(
-    column: $table.pngPath,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isShortPerfect => $composableBuilder(
-    column: $table.isShortPerfect,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$HabitsTableFilterComposer get habitId {
-    final $$HabitsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.habitId,
-      referencedTable: $db.habits,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$HabitsTableFilterComposer(
-            $db: $db,
-            $table: $db.habits,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GardenObjectsTableOrderingComposer
-    extends Composer<_$AppDatabase, $GardenObjectsTable> {
-  $$GardenObjectsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get year => $composableBuilder(
-    column: $table.year,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get month => $composableBuilder(
-    column: $table.month,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get completionPct => $composableBuilder(
-    column: $table.completionPct,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get absoluteCompletions => $composableBuilder(
-    column: $table.absoluteCompletions,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get maxStreak => $composableBuilder(
-    column: $table.maxStreak,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get morningRatio => $composableBuilder(
-    column: $table.morningRatio,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get afternoonRatio => $composableBuilder(
-    column: $table.afternoonRatio,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get eveningRatio => $composableBuilder(
-    column: $table.eveningRatio,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get objectType => $composableBuilder(
-    column: $table.objectType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get generationSeed => $composableBuilder(
-    column: $table.generationSeed,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get pngPath => $composableBuilder(
-    column: $table.pngPath,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isShortPerfect => $composableBuilder(
-    column: $table.isShortPerfect,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$HabitsTableOrderingComposer get habitId {
-    final $$HabitsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.habitId,
-      referencedTable: $db.habits,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$HabitsTableOrderingComposer(
-            $db: $db,
-            $table: $db.habits,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GardenObjectsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $GardenObjectsTable> {
-  $$GardenObjectsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<int> get year =>
-      $composableBuilder(column: $table.year, builder: (column) => column);
-
-  GeneratedColumn<int> get month =>
-      $composableBuilder(column: $table.month, builder: (column) => column);
-
-  GeneratedColumn<double> get completionPct => $composableBuilder(
-    column: $table.completionPct,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get absoluteCompletions => $composableBuilder(
-    column: $table.absoluteCompletions,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get maxStreak =>
-      $composableBuilder(column: $table.maxStreak, builder: (column) => column);
-
-  GeneratedColumn<double> get morningRatio => $composableBuilder(
-    column: $table.morningRatio,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get afternoonRatio => $composableBuilder(
-    column: $table.afternoonRatio,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get eveningRatio => $composableBuilder(
-    column: $table.eveningRatio,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get objectType => $composableBuilder(
-    column: $table.objectType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get generationSeed => $composableBuilder(
-    column: $table.generationSeed,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get pngPath =>
-      $composableBuilder(column: $table.pngPath, builder: (column) => column);
-
-  GeneratedColumn<bool> get isShortPerfect => $composableBuilder(
-    column: $table.isShortPerfect,
-    builder: (column) => column,
-  );
-
-  $$HabitsTableAnnotationComposer get habitId {
-    final $$HabitsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.habitId,
-      referencedTable: $db.habits,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$HabitsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.habits,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$GardenObjectsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $GardenObjectsTable,
-          GardenObject,
-          $$GardenObjectsTableFilterComposer,
-          $$GardenObjectsTableOrderingComposer,
-          $$GardenObjectsTableAnnotationComposer,
-          $$GardenObjectsTableCreateCompanionBuilder,
-          $$GardenObjectsTableUpdateCompanionBuilder,
-          (GardenObject, $$GardenObjectsTableReferences),
-          GardenObject,
-          PrefetchHooks Function({bool habitId})
-        > {
-  $$GardenObjectsTableTableManager(_$AppDatabase db, $GardenObjectsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$GardenObjectsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$GardenObjectsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$GardenObjectsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<int> habitId = const Value.absent(),
-                Value<int> year = const Value.absent(),
-                Value<int> month = const Value.absent(),
-                Value<double> completionPct = const Value.absent(),
-                Value<int> absoluteCompletions = const Value.absent(),
-                Value<int> maxStreak = const Value.absent(),
-                Value<double> morningRatio = const Value.absent(),
-                Value<double> afternoonRatio = const Value.absent(),
-                Value<double> eveningRatio = const Value.absent(),
-                Value<String> objectType = const Value.absent(),
-                Value<int> generationSeed = const Value.absent(),
-                Value<String?> pngPath = const Value.absent(),
-                Value<bool> isShortPerfect = const Value.absent(),
-              }) => GardenObjectsCompanion(
-                id: id,
-                habitId: habitId,
-                year: year,
-                month: month,
-                completionPct: completionPct,
-                absoluteCompletions: absoluteCompletions,
-                maxStreak: maxStreak,
-                morningRatio: morningRatio,
-                afternoonRatio: afternoonRatio,
-                eveningRatio: eveningRatio,
-                objectType: objectType,
-                generationSeed: generationSeed,
-                pngPath: pngPath,
-                isShortPerfect: isShortPerfect,
-              ),
-          createCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                required int habitId,
-                required int year,
-                required int month,
-                Value<double> completionPct = const Value.absent(),
-                Value<int> absoluteCompletions = const Value.absent(),
-                Value<int> maxStreak = const Value.absent(),
-                Value<double> morningRatio = const Value.absent(),
-                Value<double> afternoonRatio = const Value.absent(),
-                Value<double> eveningRatio = const Value.absent(),
-                Value<String> objectType = const Value.absent(),
-                required int generationSeed,
-                Value<String?> pngPath = const Value.absent(),
-                Value<bool> isShortPerfect = const Value.absent(),
-              }) => GardenObjectsCompanion.insert(
-                id: id,
-                habitId: habitId,
-                year: year,
-                month: month,
-                completionPct: completionPct,
-                absoluteCompletions: absoluteCompletions,
-                maxStreak: maxStreak,
-                morningRatio: morningRatio,
-                afternoonRatio: afternoonRatio,
-                eveningRatio: eveningRatio,
-                objectType: objectType,
-                generationSeed: generationSeed,
-                pngPath: pngPath,
-                isShortPerfect: isShortPerfect,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$GardenObjectsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({habitId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (habitId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.habitId,
-                                referencedTable: $$GardenObjectsTableReferences
-                                    ._habitIdTable(db),
-                                referencedColumn: $$GardenObjectsTableReferences
-                                    ._habitIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$GardenObjectsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $GardenObjectsTable,
-      GardenObject,
-      $$GardenObjectsTableFilterComposer,
-      $$GardenObjectsTableOrderingComposer,
-      $$GardenObjectsTableAnnotationComposer,
-      $$GardenObjectsTableCreateCompanionBuilder,
-      $$GardenObjectsTableUpdateCompanionBuilder,
-      (GardenObject, $$GardenObjectsTableReferences),
-      GardenObject,
-      PrefetchHooks Function({bool habitId})
-    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3128,6 +1697,4 @@ class $AppDatabaseManager {
       $$HabitsTableTableManager(_db, _db.habits);
   $$HabitLogsTableTableManager get habitLogs =>
       $$HabitLogsTableTableManager(_db, _db.habitLogs);
-  $$GardenObjectsTableTableManager get gardenObjects =>
-      $$GardenObjectsTableTableManager(_db, _db.gardenObjects);
 }

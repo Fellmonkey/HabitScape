@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
@@ -152,16 +153,9 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
           controller: controller,
           padding: const EdgeInsets.all(24),
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: AppRadius.borderS,
-                ),
-              ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 20),
+              child: SheetHandle(),
             ),
             Text(
               _isEdit ? 'Редактировать' : 'Новая привычка',

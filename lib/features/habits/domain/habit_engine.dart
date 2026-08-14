@@ -85,7 +85,6 @@ class HabitEngine {
     // Count statuses
     var doneCount = 0;
     var skipCount = 0;
-    var failCount = 0;
     var maxStreak = 0;
     var currentStreak = 0;
     var morningCount = 0;
@@ -97,8 +96,7 @@ class HabitEngine {
       ..sort((a, b) => a.date.compareTo(b.date));
 
     for (final log in sorted) {
-      final status = LogStatus.fromString(log.status);
-      switch (status) {
+      switch (log.status) {
         case LogStatus.done:
           doneCount++;
           currentStreak++;
@@ -117,9 +115,6 @@ class HabitEngine {
         case LogStatus.skip:
           skipCount++;
         // Skip doesn't break streak
-        case LogStatus.fail:
-          failCount++;
-          currentStreak = 0;
         case LogStatus.pending:
           // Pending doesn't affect calculations
           break;
@@ -138,19 +133,6 @@ class HabitEngine {
     final aRatio = totalTimed > 0 ? afternoonCount / totalTimed : 0.33;
     final eRatio = totalTimed > 0 ? eveningCount / totalTimed : 0.34;
 
-    // Is this a short-perfect month? (< 7 active days with 100%)
-    final createdAt = dateFromUnix(habit.createdAt);
-    final monthStart = DateTime.utc(year, month, 1);
-    final monthEnd = DateTime.utc(year, month + 1, 0);
-    final effectiveStart = createdAt.isAfter(monthStart)
-        ? createdAt
-        : monthStart;
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-    final isShortPerfect = activeDays < 7 && pct >= 100.0;
-
-    // Object type mapping
-    final objectType = getObjectType(pct, doneCount);
-
     return HabitMetrics(
       completionPct: pct,
       absoluteCompletions: doneCount,
@@ -158,29 +140,10 @@ class HabitEngine {
       morningRatio: mRatio,
       afternoonRatio: aRatio,
       eveningRatio: eRatio,
-      objectType: objectType,
-      isShortPerfect: isShortPerfect,
       requiredBase: rawBase,
       adjustedBase: adjustedBase,
       skipCount: skipCount,
-      failCount: failCount,
     );
-  }
-
-  // Object type mapping
-
-  /// Map completion % + absolute count to a garden object type.
-  /// 0-39% → moss/sleepingBulb, 40-79% → bush, 80-100% (≥5 done) → tree
-  static GardenObjectType getObjectType(double pct, int absoluteCount) {
-    if (pct < 40) {
-      return absoluteCount == 0
-          ? GardenObjectType.sleepingBulb
-          : GardenObjectType.moss;
-    }
-    if (pct < 80) return GardenObjectType.bush;
-    // "Effort threshold": need ≥ 5 absolute completions for a tree
-    if (absoluteCount >= 5) return GardenObjectType.tree;
-    return GardenObjectType.bush;
   }
 }
 
@@ -193,12 +156,9 @@ class HabitMetrics {
     required this.morningRatio,
     required this.afternoonRatio,
     required this.eveningRatio,
-    required this.objectType,
-    required this.isShortPerfect,
     required this.requiredBase,
     required this.adjustedBase,
     required this.skipCount,
-    required this.failCount,
   });
 
   final double completionPct;
@@ -207,10 +167,7 @@ class HabitMetrics {
   final double morningRatio;
   final double afternoonRatio;
   final double eveningRatio;
-  final GardenObjectType objectType;
-  final bool isShortPerfect;
   final int requiredBase;
   final int adjustedBase;
   final int skipCount;
-  final int failCount;
 }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 
 /// Default creation timestamp: 2026-01-01 midnight UTC.
@@ -66,7 +67,7 @@ HabitLog makeLog({
   int id = 1,
   int habitId = 1,
   int? date,
-  String status = 'done',
+  LogStatus status = LogStatus.done,
   int? loggedHour,
 }) {
   return HabitLog(
@@ -82,7 +83,7 @@ HabitLog makeLog({
 HabitLogsCompanion makeLogCompanion({
   int habitId = 1,
   int? date,
-  String status = 'done',
+  LogStatus status = LogStatus.done,
   int? loggedHour,
 }) {
   return HabitLogsCompanion(
@@ -127,81 +128,11 @@ List<HabitLog> makeDoneLogs({
         id: id++,
         habitId: habitId,
         date: day.unixSeconds,
-        status: 'done',
+        status: LogStatus.done,
         loggedHour: hourForIndex(i),
       ),
     );
     day = day.add(const Duration(days: 1));
   }
   return logs;
-}
-
-// ── GardenObject factories ──────────────────────────────────
-
-/// Create a GardenObject data class instance.
-GardenObject makeGardenObject({
-  int id = 1,
-  int habitId = 1,
-  int year = 2026,
-  int month = 1,
-  double completionPct = 50.0,
-  int absoluteCompletions = 15,
-  int maxStreak = 5,
-  double morningRatio = 0.33,
-  double afternoonRatio = 0.33,
-  double eveningRatio = 0.34,
-  String objectType = 'bush',
-  int generationSeed = 42,
-  String? pngPath,
-  bool isShortPerfect = false,
-}) {
-  return GardenObject(
-    id: id,
-    habitId: habitId,
-    year: year,
-    month: month,
-    completionPct: completionPct,
-    absoluteCompletions: absoluteCompletions,
-    maxStreak: maxStreak,
-    morningRatio: morningRatio,
-    afternoonRatio: afternoonRatio,
-    eveningRatio: eveningRatio,
-    objectType: objectType,
-    generationSeed: generationSeed,
-    pngPath: pngPath,
-    isShortPerfect: isShortPerfect,
-  );
-}
-
-/// Create a GardenObjectsCompanion for DAO insertion.
-GardenObjectsCompanion makeGardenObjectCompanion({
-  int habitId = 1,
-  int year = 2026,
-  int month = 1,
-  double completionPct = 50.0,
-  int absoluteCompletions = 15,
-  int maxStreak = 5,
-  double morningRatio = 0.33,
-  double afternoonRatio = 0.33,
-  double eveningRatio = 0.34,
-  String objectType = 'bush',
-  int generationSeed = 42,
-  String? pngPath,
-  bool isShortPerfect = false,
-}) {
-  return GardenObjectsCompanion(
-    habitId: Value(habitId),
-    year: Value(year),
-    month: Value(month),
-    completionPct: Value(completionPct),
-    absoluteCompletions: Value(absoluteCompletions),
-    maxStreak: Value(maxStreak),
-    morningRatio: Value(morningRatio),
-    afternoonRatio: Value(afternoonRatio),
-    eveningRatio: Value(eveningRatio),
-    objectType: Value(objectType),
-    generationSeed: Value(generationSeed),
-    pngPath: Value(pngPath),
-    isShortPerfect: Value(isShortPerfect),
-  );
 }

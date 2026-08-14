@@ -83,25 +83,20 @@ void main() {
       expect(active, isEmpty);
     });
 
-    test('deleteHabit cascades to logs and garden objects', () async {
+    test('deleteHabit cascades to logs', () async {
       final habitId = await db.habitsDao.insertHabit(
         makeHabitCompanion(name: 'Test'),
       );
 
       await db.habitLogsDao.upsertLog(makeLogCompanion(habitId: habitId));
-      await db.gardenObjectsDao.insertObject(
-        makeGardenObjectCompanion(habitId: habitId),
-      );
 
       // Verify data exists
       expect(await db.habitLogsDao.getAllLogs(), hasLength(1));
-      expect(await db.gardenObjectsDao.getAllObjects(), hasLength(1));
 
       await db.habitsDao.deleteHabit(habitId);
 
-      // Cascade should have removed logs and objects
+      // Cascade should have removed logs
       expect(await db.habitLogsDao.getAllLogs(), isEmpty);
-      expect(await db.gardenObjectsDao.getAllObjects(), isEmpty);
     });
 
     test('toggleFocus + countFocusHabits', () async {

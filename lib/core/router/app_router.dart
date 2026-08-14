@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/garden/presentation/screens/time_path_screen.dart';
 import '../../features/habits/presentation/screens/archived_habits_screen.dart';
 import '../../features/habits/presentation/screens/greenhouse_screen.dart';
 import '../../features/habits/presentation/screens/habit_detail_screen.dart';
@@ -22,11 +21,6 @@ final appRouter = GoRouter(
           path: '/',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: GreenhouseScreen()),
-        ),
-        GoRoute(
-          path: '/garden',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: TimePathScreen()),
         ),
         GoRoute(
           path: '/settings',

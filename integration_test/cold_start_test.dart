@@ -34,19 +34,15 @@ void main() {
       expect(find.text('Теплица'), findsWidgets);
     });
 
-    testWidgets('bottom nav switches between all three tabs', (tester) async {
+    testWidgets('bottom nav switches between Greenhouse and Settings', (
+      tester,
+    ) async {
       db = await pumpApp(tester);
 
       // ── Tab 0: Greenhouse (default) ──
       expect(find.byKey(K.emptyHabitsMessage), findsOneWidget);
 
-      // ── Tab 1: Garden (Тропа) ──
-      await tester.tap(find.text('Тропа'));
-      await tester.pumpAndSettle();
-      // Empty garden state.
-      expect(find.byKey(K.timePathEmpty), findsOneWidget);
-
-      // ── Tab 2: Settings (Ещё) ──
+      // ── Tab 1: Settings (Ещё) ──
       await tester.tap(find.text('Ещё'));
       await tester.pumpAndSettle();
       expect(find.text('Настройки'), findsOneWidget);
@@ -58,21 +54,6 @@ void main() {
       expect(find.byKey(K.emptyHabitsMessage), findsOneWidget);
     });
 
-    testWidgets('Garden shows empty state message on fresh DB', (tester) async {
-      db = await pumpApp(tester);
-
-      await tester.tap(find.text('Тропа'));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(K.timePathEmpty), findsOneWidget);
-      expect(
-        find.text(
-          'Растения появятся здесь в конце месяца, когда ваши привычки кристаллизуются в сад',
-        ),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('Settings screen shows all visible sections', (tester) async {
       db = await pumpApp(tester);
 
@@ -81,20 +62,16 @@ void main() {
 
       // Section headers visible without scrolling.
       expect(find.text('Резервное копирование'), findsOneWidget);
-      expect(find.text('Семена-Коды'), findsOneWidget);
 
       // Tiles by key (more reliable than text matches).
       expect(find.byKey(K.settingsExport), findsOneWidget);
       expect(find.byKey(K.settingsImport), findsOneWidget);
-      expect(find.byKey(K.settingsFriendShare), findsOneWidget);
-      expect(find.byKey(K.settingsFriendImport), findsOneWidget);
 
       // Scroll down to see remaining sections.
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
 
-      expect(find.text('Поделиться достижениями'), findsOneWidget);
-      expect(find.byKey(K.settingsCard), findsOneWidget);
+      expect(find.text('Архив'), findsOneWidget);
       expect(find.text('О приложении'), findsOneWidget);
       expect(find.text('Версия 1.0.0'), findsOneWidget);
     });

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/enums.dart';
 import '../utils/date_helpers.dart';
+import '../../features/habits/domain/scheduling.dart';
 
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {
@@ -243,7 +244,6 @@ class DebugDataSeeder {
   /// Returns the number of habits created.
   Future<int> seed(DebugScenario scenario) async {
     // 1. Wipe everything
-    await db.gardenObjectsDao.deleteAllObjects();
     await db.habitLogsDao.deleteAllLogs();
     await db.habitsDao.deleteAllHabits();
 
@@ -319,7 +319,7 @@ class DebugDataSeeder {
       );
     }
 
-    // 4. Generate logs + garden objects month by month
+    // 4. Generate logs month by month
     var m = startMonth;
     while (m.isBefore(endMonth)) {
       for (final meta in habitMeta) {
@@ -376,14 +376,6 @@ class DebugDataSeeder {
     final isSlump = rng.nextDouble() < 0.12;
     final effectiveQuality = isSlump ? quality * 0.4 : quality;
 
-    var doneCount = 0;
-    var skipCount = 0;
-    var maxStreak = 0;
-    var currentStreak = 0;
-    var morningCount = 0;
-    var afternoonCount = 0;
-    var eveningCount = 0;
-
     for (var d = 0; d < totalDays; d++) {
       final date = effectiveStart.add(Duration(days: d));
       if (date.isAfter(now)) break;
@@ -391,77 +383,28 @@ class DebugDataSeeder {
       // Determine if this day should have a log based on frequency
       if (!_shouldLogDay(meta, date)) continue;
 
-      // Decide outcome
+      // Decide outcome: done / skip / (missed day → no log)
       final roll = rng.nextDouble();
-      String status;
-      int? loggedHour;
 
       if (roll < effectiveQuality) {
-        status = LogStatus.done.name;
-        doneCount++;
-        currentStreak++;
-        if (currentStreak > maxStreak) maxStreak = currentStreak;
-
-        // Assign hour based on time-of-day preference
-        loggedHour = _hourForTimeOfDay(meta.tod, rng);
-        final h = loggedHour;
-        if (h >= 5 && h < 12) {
-          morningCount++;
-        } else if (h >= 12 && h < 18) {
-          afternoonCount++;
-        } else {
-          eveningCount++;
-        }
+        await db.habitLogsDao.upsertLog(
+          HabitLogsCompanion.insert(
+            habitId: meta.id,
+            date: date.unixSeconds,
+            status: const Value(LogStatus.done),
+            loggedHour: Value(_hourForTimeOfDay(meta.tod, rng)),
+          ),
+        );
       } else if (roll < effectiveQuality + 0.1) {
-        status = LogStatus.skip.name;
-        skipCount++;
-        // skip doesn't break streak
-      } else {
-        status = LogStatus.fail.name;
-        currentStreak = 0;
+        await db.habitLogsDao.upsertLog(
+          HabitLogsCompanion.insert(
+            habitId: meta.id,
+            date: date.unixSeconds,
+            status: const Value(LogStatus.skip),
+          ),
+        );
       }
-
-      await db.habitLogsDao.upsertLog(
-        HabitLogsCompanion.insert(
-          habitId: meta.id,
-          date: date.unixSeconds,
-          status: Value(status),
-          loggedHour: Value(loggedHour),
-        ),
-      );
     }
-
-    // Insert garden object for completed months
-    final totalTimed = morningCount + afternoonCount + eveningCount;
-    final mRatio = totalTimed > 0 ? morningCount / totalTimed : 0.33;
-    final aRatio = totalTimed > 0 ? afternoonCount / totalTimed : 0.33;
-    final eRatio = totalTimed > 0 ? eveningCount / totalTimed : 0.34;
-
-    final rawBase = totalDays - skipCount;
-    final pct = rawBase > 0
-        ? (doneCount / rawBase * 100).clamp(0.0, 100.0)
-        : 0.0;
-
-    final objectType = _objectType(pct, doneCount);
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-    final isShortPerfect = activeDays < 7 && pct >= 100.0;
-
-    await db.gardenObjectsDao.insertObject(
-      GardenObjectsCompanion(
-        habitId: Value(meta.id),
-        year: Value(year),
-        month: Value(month),
-        completionPct: Value(pct),
-        absoluteCompletions: Value(doneCount),
-        maxStreak: Value(maxStreak),
-        morningRatio: Value(mRatio),
-        afternoonRatio: Value(aRatio),
-        eveningRatio: Value(eRatio),
-        objectType: Value(objectType.name),
-        generationSeed: Value(rng.nextInt(1 << 31)),
-        isShortPerfect: Value(isShortPerfect),
-      ),
-    );
   }
 
   /// Generate pending logs for today so the Greenhouse screen shows habits.
@@ -472,7 +415,7 @@ class DebugDataSeeder {
         HabitLogsCompanion.insert(
           habitId: meta.id,
           date: now.unixSeconds,
-          status: const Value('pending'),
+          status: const Value(LogStatus.pending),
         ),
       );
     }
@@ -484,30 +427,18 @@ class DebugDataSeeder {
       case FrequencyType.negative:
         return true;
       case FrequencyType.weekdays:
-        // Parse weekdays from value
-        final days = _parseWeekdays(meta.freq.value);
+        final days = parseWeekdays(meta.freq.value);
         return days.contains(date.weekday);
       case FrequencyType.xPerWeek:
         // Simplified: log on ~x random days per week
         return true;
       case FrequencyType.everyXDays:
-        final x = _parseX(meta.freq.value);
+        final x = parseXValue(meta.freq.value);
         final diff = date.difference(meta.createdAt.toMidnight).inDays;
         return diff % x == 0;
       case FrequencyType.cycle:
         return true;
     }
-  }
-
-  static GardenObjectType _objectType(double pct, int absoluteCount) {
-    if (pct < 40) {
-      return absoluteCount == 0
-          ? GardenObjectType.sleepingBulb
-          : GardenObjectType.moss;
-    }
-    if (pct < 80) return GardenObjectType.bush;
-    if (absoluteCount >= 5) return GardenObjectType.tree;
-    return GardenObjectType.bush;
   }
 
   static int _hourForTimeOfDay(TimeOfDay tod, Random rng) => switch (tod) {
@@ -516,28 +447,6 @@ class DebugDataSeeder {
     TimeOfDay.evening => 18 + rng.nextInt(4), // 18–21
     TimeOfDay.anytime => 7 + rng.nextInt(14), // 7–20
   };
-
-  static List<int> _parseWeekdays(String json) {
-    try {
-      final match = RegExp(r'\[([0-9,\s]+)\]').firstMatch(json);
-      if (match != null) {
-        return match
-            .group(1)!
-            .split(',')
-            .map((s) => int.parse(s.trim()))
-            .toList();
-      }
-    } catch (_) {}
-    return [1, 2, 3, 4, 5];
-  }
-
-  static int _parseX(String json) {
-    try {
-      final match = RegExp(r'"x"\s*:\s*(\d+)').firstMatch(json);
-      if (match != null) return int.parse(match.group(1)!);
-    } catch (_) {}
-    return 2;
-  }
 }
 
 class _HabitMeta {

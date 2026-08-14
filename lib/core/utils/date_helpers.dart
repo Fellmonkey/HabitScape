@@ -7,19 +7,6 @@ extension DateTimeHelpers on DateTime {
 
   /// Unix timestamp in seconds (not milliseconds).
   int get unixSeconds => toMidnight.millisecondsSinceEpoch ~/ 1000;
-
-  /// First day of the month.
-  DateTime get firstOfMonth => DateTime.utc(year, month, 1);
-
-  /// Last day of the month.
-  DateTime get lastOfMonth => DateTime.utc(year, month + 1, 0);
-
-  /// Number of days in this month.
-  int get daysInMonth => lastOfMonth.day;
-
-  /// True if same calendar day.
-  bool isSameDay(DateTime other) =>
-      year == other.year && month == other.month && day == other.day;
 }
 
 /// Convert a unix timestamp (seconds) back to a DateTime.
@@ -31,19 +18,6 @@ int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;
 
 /// Number of days in a given month/year.
 int daysInMonth(int year, int month) => DateTime.utc(year, month + 1, 0).day;
-
-/// Count occurrences of specific weekdays in a month.
-/// [weekdays] uses DateTime.monday (1) through DateTime.sunday (7).
-int countWeekdaysInMonth(int year, int month, List<int> weekdays) {
-  final days = daysInMonth(year, month);
-  var count = 0;
-  for (var d = 1; d <= days; d++) {
-    if (weekdays.contains(DateTime.utc(year, month, d).weekday)) {
-      count++;
-    }
-  }
-  return count;
-}
 
 /// Count weekdays from a start day (e.g. habit created mid-month).
 int countWeekdaysInRange(DateTime start, DateTime end, List<int> weekdays) {

@@ -32,7 +32,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
   late final Animation<double> _scaleAnim;
 
   bool get _isDone =>
-      widget.log != null && widget.log!.status == LogStatus.done.name;
+      widget.log != null && widget.log!.status == LogStatus.done;
 
   bool get _showFreqBadge {
     final type = FrequencyType.fromString(widget.habit.frequencyType);
@@ -90,9 +90,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final status = widget.log != null
-        ? LogStatus.fromString(widget.log!.status)
-        : null;
+    final status = widget.log?.status;
 
     return Dismissible(
       key: ValueKey('habit_${widget.habit.id}'),
@@ -121,7 +119,6 @@ class _HabitCardState extends ConsumerState<HabitCard>
                       key: K.habitCheck(widget.habit.id),
                       isDone: _isDone,
                       isSkip: status == LogStatus.skip,
-                      isFail: status == LogStatus.fail,
                       onTap: _markDone,
                     ),
                     const SizedBox(width: 12),
@@ -221,12 +218,6 @@ class _HabitCardState extends ConsumerState<HabitCard>
               onTap: () => Navigator.pop(ctx, 'skip'),
             ),
             ListTile(
-              key: K.swipeFail,
-              leading: const Icon(Icons.close, color: AppColors.dustyRose),
-              title: const Text('Срыв'),
-              onTap: () => Navigator.pop(ctx, 'fail'),
-            ),
-            ListTile(
               key: K.swipeDelete,
               leading: const Icon(
                 Icons.delete_outline,
@@ -246,8 +237,6 @@ class _HabitCardState extends ConsumerState<HabitCard>
     switch (result) {
       case 'skip':
         await actions.markSkip(widget.habit.id);
-      case 'fail':
-        await actions.markFail(widget.habit.id);
       case 'delete':
         await actions.deleteHabit(widget.habit.id);
     }
@@ -265,13 +254,11 @@ class _CheckCircle extends StatelessWidget {
     super.key,
     required this.isDone,
     required this.isSkip,
-    required this.isFail,
     required this.onTap,
   });
 
   final bool isDone;
   final bool isSkip;
-  final bool isFail;
   final VoidCallback onTap;
 
   @override
@@ -288,10 +275,6 @@ class _CheckCircle extends StatelessWidget {
       borderColor = AppColors.coolGreyBlue;
       fillColor = AppColors.coolGreyBlue.withValues(alpha: 0.3);
       icon = Icons.pause_rounded;
-    } else if (isFail) {
-      borderColor = AppColors.dustyRose;
-      fillColor = AppColors.dustyRose.withValues(alpha: 0.3);
-      icon = Icons.close_rounded;
     } else {
       borderColor = Theme.of(
         context,

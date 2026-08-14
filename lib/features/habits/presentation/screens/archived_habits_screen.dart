@@ -144,8 +144,8 @@ class _ArchivedHabitTile extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Удалить привычку?'),
         content: Text(
-          '«${habit.name}» будет удалена навсегда, включая всю историю и '
-          'растения в саду. Это нельзя отменить.',
+          '«${habit.name}» будет удалена навсегда, включая всю историю. '
+          'Это нельзя отменить.',
         ),
         actions: [
           TextButton(

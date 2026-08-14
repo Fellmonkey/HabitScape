@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/garden/domain/generator/plant_params.dart';
-import '../../features/garden/domain/generator/plant_widget.dart';
+import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'debug_data_seeder.dart';
-import 'debug_profiles.dart';
 
 /// Draggable floating debug button that opens the debug menu.
 ///
@@ -69,7 +67,7 @@ class _DebugMenuOverlayState extends State<DebugMenuOverlay> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Debug bottom sheet — two tabs: Scenarios (DB) + Plant Profiles
+// Debug bottom sheet — database scenarios
 // ═══════════════════════════════════════════════════════════
 
 class _DebugSheet extends StatelessWidget {
@@ -89,71 +87,41 @@ class _DebugSheet extends StatelessWidget {
             color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          child: DefaultTabController(
-            length: 2,
-            child: Column(
-              children: [
-                // Handle
-                Padding(
-                  padding: const EdgeInsets.only(top: 12, bottom: 4),
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color:
-                          (isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary)
-                              .withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
+          child: Column(
+            children: [
+              // Handle
+              const Padding(
+                padding: EdgeInsets.only(top: 12, bottom: 4),
+                child: SheetHandle(),
+              ),
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bug_report,
+                      color: AppColors.glowViolet,
+                      size: 22,
                     ),
-                  ),
-                ),
-                // Title
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.bug_report,
-                        color: AppColors.glowViolet,
-                        size: 22,
+                    const SizedBox(width: 8),
+                    Text(
+                      'Debug Menu',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Debug Menu',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-                // Tabs
-                TabBar(
-                  labelColor: AppColors.glowViolet,
-                  unselectedLabelColor: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
-                  indicatorColor: AppColors.glowViolet,
-                  tabs: const [
-                    Tab(text: 'Сценарии БД'),
-                    Tab(text: 'Растения'),
+                    ),
                   ],
                 ),
-                // Tab content
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _ScenariosTab(scrollController: scrollController),
-                      _PlantProfilesTab(scrollController: scrollController),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+              // Scenarios
+              Expanded(
+                child: _ScenariosTab(scrollController: scrollController),
+              ),
+            ],
           ),
         );
       },
@@ -215,7 +183,6 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     });
     try {
       final db = ref.read(databaseProvider);
-      await db.gardenObjectsDao.deleteAllObjects();
       await db.habitLogsDao.deleteAllLogs();
       await db.habitsDao.deleteAllHabits();
 
@@ -339,32 +306,6 @@ class _ScenarioTile extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// TAB 2: Plant profiles  (preserved from previous version)
-// ═══════════════════════════════════════════════════════════
-
-class _PlantProfilesTab extends StatelessWidget {
-  const _PlantProfilesTab({required this.scrollController});
-  final ScrollController scrollController;
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = DebugProfiles.categories;
-
-    return ListView(
-      controller: scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      children: [
-        for (final entry in categories.entries) ...[
-          _CategoryHeader(title: entry.key),
-          for (final profile in entry.value) _ProfileTile(profile: profile),
-          const SizedBox(height: 12),
-        ],
-      ],
-    );
-  }
-}
-
 // ── Category header ────────────────────────────────────────
 
 class _CategoryHeader extends StatelessWidget {
@@ -384,295 +325,6 @@ class _CategoryHeader extends StatelessWidget {
               ? AppColors.darkTextSecondary
               : AppColors.lightTextSecondary,
         ),
-      ),
-    );
-  }
-}
-
-// ── Profile tile ───────────────────────────────────────────
-
-class _ProfileTile extends StatelessWidget {
-  const _ProfileTile({required this.profile});
-  final DebugProfile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final params = profile.params;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      elevation: 0,
-      color: isDark
-          ? AppColors.darkBackground.withValues(alpha: 0.6)
-          : AppColors.lightBackground.withValues(alpha: 0.6),
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderS),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: SizedBox(
-          width: 48,
-          height: 48,
-          child: PlantWidget(params: params, size: 48),
-        ),
-        title: Text(
-          profile.name,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${profile.description}  •  ${params.archetype.displayName}  •  '
-          '${params.objectType.name}',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        trailing: const Icon(Icons.chevron_right, size: 20),
-        onTap: () {
-          final nav = rootNavigatorKey.currentState;
-          if (nav == null) return;
-          // Close the bottom sheet first, then push preview
-          nav.pop();
-          nav.push(
-            MaterialPageRoute<void>(
-              builder: (_) => DebugPlantPreviewScreen(profile: profile),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── Full-screen plant preview ──────────────────────────────
-
-class DebugPlantPreviewScreen extends StatefulWidget {
-  const DebugPlantPreviewScreen({required this.profile, super.key});
-  final DebugProfile profile;
-
-  @override
-  State<DebugPlantPreviewScreen> createState() =>
-      _DebugPlantPreviewScreenState();
-}
-
-class _DebugPlantPreviewScreenState extends State<DebugPlantPreviewScreen> {
-  late GenerationParams _params;
-  late TextEditingController _seedController;
-
-  @override
-  void initState() {
-    super.initState();
-    _params = widget.profile.params;
-    _seedController = TextEditingController(text: _params.seed.toString());
-  }
-
-  @override
-  void dispose() {
-    _seedController.dispose();
-    super.dispose();
-  }
-
-  void _updateSeed(int newSeed) {
-    setState(() {
-      _params = GenerationParams(
-        archetype: _params.archetype,
-        completionPct: _params.completionPct,
-        absoluteCompletions: _params.absoluteCompletions,
-        maxStreak: _params.maxStreak,
-        morningRatio: _params.morningRatio,
-        afternoonRatio: _params.afternoonRatio,
-        eveningRatio: _params.eveningRatio,
-        seed: newSeed,
-        isShortPerfect: _params.isShortPerfect,
-        objectType: _params.objectType,
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
-    final secondaryColor = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.profile.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shuffle),
-            tooltip: 'Случайный seed',
-            onPressed: () {
-              final newSeed = DateTime.now().microsecondsSinceEpoch % 100000;
-              _seedController.text = newSeed.toString();
-              _updateSeed(newSeed);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Plant preview
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkBackground
-                    : AppColors.lightBackground,
-                borderRadius: AppRadius.borderL,
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.glassBorderDark
-                      : AppColors.lightTextSecondary.withValues(alpha: 0.15),
-                ),
-              ),
-              child: Center(child: PlantWidget(params: _params, size: 280)),
-            ),
-          ),
-          // Params panel
-          Expanded(
-            flex: 2,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: ListView(
-                children: [
-                  // Seed editor
-                  Row(
-                    children: [
-                      Text('Seed:', style: TextStyle(color: secondaryColor)),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 100,
-                        child: TextField(
-                          controller: _seedController,
-                          keyboardType: TextInputType.number,
-                          style: TextStyle(color: textColor, fontSize: 14),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                          ),
-                          onSubmitted: (v) {
-                            final parsed = int.tryParse(v);
-                            if (parsed != null) _updateSeed(parsed);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Info grid
-                  _InfoRow(
-                    label: 'Архетип',
-                    value: _params.archetype.displayName,
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Тип объекта',
-                    value: _params.objectType.name,
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Прогресс',
-                    value: '${_params.completionPct}%',
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Кол-во отметок',
-                    value: '${_params.absoluteCompletions}',
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Макс. стрик',
-                    value: '${_params.maxStreak}',
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Short-perfect',
-                    value: _params.isShortPerfect ? 'Да' : 'Нет',
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Утро / День / Вечер',
-                    value:
-                        '${(_params.morningRatio * 100).toInt()}% / '
-                        '${(_params.afternoonRatio * 100).toInt()}% / '
-                        '${(_params.eveningRatio * 100).toInt()}%',
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Scale factor',
-                    value: _params.scaleFactor.toStringAsFixed(2),
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                  _InfoRow(
-                    label: 'Lushness',
-                    value: _params.lushness.toStringAsFixed(2),
-                    color: secondaryColor,
-                    valueColor: textColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Helper: info row ───────────────────────────────────────
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: color, fontSize: 13)),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

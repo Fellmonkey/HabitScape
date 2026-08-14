@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import 'enums.dart';
+
 /// ── Habits table ──────────────────────────────────────────────
 class Habits extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -20,27 +22,8 @@ class HabitLogs extends Table {
   IntColumn get habitId =>
       integer().references(Habits, #id, onDelete: KeyAction.cascade)();
   IntColumn get date => integer()();
-  TextColumn get status => text().withDefault(const Constant('pending'))();
+  TextColumn get status => text()
+      .withDefault(const Constant('pending'))
+      .map(const LogStatusConverter())();
   IntColumn get loggedHour => integer().nullable()();
-}
-
-/// ── Garden Objects table ──────────────────────────────────────
-class GardenObjects extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get habitId =>
-      integer().references(Habits, #id, onDelete: KeyAction.cascade)();
-  IntColumn get year => integer()();
-  IntColumn get month => integer()();
-  RealColumn get completionPct => real().withDefault(const Constant(0.0))();
-  IntColumn get absoluteCompletions =>
-      integer().withDefault(const Constant(0))();
-  IntColumn get maxStreak => integer().withDefault(const Constant(0))();
-  RealColumn get morningRatio => real().withDefault(const Constant(0.0))();
-  RealColumn get afternoonRatio => real().withDefault(const Constant(0.0))();
-  RealColumn get eveningRatio => real().withDefault(const Constant(0.0))();
-  TextColumn get objectType => text().withDefault(const Constant('moss'))();
-  IntColumn get generationSeed => integer()();
-  TextColumn get pngPath => text().nullable()();
-  BoolColumn get isShortPerfect =>
-      boolean().withDefault(const Constant(false))();
 }

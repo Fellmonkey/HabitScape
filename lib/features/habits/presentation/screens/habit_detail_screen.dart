@@ -6,6 +6,7 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
+import '../../../../core/utils/localized_dates.dart';
 
 import '../../domain/habit_engine.dart';
 import '../../domain/scheduling.dart';
@@ -285,38 +286,15 @@ class _MonthStatsSection extends StatelessWidget {
   final HabitMetrics metrics;
   final int year, month;
 
-  static const _months = [
-    '',
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final pct = metrics.completionPct.round();
-    final typeLabel = switch (metrics.objectType) {
-      GardenObjectType.tree => 'Дерево',
-      GardenObjectType.bush => 'Куст',
-      GardenObjectType.grass => 'Трава',
-      GardenObjectType.moss => 'Мох',
-      GardenObjectType.sleepingBulb => 'Спящая луковица',
-    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${_months[month]} $year', style: theme.textTheme.titleMedium),
+        Text('${monthNames[month]} $year', style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
 
         // Completion progress bar
@@ -339,46 +317,12 @@ class _MonthStatsSection extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            _StatCard(label: 'Срывы', value: '${metrics.failCount}'),
-            const SizedBox(width: 8),
-            _StatCard(label: 'Растение', value: typeLabel),
-            const SizedBox(width: 8),
             _StatCard(
               label: 'База',
               value: '${metrics.absoluteCompletions}/${metrics.adjustedBase}',
             ),
           ],
         ),
-
-        // Short-perfect badge
-        if (metrics.isShortPerfect) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0x20FFD700),
-              borderRadius: AppRadius.borderM,
-              border: Border.all(color: const Color(0x40FFD700)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.auto_awesome,
-                  color: Color(0xFFFFD700),
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Аура идеального старта',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFFFD700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -510,8 +454,6 @@ class _HeatmapGrid extends StatelessWidget {
   final List<HabitLog> logs;
   final int year, month;
 
-  static const _dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -524,7 +466,7 @@ class _HeatmapGrid extends StatelessWidget {
     for (final log in logs) {
       final d = dateFromUnix(log.date);
       if (d.year == year && d.month == month) {
-        statusMap[d.day] = LogStatus.fromString(log.status);
+        statusMap[d.day] = log.status;
       }
     }
 
@@ -536,7 +478,7 @@ class _HeatmapGrid extends StatelessWidget {
             return Expanded(
               child: Center(
                 child: Text(
-                  _dayNames[i],
+                  shortWeekdayNames[i + 1],
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
@@ -610,8 +552,6 @@ class _DayCell extends StatelessWidget {
           bgColor = AppColors.sageGreen.withValues(alpha: 0.35);
         case LogStatus.skip:
           bgColor = AppColors.coolGreyBlue.withValues(alpha: 0.25);
-        case LogStatus.fail:
-          bgColor = AppColors.dustyRose.withValues(alpha: 0.30);
         case LogStatus.pending:
           bgColor = theme.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.15,
@@ -790,28 +730,11 @@ class _MonthLogGroup extends StatelessWidget {
   final int year, month;
   final List<HabitLog> logs;
 
-  static const _months = [
-    '',
-    'Январь',
-    'Февраль',
-    'Март',
-    'Апрель',
-    'Май',
-    'Июнь',
-    'Июль',
-    'Август',
-    'Сентябрь',
-    'Октябрь',
-    'Ноябрь',
-    'Декабрь',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final done = logs.where((l) => l.status == 'done').length;
-    final skip = logs.where((l) => l.status == 'skip').length;
-    final fail = logs.where((l) => l.status == 'fail').length;
+    final done = logs.where((l) => l.status == LogStatus.done).length;
+    final skip = logs.where((l) => l.status == LogStatus.skip).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,7 +744,7 @@ class _MonthLogGroup extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                '${_months[month]} $year',
+                '${monthNames[month]} $year',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
@@ -839,14 +762,6 @@ class _MonthLogGroup extends StatelessWidget {
                   icon: Icons.pause_circle_outline,
                   color: AppColors.coolGreyBlue,
                   count: skip,
-                ),
-              ],
-              if (fail > 0) ...[
-                const SizedBox(width: 6),
-                _LogBadge(
-                  icon: Icons.cancel_outlined,
-                  color: AppColors.dustyRose,
-                  count: fail,
                 ),
               ],
             ],
@@ -895,7 +810,7 @@ class _LogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final d = dateFromUnix(log.date);
-    final status = LogStatus.fromString(log.status);
+    final status = log.status;
 
     final icon = status.icon;
     final color = status == LogStatus.pending

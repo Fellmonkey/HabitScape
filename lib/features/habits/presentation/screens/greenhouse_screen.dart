@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart' as enums;
 import '../../../../core/keys.dart';
+import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../providers/habit_providers.dart';
 import '../../domain/scheduling.dart';
@@ -134,7 +135,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
     if (_hideCompleted) {
       items = items.where((h) {
         final log = logs.where((l) => l.habitId == h.id).firstOrNull;
-        return log == null || log.status != enums.LogStatus.done.name;
+        return log == null || log.status != enums.LogStatus.done;
       }).toList();
     }
 
@@ -267,35 +268,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
     ];
   }
 
-  String _formatToday() {
-    final now = DateTime.now();
-    const months = [
-      '',
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
-    ];
-    const weekdays = [
-      '',
-      'Понедельник',
-      'Вторник',
-      'Среда',
-      'Четверг',
-      'Пятница',
-      'Суббота',
-      'Воскресенье',
-    ];
-    return '${weekdays[now.weekday]}, ${now.day} ${months[now.month]}';
-  }
+  String _formatToday() => formatFullDate(DateTime.now());
 
   void _showCreateHabitSheet(BuildContext context) {
     showModalBottomSheet(

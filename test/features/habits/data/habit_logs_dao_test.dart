@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 
 import '../../../fixtures/test_db.dart';
@@ -28,39 +29,39 @@ void main() {
   group('HabitLogsDao', () {
     test('upsertLog inserts a new log', () async {
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
-      expect(logs.first.status, 'done');
+      expect(logs.first.status, LogStatus.done);
       expect(logs.first.habitId, 1);
     });
 
     test('upsertLog updates existing (same habitId+date)', () async {
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'skip'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.skip),
       );
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
-      expect(logs.first.status, 'skip');
+      expect(logs.first.status, LogStatus.skip);
     });
 
     test('getLogsForDate returns only matching date', () async {
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan2, status: 'skip'),
+        makeLogCompanion(habitId: 1, date: jan2, status: LogStatus.skip),
       );
 
       final logs = await db.habitLogsDao.getLogsForDate(jan1);
       expect(logs, hasLength(1));
-      expect(logs.first.status, 'done');
+      expect(logs.first.status, LogStatus.done);
     });
 
     test(
@@ -69,7 +70,7 @@ void main() {
         // Insert logs for Jan 1-4
         for (final date in [jan1, jan2, jan3, jan4]) {
           await db.habitLogsDao.upsertLog(
-            makeLogCompanion(habitId: 1, date: date, status: 'done'),
+            makeLogCompanion(habitId: 1, date: date, status: LogStatus.done),
           );
         }
 
@@ -91,7 +92,7 @@ void main() {
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
-      expect(logs.first.status, 'done');
+      expect(logs.first.status, LogStatus.done);
       expect(logs.first.loggedHour, 14);
     });
 
@@ -100,23 +101,15 @@ void main() {
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
-      expect(logs.first.status, 'skip');
-    });
-
-    test('markFail sets status=fail', () async {
-      await db.habitLogsDao.markFail(1, jan1);
-
-      final logs = await db.habitLogsDao.getAllLogs();
-      expect(logs, hasLength(1));
-      expect(logs.first.status, 'fail');
+      expect(logs.first.status, LogStatus.skip);
     });
 
     test('deleteLogsBefore removes old logs, keeps newer ones', () async {
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan10, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan10, status: LogStatus.done),
       );
 
       // Delete before Jan 5
@@ -129,10 +122,10 @@ void main() {
 
     test('getAllLogs and deleteAllLogs', () async {
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: 'done'),
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
       await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan2, status: 'skip'),
+        makeLogCompanion(habitId: 1, date: jan2, status: LogStatus.skip),
       );
 
       expect(await db.habitLogsDao.getAllLogs(), hasLength(2));

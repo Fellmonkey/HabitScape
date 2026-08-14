@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/enums.dart';
 import '../../../core/database/tables.dart';
 
 part 'habit_logs_dao.g.dart';
@@ -93,7 +94,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
       HabitLogsCompanion(
         habitId: Value(habitId),
         date: Value(dateTimestamp),
-        status: const Value('done'),
+        status: const Value(LogStatus.done),
         loggedHour: Value(hour),
       ),
     );
@@ -105,18 +106,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
       HabitLogsCompanion(
         habitId: Value(habitId),
         date: Value(dateTimestamp),
-        status: const Value('skip'),
-      ),
-    );
-  }
-
-  /// Mark a habit as failed.
-  Future<void> markFail(int habitId, int dateTimestamp) {
-    return upsertLog(
-      HabitLogsCompanion(
-        habitId: Value(habitId),
-        date: Value(dateTimestamp),
-        status: const Value('fail'),
+        status: const Value(LogStatus.skip),
       ),
     );
   }

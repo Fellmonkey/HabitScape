@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../core/utils/localized_dates.dart';
 
 /// Check if a habit is expected to be performed on [today].
 bool isExpectedToday(Habit habit, DateTime today) {
@@ -105,8 +106,6 @@ String? getCycleLabelForDate(Habit habit, DateTime date) {
 
 // ── Human-readable labels ────────────────────────────────────
 
-const _kShortDays = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
 /// Returns a short human-readable description of a habit's frequency,
 /// including the actual values (e.g. "Пн, Ср, Пт", "3× в нед", "Каждые 5 дн").
 String frequencyLabel(Habit habit) {
@@ -115,7 +114,7 @@ String frequencyLabel(Habit habit) {
     FrequencyType.daily => 'Каждый день',
     FrequencyType.weekdays => parseWeekdays(
       habit.frequencyValue,
-    ).map((d) => _kShortDays[d]).join(', '),
+    ).map((d) => shortWeekdayNames[d]).join(', '),
     FrequencyType.xPerWeek => '${parseXValue(habit.frequencyValue)}× в нед',
     FrequencyType.everyXDays => _everyXLabel(parseXValue(habit.frequencyValue)),
     FrequencyType.cycle => _cycleLabel(habit.frequencyValue),

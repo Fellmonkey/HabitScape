@@ -39,53 +39,6 @@ void main() {
     });
   });
 
-  // ── firstOfMonth / lastOfMonth ──────────────────────────────
-
-  group('firstOfMonth / lastOfMonth', () {
-    test('January 2026 has 31 days', () {
-      final dt = DateTime.utc(2026, 1, 15);
-      expect(dt.firstOfMonth, DateTime.utc(2026, 1, 1));
-      expect(dt.lastOfMonth, DateTime.utc(2026, 1, 31));
-      expect(dt.lastOfMonth.day, 31);
-    });
-
-    test('February 2026 (non-leap) has 28 days', () {
-      final dt = DateTime.utc(2026, 2, 10);
-      expect(dt.firstOfMonth, DateTime.utc(2026, 2, 1));
-      expect(dt.lastOfMonth, DateTime.utc(2026, 2, 28));
-      expect(dt.lastOfMonth.day, 28);
-    });
-
-    test('February 2028 (leap year) has 29 days', () {
-      final dt = DateTime.utc(2028, 2, 5);
-      expect(dt.firstOfMonth, DateTime.utc(2028, 2, 1));
-      expect(dt.lastOfMonth, DateTime.utc(2028, 2, 29));
-      expect(dt.lastOfMonth.day, 29);
-    });
-
-    test('April 2026 has 30 days', () {
-      final dt = DateTime.utc(2026, 4, 20);
-      expect(dt.firstOfMonth, DateTime.utc(2026, 4, 1));
-      expect(dt.lastOfMonth, DateTime.utc(2026, 4, 30));
-      expect(dt.lastOfMonth.day, 30);
-    });
-  });
-
-  // ── daysInMonth (extension) ─────────────────────────────────
-
-  group('daysInMonth (extension)', () {
-    test('matches lastOfMonth.day', () {
-      final jan = DateTime.utc(2026, 1, 1);
-      expect(jan.daysInMonth, jan.lastOfMonth.day);
-
-      final feb = DateTime.utc(2026, 2, 1);
-      expect(feb.daysInMonth, feb.lastOfMonth.day);
-
-      final apr = DateTime.utc(2026, 4, 1);
-      expect(apr.daysInMonth, apr.lastOfMonth.day);
-    });
-  });
-
   // ── daysInMonth (top-level function) ────────────────────────
 
   group('daysInMonth (top-level function)', () {
@@ -99,37 +52,6 @@ void main() {
 
     test('February 2028 (leap year) has 29 days', () {
       expect(daysInMonth(2028, 2), 29);
-    });
-  });
-
-  // ── isSameDay ───────────────────────────────────────────────
-
-  group('isSameDay', () {
-    test('same day different time returns true', () {
-      final a = DateTime.utc(2026, 5, 10, 8, 30);
-      final b = DateTime.utc(2026, 5, 10, 22, 15);
-      expect(a.isSameDay(b), isTrue);
-    });
-
-    test('different days returns false', () {
-      final a = DateTime.utc(2026, 5, 10);
-      final b = DateTime.utc(2026, 5, 11);
-      expect(a.isSameDay(b), isFalse);
-    });
-  });
-
-  // ── countWeekdaysInMonth ────────────────────────────────────
-
-  group('countWeekdaysInMonth', () {
-    // Mon-Fri = [1, 2, 3, 4, 5]
-    const monFri = [1, 2, 3, 4, 5];
-
-    test('January 2026 Mon-Fri has 22 weekdays', () {
-      expect(countWeekdaysInMonth(2026, 1, monFri), 22);
-    });
-
-    test('February 2026 Mon-Fri has 20 weekdays', () {
-      expect(countWeekdaysInMonth(2026, 2, monFri), 20);
     });
   });
 

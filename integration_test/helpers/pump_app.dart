@@ -7,7 +7,6 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/shell_scaffold.dart';
 import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/features/garden/presentation/screens/time_path_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
@@ -38,11 +37,6 @@ GoRouter _createTestRouter() => GoRouter(
           path: '/',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: GreenhouseScreen()),
-        ),
-        GoRoute(
-          path: '/garden',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: TimePathScreen()),
         ),
         GoRoute(
           path: '/settings',
