@@ -20,6 +20,11 @@ abstract final class K {
   static const habitNameField = Key('habit_name_field');
   static const habitCreateButton = Key('habit_create_button');
 
+  // ── Day moment (Момент дня) ────────────────────────────────
+  static const dayMomentCard = Key('day_moment_card');
+  static const dayMomentField = Key('day_moment_field');
+  static const dayMomentSave = Key('day_moment_save');
+
   // ── Habit card ─────────────────────────────────────────────
   /// Per-habit card: `habit_card_$id`
   static Key habitCard(int id) => Key('habit_card_$id');

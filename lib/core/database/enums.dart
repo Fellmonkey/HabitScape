@@ -140,3 +140,38 @@ class LogStatusConverter extends TypeConverter<LogStatus, String> {
   @override
   String toSql(LogStatus value) => value.name;
 }
+
+/// Mood of the day («Момент дня»): 🟢 хорошо / 🟡 так себе / 🔴 плохо.
+enum DayMood {
+  good,
+  ok,
+  bad;
+
+  static DayMood fromString(String value) => DayMood.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => DayMood.good,
+  );
+
+  String get localizedName => switch (this) {
+    DayMood.good => 'Хороший день',
+    DayMood.ok => 'Так себе',
+    DayMood.bad => 'Плохой день',
+  };
+
+  Color get color => switch (this) {
+    DayMood.good => AppColors.sageGreen,
+    DayMood.ok => AppColors.warmAmber,
+    DayMood.bad => AppColors.dustyRose,
+  };
+}
+
+/// Drift type converter between the [DayMood] enum and its stored string value.
+class DayMoodConverter extends TypeConverter<DayMood, String> {
+  const DayMoodConverter();
+
+  @override
+  DayMood fromSql(String fromDb) => DayMood.fromString(fromDb);
+
+  @override
+  String toSql(DayMood value) => value.name;
+}

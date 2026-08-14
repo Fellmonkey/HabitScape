@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/habits/data/day_notes_dao.dart';
 import '../../features/habits/data/habit_logs_dao.dart';
 import '../../features/habits/data/habits_dao.dart';
 import 'enums.dart';
@@ -9,7 +10,10 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Habits, HabitLogs], daos: [HabitsDao, HabitLogsDao])
+@DriftDatabase(
+  tables: [Habits, HabitLogs, DayNotes],
+  daos: [HabitsDao, HabitLogsDao, DayNotesDao],
+)
 class AppDatabase extends _$AppDatabase {
   /// Flag to indicate if this is a test database (in-memory) or a real one.
   final bool isTest;
@@ -33,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +49,10 @@ class AppDatabase extends _$AppDatabase {
         await m.database.customStatement(
           "UPDATE habit_logs SET status = 'pending' WHERE status = 'fail'",
         );
+      }
+      // v2 → v3: new DayNotes table («Момент дня»).
+      if (from < 3) {
+        await m.createTable(dayNotes);
       }
     },
   );

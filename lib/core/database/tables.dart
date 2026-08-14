@@ -16,6 +16,15 @@ class Habits extends Table {
   IntColumn get createdAt => integer()();
 }
 
+/// ── Day Notes table (Момент дня) ────────────────────────────
+/// One row per day: the most memorable moment + day mood (🟢/🟡/🔴).
+class DayNotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get date => integer().unique()();
+  TextColumn get moment => text().nullable()();
+  TextColumn get mood => text().nullable().map(const DayMoodConverter())();
+}
+
 /// ── Habit Logs table ──────────────────────────────────────────
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();

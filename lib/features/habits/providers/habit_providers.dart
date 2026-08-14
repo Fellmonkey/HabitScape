@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
 import '../domain/habit_engine.dart';
@@ -19,6 +20,10 @@ final habitsDaoProvider = Provider<HabitsDao>((ref) {
 
 final habitLogsDaoProvider = Provider<HabitLogsDao>((ref) {
   return ref.watch(databaseProvider).habitLogsDao;
+});
+
+final dayNotesDaoProvider = Provider<DayNotesDao>((ref) {
+  return ref.watch(databaseProvider).dayNotesDao;
 });
 
 // ── SharedPreferences ────────────────────────────────────────
@@ -50,6 +55,21 @@ final habitProvider = StreamProvider.family<Habit, int>((ref, id) {
 final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
   final ts = todayTimestamp();
   return ref.watch(habitLogsDaoProvider).watchLogsForDate(ts);
+});
+
+// ── Day Note (Момент дня) ────────────────────────────────────
+
+/// Today's day note («Момент дня»): the most memorable moment + mood.
+final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
+  return ref.watch(dayNotesDaoProvider).watchNoteForDate(todayTimestamp());
+});
+
+/// Day note for an arbitrary date (used by the month spread later).
+final dayNoteForDateProvider = StreamProvider.family<DayNote?, int>((
+  ref,
+  dateTimestamp,
+) {
+  return ref.watch(dayNotesDaoProvider).watchNoteForDate(dateTimestamp);
 });
 
 // ── Day Progress ─────────────────────────────────────────────
@@ -123,6 +143,7 @@ class HabitActions extends Notifier<void> {
 
   HabitsDao get _habitsDao => ref.read(habitsDaoProvider);
   HabitLogsDao get _logsDao => ref.read(habitLogsDaoProvider);
+  DayNotesDao get _dayNotesDao => ref.read(dayNotesDaoProvider);
 
   /// Create a new habit.
   Future<int> createHabit({
@@ -158,6 +179,20 @@ class HabitActions extends Notifier<void> {
   /// Mark a habit as skipped for today.
   Future<void> markSkip(int habitId) async {
     await _logsDao.markSkip(habitId, todayTimestamp());
+  }
+
+  /// Save today's day note («Момент дня»): memorable moment + mood.
+  Future<void> saveDayNote({String? moment, DayMood? mood}) {
+    return _dayNotesDao.upsertNote(
+      todayTimestamp(),
+      moment: moment,
+      mood: mood,
+    );
+  }
+
+  /// Clear today's day note entirely (both moment and mood).
+  Future<void> clearDayNote() {
+    return _dayNotesDao.clearNote(todayTimestamp());
   }
 
   /// Archive a habit.

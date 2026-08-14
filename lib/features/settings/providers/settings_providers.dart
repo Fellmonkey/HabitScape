@@ -9,5 +9,6 @@ final backupServiceProvider = Provider<BackupService>((ref) {
   return BackupService(
     habitsDao: ref.watch(habitsDaoProvider),
     habitLogsDao: ref.watch(habitLogsDaoProvider),
+    dayNotesDao: ref.watch(dayNotesDaoProvider),
   );
 });

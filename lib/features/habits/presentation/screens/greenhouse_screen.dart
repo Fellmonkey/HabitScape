@@ -9,6 +9,7 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../providers/habit_providers.dart';
 import '../../domain/scheduling.dart';
+import '../widgets/day_moment_card.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 
@@ -106,8 +107,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
           ),
         ),
 
+        // ── Day moment (Момент дня) ──
+        const SliverToBoxAdapter(child: DayMomentCard()),
+
         if (habits.isEmpty)
           SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
               child: Text(
                 'Нажмите + чтобы создать первую привычку',

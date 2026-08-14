@@ -19,6 +19,7 @@ void main() {
     service = BackupService(
       habitsDao: db.habitsDao,
       habitLogsDao: db.habitLogsDao,
+      dayNotesDao: db.dayNotesDao,
     );
   });
 
@@ -57,6 +58,13 @@ void main() {
       final logDate = DateTime.utc(2026, 1, 5).unixSeconds;
       await db.habitLogsDao.markDone(habitId, logDate, 8);
 
+      // Day note
+      await db.dayNotesDao.upsertNote(
+        logDate,
+        moment: 'Собеседование прошло хорошо',
+        mood: DayMood.good,
+      );
+
       // Export
       final exportedJson = await service.exportToJson();
 
@@ -65,6 +73,7 @@ void main() {
       final service2 = BackupService(
         habitsDao: db2.habitsDao,
         habitLogsDao: db2.habitLogsDao,
+        dayNotesDao: db2.dayNotesDao,
       );
 
       final count = await service2.importFromJson(exportedJson);
@@ -85,6 +94,13 @@ void main() {
       expect(logs, hasLength(1));
       expect(logs.first.status, LogStatus.done);
       expect(logs.first.loggedHour, 8);
+
+      // Verify day notes
+      final notes = await db2.dayNotesDao.getAllNotes();
+      expect(notes, hasLength(1));
+      expect(notes.first.date, logDate);
+      expect(notes.first.moment, 'Собеседование прошло хорошо');
+      expect(notes.first.mood, DayMood.good);
 
       await db2.close();
     });
@@ -149,6 +165,7 @@ void main() {
       final service2 = BackupService(
         habitsDao: db2.habitsDao,
         habitLogsDao: db2.habitLogsDao,
+        dayNotesDao: db2.dayNotesDao,
       );
 
       await service2.importFromJson(json);
