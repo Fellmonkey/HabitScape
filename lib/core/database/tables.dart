@@ -26,6 +26,7 @@ class DayNotes extends Table {
 }
 
 /// ── Habit Logs table ──────────────────────────────────────────
+@TableIndex(name: 'idx_habit_logs_habit_date', columns: {#habitId, #date})
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get habitId =>

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../providers/settings_providers.dart';
@@ -53,6 +54,13 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'Просмотр и восстановление архивированных привычек',
             onTap: () => context.push('/archive'),
           ),
+
+          const SizedBox(height: 24),
+
+          // ── Experience section ───────────────────────────────────
+          _SectionHeader(title: 'Ощущения', theme: theme),
+          const SizedBox(height: 8),
+          _HapticsTile(),
 
           const SizedBox(height: 24),
 
@@ -159,6 +167,35 @@ class SettingsScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+// ── Haptics toggle ──────────────────────────────────────────────
+
+class _HapticsTile extends ConsumerWidget {
+  const _HapticsTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(hapticsEnabledProvider);
+    return GlassCard(
+      child: SwitchListTile(
+        key: K.hapticsToggle,
+        secondary: Icon(
+          Icons.vibration,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        title: Text('Хептики', style: Theme.of(context).textTheme.titleSmall),
+        subtitle: Text(
+          'Тактильные отклики при отметках и нажатиях',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        value: enabled,
+        onChanged: (value) =>
+            ref.read(hapticsEnabledProvider.notifier).setEnabled(value),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+      ),
+    );
   }
 }
 

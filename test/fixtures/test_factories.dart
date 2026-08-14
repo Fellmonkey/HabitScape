@@ -94,6 +94,18 @@ HabitLogsCompanion makeLogCompanion({
   );
 }
 
+// ── DayNote factories ──────────────────────────────────────
+
+/// Create a DayNote data class instance.
+DayNote makeDayNote({int id = 1, int? date, String? moment, DayMood? mood}) {
+  return DayNote(
+    id: id,
+    date: date ?? _defaultCreatedAt,
+    moment: moment,
+    mood: mood,
+  );
+}
+
 /// Generate N done-logs with configurable time-of-day distribution.
 ///
 /// [startDate] — first log date (UTC midnight).

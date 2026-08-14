@@ -146,15 +146,19 @@ class HabitDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // All-time logs history
+                    // All-time logs history header
                     Text('История', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    _AllLogsSection(habitId: habitId),
-
-                    const SizedBox(height: 80),
                   ],
                 ),
               ),
+
+              // ── History (lazy sliver, month by month) ──
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: _HistorySection(habitId: habitId),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         );
@@ -661,66 +665,10 @@ class _TimeBar extends StatelessWidget {
   }
 }
 
-// ── Edit Habit Sheet ────────────────────────────────────────
-class _AllLogsSection extends ConsumerWidget {
-  const _AllLogsSection({required this.habitId});
+// ── History (lazy, loaded month by month) ────────────────────
 
-  final int habitId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dao = ref.watch(habitLogsDaoProvider);
-    return FutureBuilder<List<HabitLog>>(
-      future: dao.getAllLogsForHabit(habitId),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const SizedBox(
-            height: 60,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final logs = snap.data!;
-        if (logs.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Нет записей',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-          );
-        }
-
-        // Group by year-month
-        final grouped = <(int, int), List<HabitLog>>{};
-        for (final log in logs) {
-          final d = dateFromUnix(log.date);
-          grouped.putIfAbsent((d.year, d.month), () => []).add(log);
-        }
-        final sortedKeys = grouped.keys.toList()
-          ..sort((a, b) {
-            final cmp = b.$1.compareTo(a.$1);
-            return cmp != 0 ? cmp : b.$2.compareTo(a.$2);
-          });
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: sortedKeys
-              .map(
-                (k) =>
-                    _MonthLogGroup(year: k.$1, month: k.$2, logs: grouped[k]!),
-              )
-              .toList(),
-        );
-      },
-    );
-  }
-}
-
-class _MonthLogGroup extends StatelessWidget {
+/// One loaded month of logs for the history list.
+class _MonthLogGroup {
   const _MonthLogGroup({
     required this.year,
     required this.month,
@@ -730,46 +678,183 @@ class _MonthLogGroup extends StatelessWidget {
   final int year, month;
   final List<HabitLog> logs;
 
+  int get doneCount => logs.where((l) => l.status == LogStatus.done).length;
+  int get skipCount => logs.where((l) => l.status == LogStatus.skip).length;
+}
+
+/// Lazily loads the habit's history month by month (newest first), so
+/// opening the detail screen never fetches or builds the whole history at
+/// once. As the user scrolls to the bottom, older months are appended.
+class _HistorySection extends ConsumerStatefulWidget {
+  const _HistorySection({required this.habitId});
+
+  final int habitId;
+
+  @override
+  ConsumerState<_HistorySection> createState() => _HistorySectionState();
+}
+
+class _HistorySectionState extends ConsumerState<_HistorySection> {
+  final List<_MonthLogGroup> _months = [];
+  bool _loading = false;
+  bool _allLoaded = false;
+
+  /// Next month to load, as (year, month). Starts at the current month
+  /// and walks backwards.
+  late int _year;
+  late int _month;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _year = now.year;
+    _month = now.month;
+    _loadNextMonth();
+  }
+
+  Future<void> _loadNextMonth() async {
+    if (_loading || _allLoaded) return;
+    _loading = true;
+    try {
+      final dao = ref.read(habitLogsDaoProvider);
+      // Load one month per trigger: probe the current month; if it has logs,
+      // append it and step back so the next trigger loads the previous one.
+      // If empty, walk back (up to a cap) to find the next non-empty month.
+      for (var i = 0; i < 24; i++) {
+        final logs = await dao.getLogsForHabitInRange(
+          widget.habitId,
+          DateTime.utc(_year, _month, 1).unixSeconds,
+          DateTime.utc(_year, _month + 1, 1).unixSeconds,
+        );
+        if (logs.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _months.add(
+                _MonthLogGroup(year: _year, month: _month, logs: logs),
+              );
+            });
+          }
+          // Critical: advance the cursor so the next trigger loads a NEW
+          // month — otherwise the same month is appended forever.
+          _stepBack();
+          return;
+        }
+        // Month is empty — step back and try the previous one.
+        if (!_stepBack()) {
+          _allLoaded = true;
+          if (mounted) setState(() {});
+          return;
+        }
+      }
+    } finally {
+      _loading = false;
+    }
+  }
+
+  /// Move [_year]/[_month] one month back. Returns false when we've gone
+  /// too far back (year < 2000) — everything is loaded.
+  bool _stepBack() {
+    if (_month == 1) {
+      if (_year <= 2000) return false;
+      _year--;
+      _month = 12;
+    } else {
+      _month--;
+    }
+    return true;
+  }
+
+  /// Total sliver items: one header per month + one log row per log +
+  /// a trailing spacer item when there may be more history.
+  int get _itemCount {
+    var count = _months.length; // headers
+    for (final m in _months) {
+      count += m.logs.length;
+    }
+    if (!_allLoaded) count += 1; // footer trigger
+    return count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_months.isEmpty && _allLoaded) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'Нет записей',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SliverList.builder(
+      itemCount: _itemCount,
+      itemBuilder: (context, index) {
+        // Map the flat index to (month, log) pairs.
+        var remaining = index;
+        for (final m in _months) {
+          if (remaining == 0) {
+            return _MonthHeader(group: m);
+          }
+          remaining--;
+          if (remaining < m.logs.length) {
+            return _LogTile(log: m.logs[remaining]);
+          }
+          remaining -= m.logs.length;
+        }
+        // Footer: visible when the user scrolls to the end — load more.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _loadNextMonth());
+        return const SizedBox(height: 40);
+      },
+    );
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  const _MonthHeader({required this.group});
+
+  final _MonthLogGroup group;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final done = logs.where((l) => l.status == LogStatus.done).length;
-    final skip = logs.where((l) => l.status == LogStatus.skip).length;
+    final done = group.doneCount;
+    final skip = group.skipCount;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 4),
-          child: Row(
-            children: [
-              Text(
-                '${monthNames[month]} $year',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              const Spacer(),
-              if (done > 0)
-                _LogBadge(
-                  icon: Icons.check_circle_outline,
-                  color: AppColors.sageGreen,
-                  count: done,
-                ),
-              if (skip > 0) ...[
-                const SizedBox(width: 6),
-                _LogBadge(
-                  icon: Icons.pause_circle_outline,
-                  color: AppColors.coolGreyBlue,
-                  count: skip,
-                ),
-              ],
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Row(
+        children: [
+          Text(
+            '${monthNames[group.month]} ${group.year}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
-        ),
-        ...logs.map((log) => _LogTile(log: log)),
-        const Divider(height: 1),
-      ],
+          const Spacer(),
+          if (done > 0)
+            _LogBadge(
+              icon: Icons.check_circle_outline,
+              color: AppColors.sageGreen,
+              count: done,
+            ),
+          if (skip > 0) ...[
+            const SizedBox(width: 6),
+            _LogBadge(
+              icon: Icons.pause_circle_outline,
+              color: AppColors.coolGreyBlue,
+              count: skip,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

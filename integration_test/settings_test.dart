@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/keys.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/pump_app.dart';
 
@@ -73,6 +74,37 @@ void main() {
       // Dismiss the dialog.
       await tester.tap(find.text('Отмена'));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('haptics toggle persists and flips the switch', (tester) async {
+      db = await pumpApp(tester);
+
+      await tester.tap(find.text('Ещё'));
+      await tester.pumpAndSettle();
+
+      // Scroll down to the «Ощущения» section.
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      final toggle = find.byKey(K.hapticsToggle);
+      expect(toggle, findsOneWidget);
+      expect(find.text('Хептики'), findsOneWidget);
+
+      // Default is ON; flip it OFF.
+      final switchFinder = find.descendant(
+        of: toggle,
+        matching: find.byType(Switch),
+      );
+      expect(tester.widget<Switch>(switchFinder).value, isTrue);
+
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(switchFinder).value, isFalse);
+
+      // Persisted in SharedPreferences.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('haptics_enabled'), isFalse);
     });
 
     testWidgets('backup export → import round-trip via DAO layer', (

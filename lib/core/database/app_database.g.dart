@@ -1262,6 +1262,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HabitsTable habits = $HabitsTable(this);
   late final $HabitLogsTable habitLogs = $HabitLogsTable(this);
   late final $DayNotesTable dayNotes = $DayNotesTable(this);
+  late final Index idxHabitLogsHabitDate = Index(
+    'idx_habit_logs_habit_date',
+    'CREATE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
+  );
   late final HabitsDao habitsDao = HabitsDao(this as AppDatabase);
   late final HabitLogsDao habitLogsDao = HabitLogsDao(this as AppDatabase);
   late final DayNotesDao dayNotesDao = DayNotesDao(this as AppDatabase);
@@ -1273,6 +1277,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     habits,
     habitLogs,
     dayNotes,
+    idxHabitLogsHabitDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

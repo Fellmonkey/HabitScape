@@ -6,7 +6,12 @@ import 'package:flutter/foundation.dart';
 abstract final class K {
   // ── Bottom navigation ──────────────────────────────────────
   static const navGreenhouse = Key('nav_greenhouse');
+  static const navStats = Key('nav_stats');
   static const navSettings = Key('nav_settings');
+
+  // ── Stats screen ───────────────────────────────────────────
+  static const statsTitle = Key('stats_title');
+  static const statsHeatmap = Key('stats_heatmap');
 
   // ── Greenhouse screen ──────────────────────────────────────
   static const greenhouseTitle = Key('greenhouse_title');
@@ -24,6 +29,7 @@ abstract final class K {
   static const dayMomentCard = Key('day_moment_card');
   static const dayMomentField = Key('day_moment_field');
   static const dayMomentSave = Key('day_moment_save');
+  static const dayMomentHelp = Key('day_moment_help');
 
   // ── Habit card ─────────────────────────────────────────────
   /// Per-habit card: `habit_card_$id`
@@ -42,4 +48,5 @@ abstract final class K {
   // ── Settings screen ────────────────────────────────────────
   static const settingsExport = Key('settings_export');
   static const settingsImport = Key('settings_import');
+  static const hapticsToggle = Key('haptics_toggle');
 }

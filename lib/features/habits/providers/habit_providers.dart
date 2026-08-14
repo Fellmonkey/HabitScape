@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
@@ -24,12 +23,6 @@ final habitLogsDaoProvider = Provider<HabitLogsDao>((ref) {
 
 final dayNotesDaoProvider = Provider<DayNotesDao>((ref) {
   return ref.watch(databaseProvider).dayNotesDao;
-});
-
-// ── SharedPreferences ────────────────────────────────────────
-
-final sharedPrefsProvider = FutureProvider<SharedPreferences>((ref) {
-  return SharedPreferences.getInstance();
 });
 
 // ── Habit streams ────────────────────────────────────────────
@@ -62,14 +55,6 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
 /// Today's day note («Момент дня»): the most memorable moment + mood.
 final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
   return ref.watch(dayNotesDaoProvider).watchNoteForDate(todayTimestamp());
-});
-
-/// Day note for an arbitrary date (used by the month spread later).
-final dayNoteForDateProvider = StreamProvider.family<DayNote?, int>((
-  ref,
-  dateTimestamp,
-) {
-  return ref.watch(dayNotesDaoProvider).watchNoteForDate(dateTimestamp);
 });
 
 // ── Day Progress ─────────────────────────────────────────────
@@ -181,18 +166,24 @@ class HabitActions extends Notifier<void> {
     await _logsDao.markSkip(habitId, todayTimestamp());
   }
 
-  /// Save today's day note («Момент дня»): memorable moment + mood.
-  Future<void> saveDayNote({String? moment, DayMood? mood}) {
+  /// Save a day note («Момент дня»): memorable moment + mood.
+  /// [dateTimestamp] defaults to today (unix midnight).
+  Future<void> saveDayNote({
+    String? moment,
+    DayMood? mood,
+    int? dateTimestamp,
+  }) {
     return _dayNotesDao.upsertNote(
-      todayTimestamp(),
+      dateTimestamp ?? todayTimestamp(),
       moment: moment,
       mood: mood,
     );
   }
 
-  /// Clear today's day note entirely (both moment and mood).
-  Future<void> clearDayNote() {
-    return _dayNotesDao.clearNote(todayTimestamp());
+  /// Clear a day note entirely (both moment and mood).
+  /// [dateTimestamp] defaults to today (unix midnight).
+  Future<void> clearDayNote([int? dateTimestamp]) {
+    return _dayNotesDao.clearNote(dateTimestamp ?? todayTimestamp());
   }
 
   /// Archive a habit.

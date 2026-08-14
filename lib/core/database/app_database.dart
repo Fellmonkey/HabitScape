@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -53,6 +53,11 @@ class AppDatabase extends _$AppDatabase {
       // v2 → v3: new DayNotes table («Момент дня»).
       if (from < 3) {
         await m.createTable(dayNotes);
+      }
+      // v3 → v4: index on habit_logs(habitId, date) — speeds up month
+      // queries in the detail screen and the greenhouse.
+      if (from < 4) {
+        await m.createIndex(idxHabitLogsHabitDate);
       }
     },
   );

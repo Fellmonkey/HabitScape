@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart' as enums;
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../providers/habit_providers.dart';
@@ -201,7 +201,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
   }
 
   void _markAllInGroup(List<Habit> habits) {
-    HapticFeedback.heavyImpact();
+    Haptics.heavy(ref.read(hapticsEnabledProvider));
     final actions = ref.read(habitActionsProvider.notifier);
     for (final habit in habits) {
       actions.markDone(habit.id);

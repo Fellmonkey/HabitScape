@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/scheduling.dart';
@@ -81,7 +81,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
 
   Future<void> _markDone() async {
     if (_isDone) return;
-    HapticFeedback.mediumImpact();
+    Haptics.medium(ref.read(hapticsEnabledProvider));
     _bounceController.forward(from: 0);
     ref.read(habitActionsProvider.notifier).markDone(widget.habit.id);
   }
@@ -248,8 +248,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
   }
 }
 
-/// Circular check indicator with color-coded states.
-class _CheckCircle extends StatelessWidget {
+/// Circular check indicator with color-coded states and a water-drop
+/// ripple burst when tapped.
+class _CheckCircle extends StatefulWidget {
   const _CheckCircle({
     super.key,
     required this.isDone,
@@ -262,16 +263,54 @@ class _CheckCircle extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_CheckCircle> createState() => _CheckCircleState();
+}
+
+class _CheckCircleState extends State<_CheckCircle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _dropController;
+  late final Animation<double> _ringScale;
+  late final Animation<double> _ringOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _dropController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _ringScale = Tween(
+      begin: 0.6,
+      end: 2.4,
+    ).animate(CurvedAnimation(parent: _dropController, curve: Curves.easeOut));
+    _ringOpacity = Tween(
+      begin: 0.5,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _dropController, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _dropController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _dropController.forward(from: 0);
+    widget.onTap();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Color borderColor;
     Color? fillColor;
     IconData? icon;
 
-    if (isDone) {
+    if (widget.isDone) {
       borderColor = AppColors.emeraldGlow;
       fillColor = AppColors.emeraldGlow;
       icon = Icons.check_rounded;
-    } else if (isSkip) {
+    } else if (widget.isSkip) {
       borderColor = AppColors.coolGreyBlue;
       fillColor = AppColors.coolGreyBlue.withValues(alpha: 0.3);
       icon = Icons.pause_rounded;
@@ -284,20 +323,52 @@ class _CheckCircle extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
+      onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
         width: 28,
         height: 28,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: fillColor,
-          border: fillColor == null
-              ? Border.all(color: borderColor, width: 2)
-              : null,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Expanding water-drop ripple ring.
+            AnimatedBuilder(
+              animation: _dropController,
+              builder: (context, child) {
+                return Container(
+                  width: 28 * _ringScale.value,
+                  height: 28 * _ringScale.value,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.emeraldGlow.withValues(
+                        alpha: _ringOpacity.value,
+                      ),
+                      width: 2.5,
+                    ),
+                  ),
+                );
+              },
+            ),
+            // The check circle itself.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fillColor,
+                border: fillColor == null
+                    ? Border.all(color: borderColor, width: 2)
+                    : null,
+              ),
+              child: icon != null
+                  ? Icon(icon, size: 18, color: Colors.white)
+                  : null,
+            ),
+          ],
         ),
-        child: icon != null ? Icon(icon, size: 18, color: Colors.white) : null,
       ),
     );
   }

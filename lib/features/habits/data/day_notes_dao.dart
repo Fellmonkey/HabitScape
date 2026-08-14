@@ -54,6 +54,18 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     return (delete(dayNotes)..where((n) => n.date.equals(dateTimestamp))).go();
   }
 
+  /// Get all day notes in a date range (stats).
+  Future<List<DayNote>> getNotesInRange(int startTimestamp, int endTimestamp) {
+    return (select(dayNotes)
+          ..where(
+            (n) =>
+                n.date.isBiggerOrEqualValue(startTimestamp) &
+                n.date.isSmallerThanValue(endTimestamp),
+          )
+          ..orderBy([(n) => OrderingTerm.asc(n.date)]))
+        .get();
+  }
+
   /// Get ALL day notes for backup export.
   Future<List<DayNote>> getAllNotes() {
     return (select(dayNotes)..orderBy([(n) => OrderingTerm.asc(n.date)])).get();

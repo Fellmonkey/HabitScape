@@ -6,13 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/shell_scaffold.dart';
+import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
+import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:rythm/features/habits/providers/habit_providers.dart';
 
 /// Creates an in-memory [AppDatabase] for integration tests (FK enabled).
 AppDatabase createIntegrationTestDatabase() {
@@ -42,6 +42,11 @@ GoRouter _createTestRouter() => GoRouter(
           path: '/settings',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: SettingsScreen()),
+        ),
+        GoRoute(
+          path: '/stats',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: StatsScreen()),
         ),
       ],
     ),

@@ -19,6 +19,12 @@ class ShellScaffold extends StatelessWidget {
       path: '/',
     ),
     (
+      icon: Icons.insights_outlined,
+      activeIcon: Icons.insights,
+      label: 'Статистика',
+      path: '/stats',
+    ),
+    (
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings,
       label: 'Ещё',
@@ -26,7 +32,7 @@ class ShellScaffold extends StatelessWidget {
     ),
   ];
 
-  static const _navKeys = [K.navGreenhouse, K.navSettings];
+  static const _navKeys = [K.navGreenhouse, K.navStats, K.navSettings];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;

@@ -42,21 +42,16 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Watch all logs for a habit in a date range.
-  Stream<List<HabitLog>> watchLogsForHabitInRange(
-    int habitId,
-    int startTimestamp,
-    int endTimestamp,
-  ) {
+  /// Get all logs for ALL habits in a date range (stats heatmap).
+  Future<List<HabitLog>> getLogsInRange(int startTimestamp, int endTimestamp) {
     return (select(habitLogs)
           ..where(
             (l) =>
-                l.habitId.equals(habitId) &
                 l.date.isBiggerOrEqualValue(startTimestamp) &
                 l.date.isSmallerThanValue(endTimestamp),
           )
           ..orderBy([(l) => OrderingTerm.asc(l.date)]))
-        .watch();
+        .get();
   }
 
   /// Get ALL logs for backup export.
@@ -116,13 +111,5 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     return (delete(
       habitLogs,
     )..where((l) => l.date.isSmallerThanValue(cutoffTimestamp))).go();
-  }
-
-  /// Get ALL logs for a specific habit ordered newest first.
-  Future<List<HabitLog>> getAllLogsForHabit(int habitId) {
-    return (select(habitLogs)
-          ..where((l) => l.habitId.equals(habitId))
-          ..orderBy([(l) => OrderingTerm.desc(l.date)]))
-        .get();
   }
 }
