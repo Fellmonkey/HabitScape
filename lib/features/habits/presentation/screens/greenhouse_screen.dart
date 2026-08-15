@@ -83,8 +83,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<HabitLog> logs,
     double dayProgress,
   ) {
-    // Group habits by time of day
+    // Group habits by time of day; index logs by habit id once so the
+    // per-habit lookup is O(1) instead of a linear scan per card.
     final groups = _groupByTimeOfDay(habits, logs);
+    final logByHabit = {for (final l in logs) l.habitId: l};
 
     return CustomScrollView(
       slivers: [
@@ -160,7 +162,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         ),
 
         // ── Month goals (Цели месяца) ──
-        const SliverToBoxAdapter(child: MonthGoalsCard()),
+        // Not const: must rebuild after midnight so it switches to the new
+        // month when the greenhouse refreshes via [todayProvider].
+        SliverToBoxAdapter(child: const MonthGoalsCard()),
 
         if (habits.isEmpty)
           SliverFillRemaining(
@@ -175,7 +179,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         else
           // ── Grouped habit lists ──
           for (final group in groups)
-            ..._buildGroup(context, theme, group, logs),
+            ..._buildGroup(context, theme, group, logByHabit),
       ],
     );
   }
@@ -184,14 +188,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     BuildContext context,
     ThemeData theme,
     _HabitGroup group,
-    List<HabitLog> logs,
+    Map<int, HabitLog> logByHabit,
   ) {
     var items = group.habits;
 
     // Filter out completed if toggle is active
     if (_hideCompleted) {
       items = items.where((h) {
-        final log = logs.where((l) => l.habitId == h.id).firstOrNull;
+        final log = logByHabit[h.id];
         return log == null || log.status != enums.LogStatus.done;
       }).toList();
     }
@@ -241,7 +245,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           itemCount: items.length,
           itemBuilder: (context, index) {
             final habit = items[index];
-            final log = logs.where((l) => l.habitId == habit.id).firstOrNull;
+            final log = logByHabit[habit.id];
             final card = Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: HabitCard(habit: habit, log: log),
@@ -267,10 +271,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   void _markAllInGroup(List<Habit> habits) {
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    final actions = ref.read(habitActionsProvider.notifier);
-    for (final habit in habits) {
-      actions.markDone(habit.id);
-    }
+    // One batched transaction instead of N read-then-write upserts.
+    ref.read(habitActionsProvider.notifier).markAllDone([
+      for (final h in habits) h.id,
+    ]);
   }
 
   List<_HabitGroup> _groupByTimeOfDay(List<Habit> habits, List<HabitLog> logs) {

@@ -21,6 +21,9 @@ class HabitDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Rebuild on day change: the heatmap month and «today» highlights must
+    // not stay stale if this screen is left open across midnight.
+    ref.watch(todayProvider);
     final habitAsync = ref.watch(habitProvider(habitId));
     final theme = Theme.of(context);
     final now = DateTime.now();
@@ -425,25 +428,21 @@ class _MonthHeatmap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dao = ref.watch(habitLogsDaoProvider);
-    final monthStart = DateTime.utc(year, month, 1);
-    final monthEnd = DateTime.utc(year, month + 1, 1);
+    // A Riverpod provider instead of a FutureBuilder created in build():
+    // the future used to be re-created (and the query re-run) on every
+    // rebuild of the screen — the provider fetches once per screen visit
+    // and is shared with the metrics computation.
+    final logsAsync = ref.watch(
+      habitMonthLogsProvider((habitId: habitId, year: year, month: month)),
+    );
 
-    return FutureBuilder<List<HabitLog>>(
-      future: dao.getLogsForHabitInRange(
-        habitId,
-        monthStart.unixSeconds,
-        monthEnd.unixSeconds,
+    return logsAsync.when(
+      loading: () => const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
       ),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const SizedBox(
-            height: 120,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return _HeatmapGrid(logs: snap.data!, year: year, month: month);
-      },
+      error: (_, _) => const SizedBox(height: 120),
+      data: (logs) => _HeatmapGrid(logs: logs, year: year, month: month),
     );
   }
 }

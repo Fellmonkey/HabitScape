@@ -1619,7 +1619,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MonthlyGoalsTable monthlyGoals = $MonthlyGoalsTable(this);
   late final Index idxHabitLogsHabitDate = Index(
     'idx_habit_logs_habit_date',
-    'CREATE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
+    'CREATE UNIQUE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
   );
   late final HabitsDao habitsDao = HabitsDao(this as AppDatabase);
   late final HabitLogsDao habitLogsDao = HabitLogsDao(this as AppDatabase);

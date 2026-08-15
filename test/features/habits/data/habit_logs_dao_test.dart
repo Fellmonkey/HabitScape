@@ -13,8 +13,6 @@ void main() {
   final jan2 = DateTime.utc(2026, 1, 2).unixSeconds;
   final jan3 = DateTime.utc(2026, 1, 3).unixSeconds;
   final jan4 = DateTime.utc(2026, 1, 4).unixSeconds;
-  final jan5 = DateTime.utc(2026, 1, 5).unixSeconds;
-  final jan10 = DateTime.utc(2026, 1, 10).unixSeconds;
 
   setUp(() async {
     db = createTestDatabase();
@@ -51,17 +49,52 @@ void main() {
       expect(logs.first.status, LogStatus.skip);
     });
 
-    test('getLogsForDate returns only matching date', () async {
+    test('upsertLogs inserts many logs in one batch', () async {
+      await db.habitLogsDao.upsertLogs([
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
+        makeLogCompanion(habitId: 1, date: jan2, status: LogStatus.skip),
+        makeLogCompanion(habitId: 1, date: jan3, status: LogStatus.done),
+      ]);
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(3));
+      expect(logs.map((l) => l.date), [jan1, jan2, jan3]);
+    });
+
+    test('upsertLogs updates existing rows instead of duplicating', () async {
       await db.habitLogsDao.upsertLog(
         makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
       );
-      await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan2, status: LogStatus.skip),
-      );
+      await db.habitLogsDao.upsertLogs([
+        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.skip),
+        makeLogCompanion(habitId: 1, date: jan2, status: LogStatus.done),
+      ]);
 
-      final logs = await db.habitLogsDao.getLogsForDate(jan1);
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(2));
+      expect(logs.firstWhere((l) => l.date == jan1).status, LogStatus.skip);
+    });
+
+    test('markAllDone marks every habit in one batch', () async {
+      final id2 = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'B'));
+      final id3 = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'C'));
+      await db.habitLogsDao.markAllDone([1, id2, id3], jan1, 14);
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(3));
+      for (final log in logs) {
+        expect(log.status, LogStatus.done);
+        expect(log.loggedHour, 14);
+      }
+    });
+
+    test('markAllDone is idempotent on the same (habit, date)', () async {
+      await db.habitLogsDao.markAllDone([1], jan1, 10);
+      await db.habitLogsDao.markAllDone([1], jan1, 18);
+
+      final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
-      expect(logs.first.status, LogStatus.done);
+      expect(logs.first.loggedHour, 18);
     });
 
     test(
@@ -102,22 +135,6 @@ void main() {
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
       expect(logs.first.status, LogStatus.skip);
-    });
-
-    test('deleteLogsBefore removes old logs, keeps newer ones', () async {
-      await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan1, status: LogStatus.done),
-      );
-      await db.habitLogsDao.upsertLog(
-        makeLogCompanion(habitId: 1, date: jan10, status: LogStatus.done),
-      );
-
-      // Delete before Jan 5
-      await db.habitLogsDao.deleteLogsBefore(jan5);
-
-      final logs = await db.habitLogsDao.getAllLogs();
-      expect(logs, hasLength(1));
-      expect(logs.first.date, jan10);
     });
 
     test('getAllLogs and deleteAllLogs', () async {

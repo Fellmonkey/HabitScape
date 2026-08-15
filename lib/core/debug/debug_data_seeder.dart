@@ -390,6 +390,9 @@ class DebugDataSeeder {
     final isSlump = rng.nextDouble() < 0.12;
     final effectiveQuality = isSlump ? quality * 0.4 : quality;
 
+    // Collect this (habit, month)'s logs and write them in ONE batched
+    // transaction instead of a query per day.
+    final entries = <HabitLogsCompanion>[];
     for (var d = 0; d < totalDays; d++) {
       final date = effectiveStart.add(Duration(days: d));
       if (date.isAfter(now)) break;
@@ -406,7 +409,7 @@ class DebugDataSeeder {
 
       if (roll < effectiveQuality) {
         agg.done++;
-        await db.habitLogsDao.upsertLog(
+        entries.add(
           HabitLogsCompanion.insert(
             habitId: meta.id,
             date: date.unixSeconds,
@@ -415,7 +418,7 @@ class DebugDataSeeder {
           ),
         );
       } else if (roll < effectiveQuality + 0.1) {
-        await db.habitLogsDao.upsertLog(
+        entries.add(
           HabitLogsCompanion.insert(
             habitId: meta.id,
             date: date.unixSeconds,
@@ -424,6 +427,7 @@ class DebugDataSeeder {
         );
       }
     }
+    await db.habitLogsDao.upsertLogs(entries);
   }
 
   /// Generate a «Момент дня» note for every past day that had expectations:
@@ -522,16 +526,15 @@ class DebugDataSeeder {
 
   /// Generate pending logs for today so the Greenhouse screen shows habits.
   Future<void> _generateTodayLogs(List<_HabitMeta> metas, DateTime now) async {
-    for (final meta in metas) {
-      if (meta.createdAt.isAfter(now)) continue;
-      await db.habitLogsDao.upsertLog(
-        HabitLogsCompanion.insert(
-          habitId: meta.id,
-          date: now.unixSeconds,
-          status: const Value(LogStatus.pending),
-        ),
-      );
-    }
+    await db.habitLogsDao.upsertLogs([
+      for (final meta in metas)
+        if (!meta.createdAt.isAfter(now))
+          HabitLogsCompanion.insert(
+            habitId: meta.id,
+            date: now.unixSeconds,
+            status: const Value(LogStatus.pending),
+          ),
+    ]);
   }
 
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {

@@ -68,8 +68,10 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   }
 
   Future<void> _loadNote() async {
+    // One-shot read — a drift watch stream would only be used for the
+    // first event anyway.
     final dao = ref.read(dayNotesDaoProvider);
-    final note = await dao.watchNoteForDate(widget.dateTimestamp!).first;
+    final note = await dao.getNoteForDate(widget.dateTimestamp!);
     if (!mounted) return;
     setState(() {
       _mood = note?.mood;

@@ -6,7 +6,16 @@ import '../domain/stats_engine.dart';
 
 /// Aggregated statistics for the stats screen: GitHub-style year heatmap,
 /// per-habit current-month ranking and mood counts.
-final statsOverviewProvider = FutureProvider<StatsOverview>((ref) async {
+///
+/// Auto-disposed: the stats tab is a screen, so each visit recomputes from
+/// fresh data (a forever-cached FutureProvider would show stale numbers
+/// after habits are marked in the greenhouse).
+final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
+  ref,
+) async {
+  // Recompute after midnight — an app left open overnight must not keep
+  // showing yesterday's "current month/year".
+  ref.watch(todayProvider);
   final habitsDao = ref.watch(habitsDaoProvider);
   final logsDao = ref.watch(habitLogsDaoProvider);
   final notesDao = ref.watch(dayNotesDaoProvider);

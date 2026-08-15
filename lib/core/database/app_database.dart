@@ -38,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +65,20 @@ class AppDatabase extends _$AppDatabase {
       if (from < 5) {
         await m.createTable(monthlyGoals);
         await m.addColumn(dayNotes, dayNotes.timeQuality);
+      }
+      // v5 → v6: habit_logs(habitId, date) becomes UNIQUE — enables a single
+      // INSERT … ON CONFLICT DO UPDATE for marking (no read-before-write).
+      if (from < 6) {
+        // Drop rows that already duplicate (habitId, date) — the unique
+        // index can only be created on deduplicated data.
+        await m.database.customStatement(
+          'DELETE FROM habit_logs WHERE id NOT IN '
+          '(SELECT MIN(id) FROM habit_logs GROUP BY habit_id, date)',
+        );
+        await m.database.customStatement(
+          'DROP INDEX IF EXISTS idx_habit_logs_habit_date',
+        );
+        await m.createIndex(idxHabitLogsHabitDate);
       }
     },
   );

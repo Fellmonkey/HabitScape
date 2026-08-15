@@ -90,6 +90,9 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild on day change: keeps the «today» frame and «Сегодня» button
+    // correct if this screen stays open across midnight.
+    ref.watch(todayProvider);
     final theme = Theme.of(context);
     final daysAsync = ref.watch(monthSpreadProvider(_monthTs));
 

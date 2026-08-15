@@ -39,7 +39,14 @@ class MonthlyGoals extends Table {
 }
 
 /// ── Habit Logs table ──────────────────────────────────────────
-@TableIndex(name: 'idx_habit_logs_habit_date', columns: {#habitId, #date})
+/// Unique so a (habitId, date) pair maps to exactly one row — lets
+/// `upsertLog` use a single `INSERT … ON CONFLICT DO UPDATE` instead of
+/// a read-then-write pair.
+@TableIndex(
+  name: 'idx_habit_logs_habit_date',
+  columns: {#habitId, #date},
+  unique: true,
+)
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get habitId =>

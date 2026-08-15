@@ -26,36 +26,31 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Upsert a day note — one row per date (the date column is unique).
+  ///
+  /// A single `INSERT … ON CONFLICT(date) DO UPDATE`, so saving a note
+  /// never reads before it writes.
   Future<void> upsertNote(
     int dateTimestamp, {
     String? moment,
     DayMood? mood,
     int? timeQuality,
-  }) async {
-    final existing = await (select(
-      dayNotes,
-    )..where((n) => n.date.equals(dateTimestamp))).getSingleOrNull();
-
-    if (existing != null) {
-      await (update(
-        dayNotes,
-      )..where((n) => n.date.equals(dateTimestamp))).write(
-        DayNotesCompanion(
+  }) {
+    return into(dayNotes).insert(
+      DayNotesCompanion.insert(
+        date: dateTimestamp,
+        moment: Value(moment),
+        mood: Value(mood),
+        timeQuality: Value(timeQuality),
+      ),
+      onConflict: DoUpdate(
+        (_) => DayNotesCompanion(
           moment: Value(moment),
           mood: Value(mood),
           timeQuality: Value(timeQuality),
         ),
-      );
-    } else {
-      await into(dayNotes).insert(
-        DayNotesCompanion.insert(
-          date: dateTimestamp,
-          moment: Value(moment),
-          mood: Value(mood),
-          timeQuality: Value(timeQuality),
-        ),
-      );
-    }
+        target: [dayNotes.date],
+      ),
+    );
   }
 
   /// Delete the note for a specific date (clears moment and mood).
@@ -73,21 +68,6 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
           )
           ..orderBy([(n) => OrderingTerm.asc(n.date)]))
         .get();
-  }
-
-  /// Watch all day notes in a date range (reactive month chart).
-  Stream<List<DayNote>> watchNotesInRange(
-    int startTimestamp,
-    int endTimestamp,
-  ) {
-    return (select(dayNotes)
-          ..where(
-            (n) =>
-                n.date.isBiggerOrEqualValue(startTimestamp) &
-                n.date.isSmallerThanValue(endTimestamp),
-          )
-          ..orderBy([(n) => OrderingTerm.asc(n.date)]))
-        .watch();
   }
 
   /// Get ALL day notes for backup export.
