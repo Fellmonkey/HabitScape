@@ -5,6 +5,34 @@ import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/localized_dates.dart';
 
+// ── Memoized frequency parsing ───────────────────────────────
+//
+// Frequency values are short JSON strings that repeat across habits and
+// rebuilds. The hot paths (`computeDailyCompletion` for stats, the greenhouse
+// grouping, day progress) call `isExpectedToday` once per habit *per day* —
+// 365 × habits per stats visit — so re-running `jsonDecode` every call burns
+// real main-isolate time on low-end devices and drains battery. Parsing is
+// pure (same string → same result), so results are cached content-addressed;
+// the cache is bounded and cleared wholesale when it overflows.
+const _maxParseCacheEntries = 128;
+
+final Map<String, List<int>> _weekdaysCache = {};
+final Map<String, int> _xValueCache = {};
+final Map<
+  String,
+  ({int length, List<int> days, Map<int, String> labels, int? startDate})
+>
+_cycleCache = {};
+
+T _parseCached<T>(Map<String, T> cache, String key, T Function() compute) {
+  final value = cache[key];
+  if (value != null) return value;
+  final computed = compute();
+  if (cache.length >= _maxParseCacheEntries) cache.clear();
+  cache[key] = computed;
+  return computed;
+}
+
 /// Check if a habit is expected to be performed on [today].
 bool isExpectedToday(Habit habit, DateTime today) {
   final freqType = FrequencyType.fromString(habit.frequencyType);
@@ -38,54 +66,72 @@ bool isExpectedToday(Habit habit, DateTime today) {
 }
 
 /// Parse weekday list from JSON frequency value.
-/// Returns [1,2,3,4,5] (Mon-Fri) as default.
+/// Returns [1,2,3,4,5] (Mon-Fri) as default. Result is cached per input
+/// string — callers must not mutate the returned list.
 List<int> parseWeekdays(String json) {
-  try {
-    final decoded = jsonDecode(json);
-    if (decoded is Map && decoded.containsKey('days')) {
-      return (decoded['days'] as List).cast<int>();
-    }
-    if (decoded is List) return decoded.cast<int>();
-  } catch (_) {}
-  return [1, 2, 3, 4, 5];
+  return _parseCached(_weekdaysCache, json, () {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map && decoded.containsKey('days')) {
+        return (decoded['days'] as List).cast<int>();
+      }
+      if (decoded is List) return decoded.cast<int>();
+    } catch (_) {}
+    return const [1, 2, 3, 4, 5];
+  });
 }
 
 /// Parse a single integer value from JSON frequency value.
-/// Returns 1 as default.
+/// Returns 1 as default. Result is cached per input string.
 int parseXValue(String json) {
-  try {
-    final decoded = jsonDecode(json);
-    if (decoded is Map && decoded.containsKey('x')) {
-      return decoded['x'] as int;
-    }
-    if (decoded is int) return decoded;
-  } catch (_) {}
-  return 1;
+  return _parseCached(_xValueCache, json, () {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map && decoded.containsKey('x')) {
+        return decoded['x'] as int;
+      }
+      if (decoded is int) return decoded;
+    } catch (_) {}
+    return 1;
+  });
 }
 
 /// Parse cycle configuration.
 /// Returns a record with length, active days, and optional labels for days.
+/// Result is cached per input string — callers must not mutate `days`/`labels`.
 ({int length, List<int> days, Map<int, String> labels, int? startDate})
 parseCycle(String json) {
-  try {
-    final decoded = jsonDecode(json);
-    if (decoded is Map &&
-        decoded.containsKey('length') &&
-        decoded.containsKey('days')) {
-      final length = decoded['length'] as int;
-      final days = (decoded['days'] as List).cast<int>();
-      final labels = <int, String>{};
-      if (decoded.containsKey('labels')) {
-        final rawLabels = decoded['labels'] as Map;
-        for (final entry in rawLabels.entries) {
-          labels[int.parse(entry.key.toString())] = entry.value.toString();
+  return _parseCached(_cycleCache, json, () {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map &&
+          decoded.containsKey('length') &&
+          decoded.containsKey('days')) {
+        final length = decoded['length'] as int;
+        final days = (decoded['days'] as List).cast<int>();
+        final labels = <int, String>{};
+        if (decoded.containsKey('labels')) {
+          final rawLabels = decoded['labels'] as Map;
+          for (final entry in rawLabels.entries) {
+            labels[int.parse(entry.key.toString())] = entry.value.toString();
+          }
         }
+        final startDate = decoded['startDate'] as int?;
+        return (
+          length: length,
+          days: days,
+          labels: labels,
+          startDate: startDate,
+        );
       }
-      final startDate = decoded['startDate'] as int?;
-      return (length: length, days: days, labels: labels, startDate: startDate);
-    }
-  } catch (_) {}
-  return (length: 5, days: [1], labels: {}, startDate: null); // fallback
+    } catch (_) {}
+    return (
+      length: 5,
+      days: const [1],
+      labels: const {},
+      startDate: null,
+    ); // fallback
+  });
 }
 
 /// Returns the label for the current cycle day, if any.

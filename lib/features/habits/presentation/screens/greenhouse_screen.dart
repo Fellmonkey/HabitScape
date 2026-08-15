@@ -247,9 +247,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           itemBuilder: (context, index) {
             final habit = items[index];
             final log = logByHabit[habit.id];
-            final card = Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: HabitCard(habit: habit, log: log),
+            // RepaintBoundary isolates the tap bounce / drop-ripple animations
+            // to this card so a single card animating doesn't repaint the
+            // whole sliver (cheaper frames + less battery on low-end devices).
+            final card = RepaintBoundary(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: HabitCard(habit: habit, log: log),
+              ),
             );
             // Wrap only the first habit card in the tour spotlight — it
             // must not be re-created on later rebuilds (GlobalKey clash).

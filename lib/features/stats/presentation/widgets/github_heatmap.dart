@@ -6,6 +6,11 @@ import '../../../habits/domain/completion.dart';
 
 /// GitHub-style contribution heatmap: 7 rows (weekdays) × N columns (weeks).
 /// Each cell is colored by the day's completion ratio.
+///
+/// The whole grid (weekday labels + month labels + cells) is painted by one
+/// [CustomPainter] instead of ~380 individual widgets. On low-end devices
+/// (e.g. an iPhone 7 running the web build) laying out and rasterising that
+/// many rounded `Container`s per visit is a real source of jank.
 class GithubHeatmap extends StatelessWidget {
   const GithubHeatmap({
     required this.days,
@@ -33,117 +38,155 @@ class GithubHeatmap extends StatelessWidget {
     final mondayOffset = first.weekday - 1;
     final gridStart = first.subtract(Duration(days: mondayOffset));
 
-    final dayByDate = <DateTime, DayCompletion>{
-      for (final d in days) d.date: d,
-    };
-
     final totalDays = last.difference(gridStart).inDays + 1;
     final weekCount = (totalDays / 7).ceil();
 
+    const labelWidth = 18.0;
+    const monthLabelHeight = 14.0;
+    const labelGap = 2.0;
+
+    final gridWidth = weekCount * (cellSize + gap);
+    final totalWidth = labelWidth + gridWidth;
+    final totalHeight = monthLabelHeight + labelGap + 7 * (cellSize + gap);
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Day-of-week labels (only Mon/Wed/Fri)
-          SizedBox(
-            width: 18,
-            child: Column(
-              children: List.generate(7, (dow) {
-                final label = switch (dow) {
-                  0 => 'Пн',
-                  2 => 'Ср',
-                  4 => 'Пт',
-                  _ => '',
-                };
-                return SizedBox(
-                  height: cellSize + gap,
-                  child: Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(fontSize: 8),
-                  ),
-                );
-              }),
-            ),
-          ),
-          // Month labels + grid
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Month labels: show the month name in the first week that
-              // contains the 1st of a month.
-              SizedBox(
-                height: 14,
-                child: Row(
-                  children: List.generate(weekCount, (week) {
-                    String label = '';
-                    for (var dow = 0; dow < 7; dow++) {
-                      final date = gridStart.add(
-                        Duration(days: week * 7 + dow),
-                      );
-                      if (date.day == 1 &&
-                          !date.isBefore(first) &&
-                          !date.isAfter(last)) {
-                        label = monthNames[date.month].substring(0, 3);
-                        break;
-                      }
-                    }
-                    return SizedBox(
-                      width: cellSize + gap,
-                      child: Text(
-                        label,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontSize: 9,
-                        ),
-                        overflow: TextOverflow.clip,
-                      ),
-                    );
-                  }),
-                ),
-              ),
-              const SizedBox(height: 2),
-              // Grid columns
-              Row(
-                children: List.generate(weekCount, (week) {
-                  return Column(
-                    children: List.generate(7, (dow) {
-                      final date = gridStart.add(
-                        Duration(days: week * 7 + dow),
-                      );
-                      final comp = dayByDate[date];
-                      final inRange =
-                          !date.isBefore(first) && !date.isAfter(last);
-                      final color = inRange && comp != null
-                          ? _cellColor(comp.ratio, theme)
-                          : Colors.transparent;
-                      return Container(
-                        width: cellSize,
-                        height: cellSize,
-                        margin: EdgeInsets.only(right: gap, bottom: gap),
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(2.5),
-                        ),
-                      );
-                    }),
-                  );
-                }),
-              ),
-            ],
-          ),
-        ],
+      child: CustomPaint(
+        size: Size(totalWidth, totalHeight),
+        painter: _HeatmapPainter(
+          days: days,
+          gridStart: gridStart,
+          first: first,
+          last: last,
+          weekCount: weekCount,
+          cellSize: cellSize,
+          gap: gap,
+          labelWidth: labelWidth,
+          monthLabelHeight: monthLabelHeight,
+          labelGap: labelGap,
+          weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 8),
+          monthLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
+          onSurface: theme.colorScheme.onSurface,
+        ),
       ),
     );
   }
+}
 
-  Color _cellColor(double ratio, ThemeData theme) {
+class _HeatmapPainter extends CustomPainter {
+  _HeatmapPainter({
+    required this.days,
+    required this.gridStart,
+    required this.first,
+    required this.last,
+    required this.weekCount,
+    required this.cellSize,
+    required this.gap,
+    required this.labelWidth,
+    required this.monthLabelHeight,
+    required this.labelGap,
+    required this.weekdayLabelStyle,
+    required this.monthLabelStyle,
+    required this.onSurface,
+  });
+
+  final List<DayCompletion> days;
+  final DateTime gridStart;
+  final DateTime first;
+  final DateTime last;
+  final int weekCount;
+  final double cellSize;
+  final double gap;
+  final double labelWidth;
+  final double monthLabelHeight;
+  final double labelGap;
+  final TextStyle? weekdayLabelStyle;
+  final TextStyle? monthLabelStyle;
+  final Color onSurface;
+
+  late final Map<DateTime, DayCompletion> _dayByDate = {
+    for (final d in days) d.date: d,
+  };
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // ── Month labels ──────────────────────────────────────────
+    for (var week = 0; week < weekCount; week++) {
+      String? label;
+      for (var dow = 0; dow < 7; dow++) {
+        final date = gridStart.add(Duration(days: week * 7 + dow));
+        if (date.day == 1 && !date.isBefore(first) && !date.isAfter(last)) {
+          label = monthNames[date.month].substring(0, 3);
+          break;
+        }
+      }
+      if (label == null) continue;
+      textPainter.text = TextSpan(text: label, style: monthLabelStyle);
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(labelWidth + week * (cellSize + gap), 0),
+      );
+    }
+
+    // ── Weekday labels (Пн/Ср/Пт) ─────────────────────────────
+    for (var dow = 0; dow < 7; dow++) {
+      final label = switch (dow) {
+        0 => 'Пн',
+        2 => 'Ср',
+        4 => 'Пт',
+        _ => '',
+      };
+      if (label.isEmpty) continue;
+      textPainter.text = TextSpan(text: label, style: weekdayLabelStyle);
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(0, monthLabelHeight + labelGap + dow * (cellSize + gap)),
+      );
+    }
+
+    // ── Cells ─────────────────────────────────────────────────
+    final paint = Paint();
+    for (var week = 0; week < weekCount; week++) {
+      for (var dow = 0; dow < 7; dow++) {
+        final date = gridStart.add(Duration(days: week * 7 + dow));
+        final comp = _dayByDate[date];
+        final inRange = !date.isBefore(first) && !date.isAfter(last);
+        final color = inRange && comp != null
+            ? _cellColor(comp.ratio)
+            : Colors.transparent;
+        if (color == Colors.transparent) continue;
+        paint.color = color;
+        final left = labelWidth + week * (cellSize + gap);
+        final top = monthLabelHeight + labelGap + dow * (cellSize + gap);
+        final rect = Rect.fromLTWH(left, top, cellSize, cellSize);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(2.5)),
+          paint,
+        );
+      }
+    }
+  }
+
+  Color _cellColor(double ratio) {
     if (ratio <= 0.0) {
-      return theme.colorScheme.onSurface.withValues(alpha: 0.08);
+      return onSurface.withValues(alpha: 0.08);
     }
     if (ratio < 0.25) return AppColors.sageGreen.withValues(alpha: 0.35);
     if (ratio < 0.5) return AppColors.sageGreen.withValues(alpha: 0.6);
     if (ratio < 0.75) return AppColors.sageGreen.withValues(alpha: 0.85);
     return AppColors.emeraldGlow;
+  }
+
+  @override
+  bool shouldRepaint(_HeatmapPainter oldDelegate) {
+    return !identical(oldDelegate.days, days) ||
+        oldDelegate.onSurface != onSurface ||
+        oldDelegate.weekdayLabelStyle != weekdayLabelStyle ||
+        oldDelegate.monthLabelStyle != monthLabelStyle;
   }
 }
 
