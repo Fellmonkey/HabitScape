@@ -22,20 +22,20 @@ final statsOverviewProvider = FutureProvider<StatsOverview>((ref) async {
     yearStart.unixSeconds,
     yearEnd.unixSeconds,
   );
-  final monthLogs = await logsDao.getLogsInRange(
-    monthStart.unixSeconds,
-    monthEnd.unixSeconds,
-  );
   final monthNotes = await notesDao.getNotesInRange(
     monthStart.unixSeconds,
     monthEnd.unixSeconds,
+  );
+  final yearNotes = await notesDao.getNotesInRange(
+    yearStart.unixSeconds,
+    yearEnd.unixSeconds,
   );
 
   return buildStatsOverview(
     habits: habits,
     yearLogs: yearLogs,
-    monthLogs: monthLogs,
     monthNotes: monthNotes,
+    yearNotes: yearNotes,
     now: now,
   );
 });

@@ -32,6 +32,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   late final AnimationController _saveController;
   late final Animation<double> _saveScale;
   DayMood? _mood;
+  int? _timeQuality;
 
   @override
   void initState() {
@@ -39,6 +40,13 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     final note = widget.initial;
     _momentController = TextEditingController(text: note?.moment ?? '');
     _mood = note?.mood;
+    _timeQuality = note?.timeQuality;
+
+    // Opened for a specific date (e.g. tap on the month chart) — load the
+    // existing note for that day so it can be edited.
+    if (note == null && widget.dateTimestamp != null) {
+      _loadNote();
+    }
 
     // "Juicy" save animation: a quick squash-and-stretch of the button.
     _saveController = AnimationController(
@@ -59,12 +67,26 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     super.dispose();
   }
 
+  Future<void> _loadNote() async {
+    final dao = ref.read(dayNotesDaoProvider);
+    final note = await dao.watchNoteForDate(widget.dateTimestamp!).first;
+    if (!mounted) return;
+    setState(() {
+      _mood = note?.mood;
+      _timeQuality = note?.timeQuality;
+      final moment = note?.moment;
+      if (moment != null && moment.isNotEmpty) {
+        _momentController.text = moment;
+      }
+    });
+  }
+
   Future<void> _save() async {
     final moment = _momentController.text.trim();
     final actions = ref.read(habitActionsProvider.notifier);
     final ts = widget.dateTimestamp ?? todayTimestamp();
 
-    if (moment.isEmpty && _mood == null) {
+    if (moment.isEmpty && _mood == null && _timeQuality == null) {
       // Nothing to remember — clear the note entirely.
       await actions.clearDayNote(ts);
     } else {
@@ -72,6 +94,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
         dateTimestamp: ts,
         moment: moment.isEmpty ? null : moment,
         mood: _mood,
+        timeQuality: _timeQuality,
       );
     }
 
@@ -181,6 +204,16 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
               }).toList(),
             ),
             const SizedBox(height: 20),
+            Text(
+              'Как рационально использовал время?',
+              style: theme.textTheme.labelLarge,
+            ),
+            const SizedBox(height: 8),
+            _TimeQualitySelector(
+              selected: _timeQuality,
+              onChanged: (v) => setState(() => _timeQuality = v),
+            ),
+            const SizedBox(height: 20),
             ScaleTransition(
               scale: _saveScale,
               child: FilledButton(
@@ -256,6 +289,114 @@ class _DayMomentHelpSheet extends StatelessWidget {
                 'было вокруг него. Дни перестанут сливаться.',
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «Рациональность времени» — 5 levels from «Впустую» (1) to
+/// «Максимально» (5). Rendered as a row of tappable drops with the
+/// selected level's label below.
+class _TimeQualitySelector extends StatelessWidget {
+  const _TimeQualitySelector({required this.selected, required this.onChanged});
+
+  /// Current value (1–5), null when not set.
+  final int? selected;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final levels = TimeQuality.values.reversed.toList(); // 5 → 1 visually
+    final current = TimeQuality.fromValue(selected);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (final level in levels)
+              Expanded(
+                child: _QualityDrop(
+                  level: level,
+                  selected: selected == level.value,
+                  onTap: () =>
+                      onChanged(selected == level.value ? null : level.value),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: Text(
+            current == null
+                ? 'Не отмечено'
+                : '${current.label} — день прошёл ${current == TimeQuality.max
+                      ? 'идеально'
+                      : current == TimeQuality.good
+                      ? 'хорошо'
+                      : current == TimeQuality.normal
+                      ? 'нормально'
+                      : current == TimeQuality.lazy
+                      ? 'лениво'
+                      : 'впустую'}',
+            key: ValueKey(selected),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color:
+                  current?.color ??
+                  theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A single tappable drop in the time-quality selector.
+class _QualityDrop extends StatelessWidget {
+  const _QualityDrop({
+    required this.level,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TimeQuality level;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      key: K.timeQualityLevel(level.value),
+      borderRadius: AppRadius.borderS,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          height: selected ? 30 : 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected ? level.color : level.color.withValues(alpha: 0.25),
+            border: Border.all(
+              color: level.color.withValues(alpha: selected ? 1 : 0.5),
+              width: 1.5,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: level.color.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
+        ),
       ),
     );
   }

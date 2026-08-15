@@ -25,6 +25,7 @@ void main() {
         jan1,
         moment: 'Собеседование прошло хорошо',
         mood: DayMood.good,
+        timeQuality: 5,
       );
 
       final notes = await db.dayNotesDao.getAllNotes();
@@ -32,6 +33,18 @@ void main() {
       expect(notes.first.date, jan1);
       expect(notes.first.moment, 'Собеседование прошло хорошо');
       expect(notes.first.mood, DayMood.good);
+      expect(notes.first.timeQuality, 5);
+    });
+
+    test('upsertNote stores time quality and can clear it', () async {
+      await db.dayNotesDao.upsertNote(jan1, timeQuality: 3);
+      expect((await db.dayNotesDao.getNoteForDate(jan1))!.timeQuality, 3);
+
+      // Overwrite with null — the rating is cleared.
+      await db.dayNotesDao.upsertNote(jan1, moment: 'День', timeQuality: null);
+      final note = await db.dayNotesDao.getNoteForDate(jan1);
+      expect(note!.timeQuality, isNull);
+      expect(note.moment, 'День');
     });
 
     test('upsertNote keeps one row per date (updates in place)', () async {

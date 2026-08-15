@@ -175,3 +175,28 @@ class DayMoodConverter extends TypeConverter<DayMood, String> {
   @override
   String toSql(DayMood value) => value.name;
 }
+
+/// «Рациональность времени» — how rationally the day's time was used.
+/// Five levels from 5 (максимально) to 1 (впустую), stored as int 1–5.
+/// Idea: «чем выше точка — тем я счастливее» (прямая корреляция).
+enum TimeQuality {
+  wasted(1, 'Впустую', AppColors.dustyRose),
+  lazy(2, 'Лениво', AppColors.mutedTerracotta),
+  normal(3, 'Нормально', AppColors.warmAmber),
+  good(4, 'Хорошо', AppColors.sageGreen),
+  max(5, 'Максимально', AppColors.emeraldGlow);
+
+  const TimeQuality(this.value, this.label, this.color);
+
+  /// Stored int value (1–5).
+  final int value;
+  final String label;
+  final Color color;
+
+  static TimeQuality? fromValue(int? value) => value == null
+      ? null
+      : TimeQuality.values.firstWhere(
+          (e) => e.value == value,
+          orElse: () => TimeQuality.normal,
+        );
+}

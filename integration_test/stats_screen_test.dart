@@ -50,8 +50,19 @@ void main() {
       expect(find.text('Активность за год'), findsOneWidget);
       expect(find.byKey(K.statsHeatmap), findsOneWidget);
 
-      // Habit ranking lists the seeded habit.
-      expect(find.text('Бег'), findsOneWidget);
+      // Week trend sits right under the header.
+      expect(find.byKey(K.statsWeekTrend), findsOneWidget);
+
+      // Correlation section (further down the page).
+      await tester.scrollUntilVisible(
+        find.text('Настроение и выполнение'),
+        200,
+      );
+      expect(find.byKey(K.statsCorrelation), findsOneWidget);
+
+      // Mood counts + rhythm section.
+      await tester.scrollUntilVisible(find.text('Ритм недели'), 200);
+      expect(find.byKey(K.statsRhythm), findsOneWidget);
       expect(find.text('Настроение за месяц'), findsOneWidget);
     });
 
@@ -62,7 +73,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(K.statsTitle), findsOneWidget);
-      expect(find.text('Пока нет данных'), findsOneWidget);
+      // Empty-state hints instead of a ranking.
+      expect(
+        find.text(
+          'Отмечай привычки — здесь появится сравнение с прошлой неделей.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Привычки за месяц'), findsNothing);
     });
   });
 }

@@ -17,12 +17,25 @@ class Habits extends Table {
 }
 
 /// ── Day Notes table (Момент дня) ────────────────────────────
-/// One row per day: the most memorable moment + day mood (🟢/🟡/🔴).
+/// One row per day: the most memorable moment + day mood (🟢/🟡/🔴)
+/// + how rationally the day's time was used (1–5).
 class DayNotes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get date => integer().unique()();
   TextColumn get moment => text().nullable()();
   TextColumn get mood => text().nullable().map(const DayMoodConverter())();
+  IntColumn get timeQuality => integer().nullable()();
+}
+
+/// ── Monthly Goals table (Цели месяца) ────────────────────────
+/// Things to achieve *through* habits this month (e.g. «снять 4 ютуба»).
+class MonthlyGoals extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// First-of-month unix timestamp the goal belongs to.
+  IntColumn get month => integer()();
+  TextColumn get title => text().withLength(min: 1, max: 200)();
+  BoolColumn get isDone => boolean().withDefault(const Constant(false))();
 }
 
 /// ── Habit Logs table ──────────────────────────────────────────

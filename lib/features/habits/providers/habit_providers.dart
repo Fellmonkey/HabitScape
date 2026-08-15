@@ -8,8 +8,10 @@ import '../../../core/utils/date_helpers.dart';
 import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
+import '../data/monthly_goals_dao.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
+import '../../stats/domain/stats_engine.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -23,6 +25,10 @@ final habitLogsDaoProvider = Provider<HabitLogsDao>((ref) {
 
 final dayNotesDaoProvider = Provider<DayNotesDao>((ref) {
   return ref.watch(databaseProvider).dayNotesDao;
+});
+
+final monthlyGoalsDaoProvider = Provider<MonthlyGoalsDao>((ref) {
+  return ref.watch(databaseProvider).monthlyGoalsDao;
 });
 
 // ── Habit streams ────────────────────────────────────────────
@@ -56,6 +62,45 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
 final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
   return ref.watch(dayNotesDaoProvider).watchNoteForDate(todayTimestamp());
 });
+
+// ── Monthly goals (Цели месяца) ──────────────────────────────
+
+/// Stream of a month's goals («Цели месяца»), family keyed by first-of-month
+/// unix timestamp.
+final monthGoalsProvider = StreamProvider.family<List<MonthlyGoal>, int>((
+  ref,
+  monthTs,
+) {
+  return ref.watch(monthlyGoalsDaoProvider).watchGoalsForMonth(monthTs);
+});
+
+/// Per-day data for the «Разворот месяца» of one month (family keyed by
+/// first-of-month unix timestamp).
+///
+/// One-shot fetch (like `statsOverviewProvider`): the spread screen refreshes
+/// it after editing a day, so no drift watch-stream subscriptions linger and
+/// `db.close()` in tests teardown never hangs.
+final monthSpreadProvider = FutureProvider.autoDispose
+    .family<List<MonthSpreadDay>, int>((ref, monthTs) async {
+      final habitsDao = ref.watch(habitsDaoProvider);
+      final logsDao = ref.watch(habitLogsDaoProvider);
+      final notesDao = ref.watch(dayNotesDaoProvider);
+
+      final monthStart = dateFromUnix(monthTs).toMidnight;
+      final monthEnd = DateTime.utc(monthStart.year, monthStart.month + 1, 1);
+      final startTs = monthStart.unixSeconds;
+      final endTs = monthEnd.unixSeconds;
+
+      final habits = await habitsDao.getActiveHabits();
+      final logs = await logsDao.getLogsInRange(startTs, endTs);
+      final notes = await notesDao.getNotesInRange(startTs, endTs);
+      return computeMonthSpreadDays(
+        habits: habits,
+        logs: logs,
+        notes: notes,
+        monthStart: monthStart,
+      );
+    });
 
 // ── Day Progress ─────────────────────────────────────────────
 
@@ -129,6 +174,7 @@ class HabitActions extends Notifier<void> {
   HabitsDao get _habitsDao => ref.read(habitsDaoProvider);
   HabitLogsDao get _logsDao => ref.read(habitLogsDaoProvider);
   DayNotesDao get _dayNotesDao => ref.read(dayNotesDaoProvider);
+  MonthlyGoalsDao get _goalsDao => ref.read(monthlyGoalsDaoProvider);
 
   /// Create a new habit.
   Future<int> createHabit({
@@ -166,19 +212,37 @@ class HabitActions extends Notifier<void> {
     await _logsDao.markSkip(habitId, todayTimestamp());
   }
 
-  /// Save a day note («Момент дня»): memorable moment + mood.
+  /// Save a day note («Момент дня»): memorable moment + mood +
+  /// time quality («Рациональность времени», 1–5).
   /// [dateTimestamp] defaults to today (unix midnight).
   Future<void> saveDayNote({
     String? moment,
     DayMood? mood,
+    int? timeQuality,
     int? dateTimestamp,
   }) {
     return _dayNotesDao.upsertNote(
       dateTimestamp ?? todayTimestamp(),
       moment: moment,
       mood: mood,
+      timeQuality: timeQuality,
     );
   }
+
+  /// Add a goal to a month ([monthTs] = first-of-month unix timestamp,
+  /// defaults to the current month).
+  Future<int> addMonthGoal(String title, {int? monthTs}) {
+    final ts =
+        monthTs ??
+        DateTime.utc(DateTime.now().year, DateTime.now().month, 1).unixSeconds;
+    return _goalsDao.addGoal(ts, title);
+  }
+
+  /// Toggle the done state of a monthly goal.
+  Future<void> toggleMonthGoal(int goalId) => _goalsDao.toggleGoal(goalId);
+
+  /// Delete a monthly goal.
+  Future<void> deleteMonthGoal(int goalId) => _goalsDao.deleteGoal(goalId);
 
   /// Clear a day note entirely (both moment and mood).
   /// [dateTimestamp] defaults to today (unix midnight).

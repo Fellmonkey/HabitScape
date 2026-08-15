@@ -30,20 +30,29 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     int dateTimestamp, {
     String? moment,
     DayMood? mood,
+    int? timeQuality,
   }) async {
     final existing = await (select(
       dayNotes,
     )..where((n) => n.date.equals(dateTimestamp))).getSingleOrNull();
 
     if (existing != null) {
-      await (update(dayNotes)..where((n) => n.date.equals(dateTimestamp)))
-          .write(DayNotesCompanion(moment: Value(moment), mood: Value(mood)));
+      await (update(
+        dayNotes,
+      )..where((n) => n.date.equals(dateTimestamp))).write(
+        DayNotesCompanion(
+          moment: Value(moment),
+          mood: Value(mood),
+          timeQuality: Value(timeQuality),
+        ),
+      );
     } else {
       await into(dayNotes).insert(
         DayNotesCompanion.insert(
           date: dateTimestamp,
           moment: Value(moment),
           mood: Value(mood),
+          timeQuality: Value(timeQuality),
         ),
       );
     }
@@ -64,6 +73,21 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
           )
           ..orderBy([(n) => OrderingTerm.asc(n.date)]))
         .get();
+  }
+
+  /// Watch all day notes in a date range (reactive month chart).
+  Stream<List<DayNote>> watchNotesInRange(
+    int startTimestamp,
+    int endTimestamp,
+  ) {
+    return (select(dayNotes)
+          ..where(
+            (n) =>
+                n.date.isBiggerOrEqualValue(startTimestamp) &
+                n.date.isSmallerThanValue(endTimestamp),
+          )
+          ..orderBy([(n) => OrderingTerm.asc(n.date)]))
+        .watch();
   }
 
   /// Get ALL day notes for backup export.

@@ -7,6 +7,7 @@ import '../../../core/database/enums.dart';
 import '../../habits/data/day_notes_dao.dart';
 import '../../habits/data/habit_logs_dao.dart';
 import '../../habits/data/habits_dao.dart';
+import '../../habits/data/monthly_goals_dao.dart';
 
 // Backup format version for forward compatibility.
 const _backupVersion = 1;
@@ -16,17 +17,20 @@ class BackupService {
     required this.habitsDao,
     required this.habitLogsDao,
     required this.dayNotesDao,
+    required this.monthlyGoalsDao,
   });
 
   final HabitsDao habitsDao;
   final HabitLogsDao habitLogsDao;
   final DayNotesDao dayNotesDao;
+  final MonthlyGoalsDao monthlyGoalsDao;
 
   /// Export the entire database to a JSON string.
   Future<String> exportToJson() async {
     final habits = await habitsDao.getAllHabits();
     final logs = await habitLogsDao.getAllLogs();
     final notes = await dayNotesDao.getAllNotes();
+    final goals = await monthlyGoalsDao.getAllGoals();
 
     final data = {
       'version': _backupVersion,
@@ -34,6 +38,7 @@ class BackupService {
       'habits': habits.map(_habitToMap).toList(),
       'habitLogs': logs.map(_logToMap).toList(),
       'dayNotes': notes.map(_noteToMap).toList(),
+      'monthlyGoals': goals.map(_goalToMap).toList(),
     };
 
     return jsonEncode(data);
@@ -53,10 +58,12 @@ class BackupService {
     final habitsList = data['habits'] as List<dynamic>? ?? [];
     final logsList = data['habitLogs'] as List<dynamic>? ?? [];
     final notesList = data['dayNotes'] as List<dynamic>? ?? [];
+    final goalsList = data['monthlyGoals'] as List<dynamic>? ?? [];
 
     // Clear existing data (order matters for FK constraints).
     await habitLogsDao.deleteAllLogs();
     await dayNotesDao.deleteAllNotes();
+    await monthlyGoalsDao.deleteAllGoals();
     await habitsDao.deleteAllHabits();
 
     // Import habits.
@@ -101,7 +108,23 @@ class BackupService {
         mood: map['mood'] == null
             ? null
             : DayMood.fromString(map['mood'] as String),
+        timeQuality: map['timeQuality'] as int?,
       );
+    }
+
+    // Import monthly goals.
+    for (final g in goalsList) {
+      final map = g as Map<String, dynamic>;
+      await monthlyGoalsDao.addGoal(
+        map['month'] as int,
+        map['title'] as String,
+      );
+      // The insert generates a fresh id, so the done state must be set after.
+      final goals = await monthlyGoalsDao.getGoalsForMonth(map['month'] as int);
+      final last = goals.last;
+      if (map['isDone'] == true && !last.isDone) {
+        await monthlyGoalsDao.toggleGoal(last.id);
+      }
     }
 
     return habitsList.length;
@@ -134,5 +157,12 @@ class BackupService {
     'date': n.date,
     'moment': n.moment,
     'mood': n.mood?.name,
+    'timeQuality': n.timeQuality,
+  };
+
+  static Map<String, dynamic> _goalToMap(MonthlyGoal g) => {
+    'month': g.month,
+    'title': g.title,
+    'isDone': g.isDone,
   };
 }

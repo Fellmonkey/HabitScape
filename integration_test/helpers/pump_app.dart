@@ -10,6 +10,7 @@ import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
+import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,6 +57,10 @@ GoRouter _createTestRouter() => GoRouter(
         final id = int.parse(state.pathParameters['id']!);
         return HabitDetailScreen(habitId: id);
       },
+    ),
+    GoRoute(
+      path: '/month',
+      builder: (context, state) => const MonthSpreadScreen(),
     ),
   ],
 );

@@ -246,9 +246,13 @@ class DebugDataSeeder {
     // 1. Wipe everything
     await db.habitLogsDao.deleteAllLogs();
     await db.habitsDao.deleteAllHabits();
+    await db.dayNotesDao.deleteAllNotes();
+    await db.monthlyGoalsDao.deleteAllGoals();
 
     final rng = Random(scenario.habitCount * 1000 + scenario.months);
     final now = DateTime.now().toMidnight;
+    // Per-day done/expected counts across all habits — feeds the mood notes.
+    final dayAgg = <int, _DayAgg>{};
 
     // 2. Determine the time window
     final endMonth = DateTime.utc(
@@ -336,6 +340,7 @@ class DebugDataSeeder {
           month: m.month,
           now: now,
           rng: rng,
+          dayAgg: dayAgg,
         );
       }
       m = DateTime.utc(m.year, m.month + 1, 1);
@@ -343,6 +348,14 @@ class DebugDataSeeder {
 
     // 5. Generate today's logs as pending (so Greenhouse shows them)
     await _generateTodayLogs(habitMeta, now);
+
+    // 6. Day notes («Момент дня»): mood + time quality correlated with
+    //    daily completion, so the stats insights and month charts look
+    //    meaningful.
+    await _generateDayNotes(dayAgg, now, rng);
+
+    // 7. A few month goals for the current month (Цели месяца).
+    await _generateMonthGoals(now);
 
     return scenario.habitCount;
   }
@@ -353,6 +366,7 @@ class DebugDataSeeder {
     required int month,
     required DateTime now,
     required Random rng,
+    required Map<int, _DayAgg> dayAgg,
   }) async {
     final monthStart = DateTime.utc(year, month, 1);
     final monthEnd = DateTime.utc(year, month + 1, 0);
@@ -383,10 +397,15 @@ class DebugDataSeeder {
       // Determine if this day should have a log based on frequency
       if (!_shouldLogDay(meta, date)) continue;
 
+      // Track the day for mood generation (expected vs actually done).
+      final agg = dayAgg.putIfAbsent(date.unixSeconds, () => _DayAgg());
+      agg.expected++;
+
       // Decide outcome: done / skip / (missed day → no log)
       final roll = rng.nextDouble();
 
       if (roll < effectiveQuality) {
+        agg.done++;
         await db.habitLogsDao.upsertLog(
           HabitLogsCompanion.insert(
             habitId: meta.id,
@@ -404,6 +423,100 @@ class DebugDataSeeder {
           ),
         );
       }
+    }
+  }
+
+  /// Generate a «Момент дня» note for every past day that had expectations:
+  /// mood 🟢/🟡/🔴 + time quality (1–5) correlated with that day's completion
+  /// ratio, plus a memorable moment line for ~half of the days.
+  Future<void> _generateDayNotes(
+    Map<int, _DayAgg> dayAgg,
+    DateTime now,
+    Random rng,
+  ) async {
+    for (final entry in dayAgg.entries) {
+      final date = dateFromUnix(entry.key);
+      // Today is the user's live «Момент дня» — don't pre-fill it.
+      if (!date.isBefore(now)) continue;
+
+      final agg = entry.value;
+      final ratio = agg.expected == 0 ? 0.0 : agg.done / agg.expected;
+      final mood = _moodForRatio(ratio, rng);
+      final quality = _qualityForRatio(ratio, rng);
+      final moment = rng.nextDouble() < 0.55
+          ? _momentPool[rng.nextInt(_momentPool.length)]
+          : null;
+      await db.dayNotesDao.upsertNote(
+        entry.key,
+        moment: moment,
+        mood: mood,
+        timeQuality: quality,
+      );
+    }
+  }
+
+  /// Maps a day's completion ratio to «рациональность времени» (1–5)
+  /// with noise — mirrors the idea's «чем выше точка, тем я счастливее».
+  static int? _qualityForRatio(double ratio, Random rng) {
+    // ~15% of days have no rating at all (user skipped the ritual).
+    if (rng.nextDouble() < 0.15) return null;
+    final roll = rng.nextDouble();
+    if (ratio >= 0.8) {
+      return roll < 0.7
+          ? 5
+          : roll < 0.95
+          ? 4
+          : 3;
+    } else if (ratio >= 0.4) {
+      return roll < 0.25
+          ? 4
+          : roll < 0.8
+          ? 3
+          : 2;
+    } else {
+      return roll < 0.2
+          ? 2
+          : roll < 0.75
+          ? 1
+          : 3;
+    }
+  }
+
+  /// Seed a few «Цели месяца» for the current month so the card has content.
+  Future<void> _generateMonthGoals(DateTime now) async {
+    final monthTs = DateTime.utc(now.year, now.month, 1).unixSeconds;
+    final goals = [
+      'Снять 4 видео на YouTube',
+      'Сдать тесты по учёбе',
+      'Прочитать книгу',
+    ];
+    for (final g in goals) {
+      await db.monthlyGoalsDao.addGoal(monthTs, g);
+    }
+  }
+
+  /// Maps a day's completion ratio to a mood with noise — good days are
+  /// usually 🟢, skipped days usually 🟡, empty days usually 🔴.
+  static DayMood _moodForRatio(double ratio, Random rng) {
+    final roll = rng.nextDouble();
+    if (ratio >= 0.8) {
+      return roll < 0.75
+          ? DayMood.good
+          : roll < 0.95
+          ? DayMood.ok
+          : DayMood.bad;
+    } else if (ratio >= 0.4) {
+      return roll < 0.3
+          ? DayMood.good
+          : roll < 0.8
+          ? DayMood.ok
+          : DayMood.bad;
+    } else {
+      return roll < 0.1
+          ? DayMood.good
+          : roll < 0.4
+          ? DayMood.ok
+          : DayMood.bad;
     }
   }
 
@@ -448,6 +561,40 @@ class DebugDataSeeder {
     TimeOfDay.anytime => 7 + rng.nextInt(14), // 7–20
   };
 }
+
+/// Per-day done/expected counts across all habits (for mood generation).
+class _DayAgg {
+  int expected = 0;
+  int done = 0;
+}
+
+/// Memorable-moment lines for the seeded «Момент дня» notes.
+const _momentPool = [
+  'Встретил друга, гуляли у залива',
+  'Красивый закат после работы',
+  'Прочитал главу книги',
+  'Поговорил с мамой по телефону',
+  'Сходил на тренировку — бодрость весь день',
+  'Удачный день на работе',
+  'Приготовил новое блюдо',
+  'Золотой вечер, белые ночи',
+  'Написал пост в блог',
+  'Долгая прогулка по городу',
+  'Ранний подъём и продуктивное утро',
+  'Созвонился с другом',
+  'Получил комплимент',
+  'Поработал над своим проектом',
+  'Медитация и тишина',
+  'Прочитал 30 минут перед сном',
+  'Выучил новые слова',
+  'День был ленивый',
+  'Голова болела — день насмарку',
+  'Сорвался со сном, встал поздно',
+  'Хороший кофе и книга',
+  'Пробежка в парке',
+  'Интересный разговор, новые мысли',
+  'Дождь весь день, остался дома',
+];
 
 class _HabitMeta {
   _HabitMeta({

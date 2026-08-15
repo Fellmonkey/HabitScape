@@ -20,6 +20,7 @@ void main() {
       habitsDao: db.habitsDao,
       habitLogsDao: db.habitLogsDao,
       dayNotesDao: db.dayNotesDao,
+      monthlyGoalsDao: db.monthlyGoalsDao,
     );
   });
 
@@ -63,7 +64,13 @@ void main() {
         logDate,
         moment: 'Собеседование прошло хорошо',
         mood: DayMood.good,
+        timeQuality: 5,
       );
+
+      // Monthly goal
+      final janTs = DateTime.utc(2026, 1, 1).unixSeconds;
+      final goalId = await db.monthlyGoalsDao.addGoal(janTs, 'Снять 4 видео');
+      await db.monthlyGoalsDao.toggleGoal(goalId); // done
 
       // Export
       final exportedJson = await service.exportToJson();
@@ -74,6 +81,7 @@ void main() {
         habitsDao: db2.habitsDao,
         habitLogsDao: db2.habitLogsDao,
         dayNotesDao: db2.dayNotesDao,
+        monthlyGoalsDao: db2.monthlyGoalsDao,
       );
 
       final count = await service2.importFromJson(exportedJson);
@@ -101,6 +109,14 @@ void main() {
       expect(notes.first.date, logDate);
       expect(notes.first.moment, 'Собеседование прошло хорошо');
       expect(notes.first.mood, DayMood.good);
+      expect(notes.first.timeQuality, 5);
+
+      // Verify monthly goals (including done state)
+      final goals = await db2.monthlyGoalsDao.getAllGoals();
+      expect(goals, hasLength(1));
+      expect(goals.first.month, janTs);
+      expect(goals.first.title, 'Снять 4 видео');
+      expect(goals.first.isDone, isTrue);
 
       await db2.close();
     });
@@ -166,6 +182,7 @@ void main() {
         habitsDao: db2.habitsDao,
         habitLogsDao: db2.habitLogsDao,
         dayNotesDao: db2.dayNotesDao,
+        monthlyGoalsDao: db2.monthlyGoalsDao,
       );
 
       await service2.importFromJson(json);

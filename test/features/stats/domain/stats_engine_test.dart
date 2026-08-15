@@ -85,7 +85,7 @@ void main() {
   });
 
   group('buildStatsOverview', () {
-    test('aggregates month stats and year total', () {
+    test('aggregates year total and daily completion', () {
       final habit = makeHabit(
         name: 'Чтение',
         frequencyType: 'daily',
@@ -110,30 +110,24 @@ void main() {
           status: LogStatus.done,
         ),
       ];
-      final monthLogs = yearLogs
-          .where((l) => dateFromUnix(l.date).month == 1)
-          .toList();
 
       final overview = buildStatsOverview(
         habits: [habit],
         yearLogs: yearLogs,
-        monthLogs: monthLogs,
         monthNotes: const [],
+        yearNotes: const [],
         now: DateTime.utc(2026, 1, 31),
       );
 
       // Year window is 2025-02-01 … 2026-02-01 (exclusive): all 3 done.
       expect(overview.yearTotalDone, 3);
       expect(overview.days.length, 365);
-      expect(overview.monthHabitRanks, hasLength(1));
-      expect(overview.monthHabitRanks.first.pct, greaterThan(0));
     });
 
     test('mood counts only non-null moods', () {
       final overview = buildStatsOverview(
         habits: const [],
         yearLogs: const [],
-        monthLogs: const [],
         monthNotes: [
           makeDayNote(
             date: DateTime.utc(2026, 1, 3).unixSeconds,
@@ -144,6 +138,7 @@ void main() {
             mood: DayMood.bad,
           ),
         ],
+        yearNotes: const [],
         now: DateTime.utc(2026, 1, 31),
       );
 
@@ -152,17 +147,261 @@ void main() {
       expect(overview.monthMoods[DayMood.bad], 1);
     });
 
-    test('empty month expected gives 0% average', () {
+    test('empty data yields no insights', () {
       final overview = buildStatsOverview(
         habits: const [],
         yearLogs: const [],
-        monthLogs: const [],
         monthNotes: const [],
+        yearNotes: const [],
         now: DateTime.utc(2026, 1, 31),
       );
 
-      expect(overview.monthAvgPct, 0.0);
-      expect(overview.monthHabitRanks, isEmpty);
+      expect(overview.weekTrend.hasData, isFalse);
+      expect(overview.moodCorrelation.hasData, isFalse);
+      expect(overview.rhythm.bestWeekday, isNull);
+    });
+  });
+
+  group('computeMonthSpreadDays', () {
+    test('builds one day per calendar day with mood + quality + moment', () {
+      final habit = makeHabit(
+        name: 'Бег',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2025, 12, 1).unixSeconds,
+      );
+      final logs = [
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 2).unixSeconds,
+          status: LogStatus.done,
+        ),
+      ];
+      final notes = [
+        makeDayNote(
+          date: DateTime.utc(2026, 1, 2).unixSeconds,
+          mood: DayMood.bad,
+          timeQuality: 1,
+          moment: 'Голова болела',
+        ),
+      ];
+
+      final days = computeMonthSpreadDays(
+        habits: [habit],
+        logs: logs,
+        notes: notes,
+        monthStart: DateTime.utc(2026, 1, 1),
+      );
+
+      expect(days, hasLength(31)); // full January grid
+      final d1 = days[0];
+      expect(d1.mood, isNull);
+      expect(d1.ratio, 0.0);
+      expect(d1.hasMoment, isFalse);
+
+      final d2 = days[1];
+      expect(d2.mood, DayMood.bad);
+      expect(d2.ratio, 1.0);
+      expect(d2.timeQuality, 1); // «Впустую»
+      expect(d2.hasMoment, isTrue);
+      expect(d2.moment, 'Голова болела');
+    });
+
+    test('keeps days after habit creation but not before it', () {
+      final habit = makeHabit(
+        name: 'Поздняя привычка',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2026, 1, 15).unixSeconds,
+      );
+
+      final days = computeMonthSpreadDays(
+        habits: [habit],
+        logs: const [],
+        notes: const [],
+        monthStart: DateTime.utc(2026, 1, 1),
+      );
+
+      expect(days, hasLength(31));
+      expect(days[13].expected, 0); // Jan 14 — before creation
+      expect(days[14].expected, 1); // Jan 15 — created
+    });
+  });
+
+  group('computeMoodCorrelation', () {
+    test('full-done days are 🟢, empty days are 🔴', () {
+      final days = [
+        DayCompletion(
+          date: DateTime.utc(2026, 1, 1),
+          expected: 2,
+          done: 2,
+        ), // full
+        DayCompletion(
+          date: DateTime.utc(2026, 1, 2),
+          expected: 2,
+          done: 0,
+        ), // empty
+        DayCompletion(
+          date: DateTime.utc(2026, 1, 3),
+          expected: 2,
+          done: 1,
+        ), // partial — ignored
+        DayCompletion(
+          date: DateTime.utc(2026, 1, 4),
+          expected: 0,
+          done: 0,
+        ), // nothing expected — ignored
+      ];
+      final notes = [
+        makeDayNote(
+          date: DateTime.utc(2026, 1, 1).unixSeconds,
+          mood: DayMood.good,
+        ),
+        makeDayNote(
+          date: DateTime.utc(2026, 1, 2).unixSeconds,
+          mood: DayMood.bad,
+        ),
+      ];
+
+      final corr = computeMoodCorrelation(days: days, notes: notes);
+
+      expect(corr.fullDays, 1);
+      expect(corr.fullDaysGood, 1);
+      expect(corr.emptyDays, 1);
+      expect(corr.emptyDaysBad, 1);
+      expect(corr.goodShareOnFull, 100.0);
+      expect(corr.badShareOnEmpty, 100.0);
+    });
+
+    test('days without a mood note are skipped', () {
+      final days = [
+        DayCompletion(date: DateTime.utc(2026, 1, 1), expected: 1, done: 1),
+      ];
+
+      final corr = computeMoodCorrelation(days: days, notes: const []);
+
+      expect(corr.hasData, isFalse);
+      expect(corr.goodShareOnFull, isNull);
+      expect(corr.badShareOnEmpty, isNull);
+    });
+  });
+
+  group('computeWeekTrend', () {
+    test('this week beats last week', () {
+      final habit = makeHabit(
+        name: 'Зарядка',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
+      );
+      // now = Wed 2026-02-04 → this week Mon 02-02 … Sun 02-08.
+      final now = DateTime.utc(2026, 2, 4);
+
+      // Done Mon/Tue/Wed this week; last week only Mon.
+      final logs = [
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 2, 2).unixSeconds,
+          status: LogStatus.done,
+        ),
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 2, 3).unixSeconds,
+          status: LogStatus.done,
+        ),
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 2, 4).unixSeconds,
+          status: LogStatus.done,
+        ),
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 26).unixSeconds,
+          status: LogStatus.done,
+        ),
+      ];
+
+      final trend = computeWeekTrend(habits: [habit], logs: logs, now: now);
+
+      // Mon…today (3 days) this week vs the same 3 days last week.
+      expect(trend.thisWeekDays, 3);
+      expect(trend.thisWeekPct, 100.0);
+      expect(trend.lastWeekDays, 3);
+      expect(trend.lastWeekPct, closeTo(100 / 3, 0.01));
+      expect(trend.thisWeekDone, 3);
+      expect(trend.delta, greaterThan(0));
+      expect(trend.hasData, isTrue);
+    });
+
+    test('no data when nothing expected in either week', () {
+      final habit = makeHabit(
+        name: 'Поздняя',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2026, 3, 1).unixSeconds,
+      );
+
+      final trend = computeWeekTrend(
+        habits: [habit],
+        logs: const [],
+        now: DateTime.utc(2026, 2, 4),
+      );
+
+      expect(trend.hasData, isFalse);
+      expect(trend.thisWeekPct, 0.0);
+      expect(trend.lastWeekPct, 0.0);
+    });
+  });
+
+  group('computeRhythmStats', () {
+    test('finds best/worst weekday and top time bucket', () {
+      final habit = makeHabit(
+        name: 'Чтение',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+      );
+      // Week of Mon 2026-01-05 … Sun 2026-01-11.
+      final logs = [
+        // Mon — done in the morning.
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 5).unixSeconds,
+          status: LogStatus.done,
+          loggedHour: 9,
+        ),
+        // Tue, Wed — done in the evening.
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 6).unixSeconds,
+          status: LogStatus.done,
+          loggedHour: 21,
+        ),
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 7).unixSeconds,
+          status: LogStatus.done,
+          loggedHour: 22,
+        ),
+      ];
+
+      final days = computeDailyCompletion(
+        habits: [habit],
+        logs: logs,
+        start: DateTime.utc(2026, 1, 5),
+        end: DateTime.utc(2026, 1, 12),
+      );
+      final rhythm = computeRhythmStats(days: days, logs: logs);
+
+      // Mon/Tue/Wed at 100%, Thu–Sun at 0%.
+      expect(rhythm.bestWeekday, DateTime.monday);
+      expect(rhythm.worstWeekday, DateTime.thursday);
+      expect(rhythm.timeBucket, 'evening');
+      expect(rhythm.timeShare.round(), 67);
+    });
+
+    test('empty data yields no insights', () {
+      final rhythm = computeRhythmStats(days: const [], logs: const []);
+
+      expect(rhythm.bestWeekday, isNull);
+      expect(rhythm.worstWeekday, isNull);
+      expect(rhythm.timeBucket, isNull);
+      expect(rhythm.timeShare, 0.0);
     });
   });
 }

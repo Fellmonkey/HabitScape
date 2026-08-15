@@ -5,14 +5,15 @@ import 'package:path_provider/path_provider.dart';
 import '../../features/habits/data/day_notes_dao.dart';
 import '../../features/habits/data/habit_logs_dao.dart';
 import '../../features/habits/data/habits_dao.dart';
+import '../../features/habits/data/monthly_goals_dao.dart';
 import 'enums.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Habits, HabitLogs, DayNotes],
-  daos: [HabitsDao, HabitLogsDao, DayNotesDao],
+  tables: [Habits, HabitLogs, DayNotes, MonthlyGoals],
+  daos: [HabitsDao, HabitLogsDao, DayNotesDao, MonthlyGoalsDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Flag to indicate if this is a test database (in-memory) or a real one.
@@ -37,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +59,12 @@ class AppDatabase extends _$AppDatabase {
       // queries in the detail screen and the greenhouse.
       if (from < 4) {
         await m.createIndex(idxHabitLogsHabitDate);
+      }
+      // v4 → v5: MonthlyGoals table («Цели месяца») + timeQuality column
+      // on DayNotes («Рациональность времени», 1–5).
+      if (from < 5) {
+        await m.createTable(monthlyGoals);
+        await m.addColumn(dayNotes, dayNotes.timeQuality);
       }
     },
   );

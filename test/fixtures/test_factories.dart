@@ -97,12 +97,19 @@ HabitLogsCompanion makeLogCompanion({
 // ── DayNote factories ──────────────────────────────────────
 
 /// Create a DayNote data class instance.
-DayNote makeDayNote({int id = 1, int? date, String? moment, DayMood? mood}) {
+DayNote makeDayNote({
+  int id = 1,
+  int? date,
+  String? moment,
+  DayMood? mood,
+  int? timeQuality,
+}) {
   return DayNote(
     id: id,
     date: date ?? _defaultCreatedAt,
     moment: moment,
     mood: mood,
+    timeQuality: timeQuality,
   );
 }
 

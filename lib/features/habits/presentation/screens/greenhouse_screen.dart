@@ -9,9 +9,12 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../providers/habit_providers.dart';
 import '../../domain/scheduling.dart';
+import 'package:go_router/go_router.dart';
+
 import '../widgets/day_moment_card.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
+import '../widgets/month_goals_card.dart';
 
 /// Main daily screen — the "Greenhouse" (Теплица).
 /// Shows today's habits grouped by time of day with a progress ring.
@@ -87,6 +90,16 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
                     ],
                   ),
                 ),
+                // Open the month spread (Разворот месяца)
+                IconButton(
+                  key: K.openMonthSpread,
+                  onPressed: () => context.push('/month'),
+                  icon: Icon(
+                    Icons.calendar_month_outlined,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  tooltip: 'Разворот месяца',
+                ),
                 // Hide completed toggle
                 IconButton(
                   key: K.hideCompletedToggle,
@@ -109,6 +122,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
 
         // ── Day moment (Момент дня) ──
         const SliverToBoxAdapter(child: DayMomentCard()),
+
+        // ── Month goals (Цели месяца) ──
+        const SliverToBoxAdapter(child: MonthGoalsCard()),
 
         if (habits.isEmpty)
           SliverFillRemaining(

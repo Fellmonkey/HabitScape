@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/habits/presentation/screens/archived_habits_screen.dart';
 import '../../features/habits/presentation/screens/greenhouse_screen.dart';
 import '../../features/habits/presentation/screens/habit_detail_screen.dart';
+import '../../features/habits/presentation/screens/month_spread_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import 'shell_scaffold.dart';
@@ -45,6 +46,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/archive',
       builder: (context, state) => const ArchivedHabitsScreen(),
+    ),
+    GoRoute(
+      path: '/month',
+      builder: (context, state) => const MonthSpreadScreen(),
     ),
   ],
 );

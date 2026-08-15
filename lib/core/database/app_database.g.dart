@@ -1008,8 +1008,19 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       ).withConverter<DayMood?>($DayNotesTable.$convertermoodn);
+  static const VerificationMeta _timeQualityMeta = const VerificationMeta(
+    'timeQuality',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, date, moment, mood];
+  late final GeneratedColumn<int> timeQuality = GeneratedColumn<int>(
+    'time_quality',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, date, moment, mood, timeQuality];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1039,6 +1050,15 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
         moment.isAcceptableOrUnknown(data['moment']!, _momentMeta),
       );
     }
+    if (data.containsKey('time_quality')) {
+      context.handle(
+        _timeQualityMeta,
+        timeQuality.isAcceptableOrUnknown(
+          data['time_quality']!,
+          _timeQualityMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1066,6 +1086,10 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
           data['${effectivePrefix}mood'],
         ),
       ),
+      timeQuality: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}time_quality'],
+      ),
     );
   }
 
@@ -1085,7 +1109,14 @@ class DayNote extends DataClass implements Insertable<DayNote> {
   final int date;
   final String? moment;
   final DayMood? mood;
-  const DayNote({required this.id, required this.date, this.moment, this.mood});
+  final int? timeQuality;
+  const DayNote({
+    required this.id,
+    required this.date,
+    this.moment,
+    this.mood,
+    this.timeQuality,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1099,6 +1130,9 @@ class DayNote extends DataClass implements Insertable<DayNote> {
         $DayNotesTable.$convertermoodn.toSql(mood),
       );
     }
+    if (!nullToAbsent || timeQuality != null) {
+      map['time_quality'] = Variable<int>(timeQuality);
+    }
     return map;
   }
 
@@ -1110,6 +1144,9 @@ class DayNote extends DataClass implements Insertable<DayNote> {
           ? const Value.absent()
           : Value(moment),
       mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
+      timeQuality: timeQuality == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timeQuality),
     );
   }
 
@@ -1123,6 +1160,7 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       date: serializer.fromJson<int>(json['date']),
       moment: serializer.fromJson<String?>(json['moment']),
       mood: serializer.fromJson<DayMood?>(json['mood']),
+      timeQuality: serializer.fromJson<int?>(json['timeQuality']),
     );
   }
   @override
@@ -1133,6 +1171,7 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       'date': serializer.toJson<int>(date),
       'moment': serializer.toJson<String?>(moment),
       'mood': serializer.toJson<DayMood?>(mood),
+      'timeQuality': serializer.toJson<int?>(timeQuality),
     };
   }
 
@@ -1141,11 +1180,13 @@ class DayNote extends DataClass implements Insertable<DayNote> {
     int? date,
     Value<String?> moment = const Value.absent(),
     Value<DayMood?> mood = const Value.absent(),
+    Value<int?> timeQuality = const Value.absent(),
   }) => DayNote(
     id: id ?? this.id,
     date: date ?? this.date,
     moment: moment.present ? moment.value : this.moment,
     mood: mood.present ? mood.value : this.mood,
+    timeQuality: timeQuality.present ? timeQuality.value : this.timeQuality,
   );
   DayNote copyWithCompanion(DayNotesCompanion data) {
     return DayNote(
@@ -1153,6 +1194,9 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       date: data.date.present ? data.date.value : this.date,
       moment: data.moment.present ? data.moment.value : this.moment,
       mood: data.mood.present ? data.mood.value : this.mood,
+      timeQuality: data.timeQuality.present
+          ? data.timeQuality.value
+          : this.timeQuality,
     );
   }
 
@@ -1162,13 +1206,14 @@ class DayNote extends DataClass implements Insertable<DayNote> {
           ..write('id: $id, ')
           ..write('date: $date, ')
           ..write('moment: $moment, ')
-          ..write('mood: $mood')
+          ..write('mood: $mood, ')
+          ..write('timeQuality: $timeQuality')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, date, moment, mood);
+  int get hashCode => Object.hash(id, date, moment, mood, timeQuality);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1176,7 +1221,8 @@ class DayNote extends DataClass implements Insertable<DayNote> {
           other.id == this.id &&
           other.date == this.date &&
           other.moment == this.moment &&
-          other.mood == this.mood);
+          other.mood == this.mood &&
+          other.timeQuality == this.timeQuality);
 }
 
 class DayNotesCompanion extends UpdateCompanion<DayNote> {
@@ -1184,29 +1230,34 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
   final Value<int> date;
   final Value<String?> moment;
   final Value<DayMood?> mood;
+  final Value<int?> timeQuality;
   const DayNotesCompanion({
     this.id = const Value.absent(),
     this.date = const Value.absent(),
     this.moment = const Value.absent(),
     this.mood = const Value.absent(),
+    this.timeQuality = const Value.absent(),
   });
   DayNotesCompanion.insert({
     this.id = const Value.absent(),
     required int date,
     this.moment = const Value.absent(),
     this.mood = const Value.absent(),
+    this.timeQuality = const Value.absent(),
   }) : date = Value(date);
   static Insertable<DayNote> custom({
     Expression<int>? id,
     Expression<int>? date,
     Expression<String>? moment,
     Expression<String>? mood,
+    Expression<int>? timeQuality,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (date != null) 'date': date,
       if (moment != null) 'moment': moment,
       if (mood != null) 'mood': mood,
+      if (timeQuality != null) 'time_quality': timeQuality,
     });
   }
 
@@ -1215,12 +1266,14 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
     Value<int>? date,
     Value<String?>? moment,
     Value<DayMood?>? mood,
+    Value<int?>? timeQuality,
   }) {
     return DayNotesCompanion(
       id: id ?? this.id,
       date: date ?? this.date,
       moment: moment ?? this.moment,
       mood: mood ?? this.mood,
+      timeQuality: timeQuality ?? this.timeQuality,
     );
   }
 
@@ -1241,6 +1294,9 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
         $DayNotesTable.$convertermoodn.toSql(mood.value),
       );
     }
+    if (timeQuality.present) {
+      map['time_quality'] = Variable<int>(timeQuality.value);
+    }
     return map;
   }
 
@@ -1250,7 +1306,305 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
           ..write('id: $id, ')
           ..write('date: $date, ')
           ..write('moment: $moment, ')
-          ..write('mood: $mood')
+          ..write('mood: $mood, ')
+          ..write('timeQuality: $timeQuality')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MonthlyGoalsTable extends MonthlyGoals
+    with TableInfo<$MonthlyGoalsTable, MonthlyGoal> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MonthlyGoalsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _monthMeta = const VerificationMeta('month');
+  @override
+  late final GeneratedColumn<int> month = GeneratedColumn<int>(
+    'month',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
+  @override
+  late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
+    'is_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_done" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, month, title, isDone];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'monthly_goals';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MonthlyGoal> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('month')) {
+      context.handle(
+        _monthMeta,
+        month.isAcceptableOrUnknown(data['month']!, _monthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_monthMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('is_done')) {
+      context.handle(
+        _isDoneMeta,
+        isDone.isAcceptableOrUnknown(data['is_done']!, _isDoneMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MonthlyGoal map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MonthlyGoal(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      month: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}month'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      isDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_done'],
+      )!,
+    );
+  }
+
+  @override
+  $MonthlyGoalsTable createAlias(String alias) {
+    return $MonthlyGoalsTable(attachedDatabase, alias);
+  }
+}
+
+class MonthlyGoal extends DataClass implements Insertable<MonthlyGoal> {
+  final int id;
+
+  /// First-of-month unix timestamp the goal belongs to.
+  final int month;
+  final String title;
+  final bool isDone;
+  const MonthlyGoal({
+    required this.id,
+    required this.month,
+    required this.title,
+    required this.isDone,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['month'] = Variable<int>(month);
+    map['title'] = Variable<String>(title);
+    map['is_done'] = Variable<bool>(isDone);
+    return map;
+  }
+
+  MonthlyGoalsCompanion toCompanion(bool nullToAbsent) {
+    return MonthlyGoalsCompanion(
+      id: Value(id),
+      month: Value(month),
+      title: Value(title),
+      isDone: Value(isDone),
+    );
+  }
+
+  factory MonthlyGoal.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MonthlyGoal(
+      id: serializer.fromJson<int>(json['id']),
+      month: serializer.fromJson<int>(json['month']),
+      title: serializer.fromJson<String>(json['title']),
+      isDone: serializer.fromJson<bool>(json['isDone']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'month': serializer.toJson<int>(month),
+      'title': serializer.toJson<String>(title),
+      'isDone': serializer.toJson<bool>(isDone),
+    };
+  }
+
+  MonthlyGoal copyWith({int? id, int? month, String? title, bool? isDone}) =>
+      MonthlyGoal(
+        id: id ?? this.id,
+        month: month ?? this.month,
+        title: title ?? this.title,
+        isDone: isDone ?? this.isDone,
+      );
+  MonthlyGoal copyWithCompanion(MonthlyGoalsCompanion data) {
+    return MonthlyGoal(
+      id: data.id.present ? data.id.value : this.id,
+      month: data.month.present ? data.month.value : this.month,
+      title: data.title.present ? data.title.value : this.title,
+      isDone: data.isDone.present ? data.isDone.value : this.isDone,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyGoal(')
+          ..write('id: $id, ')
+          ..write('month: $month, ')
+          ..write('title: $title, ')
+          ..write('isDone: $isDone')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, month, title, isDone);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MonthlyGoal &&
+          other.id == this.id &&
+          other.month == this.month &&
+          other.title == this.title &&
+          other.isDone == this.isDone);
+}
+
+class MonthlyGoalsCompanion extends UpdateCompanion<MonthlyGoal> {
+  final Value<int> id;
+  final Value<int> month;
+  final Value<String> title;
+  final Value<bool> isDone;
+  const MonthlyGoalsCompanion({
+    this.id = const Value.absent(),
+    this.month = const Value.absent(),
+    this.title = const Value.absent(),
+    this.isDone = const Value.absent(),
+  });
+  MonthlyGoalsCompanion.insert({
+    this.id = const Value.absent(),
+    required int month,
+    required String title,
+    this.isDone = const Value.absent(),
+  }) : month = Value(month),
+       title = Value(title);
+  static Insertable<MonthlyGoal> custom({
+    Expression<int>? id,
+    Expression<int>? month,
+    Expression<String>? title,
+    Expression<bool>? isDone,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (month != null) 'month': month,
+      if (title != null) 'title': title,
+      if (isDone != null) 'is_done': isDone,
+    });
+  }
+
+  MonthlyGoalsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? month,
+    Value<String>? title,
+    Value<bool>? isDone,
+  }) {
+    return MonthlyGoalsCompanion(
+      id: id ?? this.id,
+      month: month ?? this.month,
+      title: title ?? this.title,
+      isDone: isDone ?? this.isDone,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (month.present) {
+      map['month'] = Variable<int>(month.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (isDone.present) {
+      map['is_done'] = Variable<bool>(isDone.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyGoalsCompanion(')
+          ..write('id: $id, ')
+          ..write('month: $month, ')
+          ..write('title: $title, ')
+          ..write('isDone: $isDone')
           ..write(')'))
         .toString();
   }
@@ -1262,6 +1616,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HabitsTable habits = $HabitsTable(this);
   late final $HabitLogsTable habitLogs = $HabitLogsTable(this);
   late final $DayNotesTable dayNotes = $DayNotesTable(this);
+  late final $MonthlyGoalsTable monthlyGoals = $MonthlyGoalsTable(this);
   late final Index idxHabitLogsHabitDate = Index(
     'idx_habit_logs_habit_date',
     'CREATE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
@@ -1269,6 +1624,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final HabitsDao habitsDao = HabitsDao(this as AppDatabase);
   late final HabitLogsDao habitLogsDao = HabitLogsDao(this as AppDatabase);
   late final DayNotesDao dayNotesDao = DayNotesDao(this as AppDatabase);
+  late final MonthlyGoalsDao monthlyGoalsDao = MonthlyGoalsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1277,6 +1635,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     habits,
     habitLogs,
     dayNotes,
+    monthlyGoals,
     idxHabitLogsHabitDate,
   ];
   @override
@@ -2000,6 +2359,7 @@ typedef $$DayNotesTableCreateCompanionBuilder =
       required int date,
       Value<String?> moment,
       Value<DayMood?> mood,
+      Value<int?> timeQuality,
     });
 typedef $$DayNotesTableUpdateCompanionBuilder =
     DayNotesCompanion Function({
@@ -2007,6 +2367,7 @@ typedef $$DayNotesTableUpdateCompanionBuilder =
       Value<int> date,
       Value<String?> moment,
       Value<DayMood?> mood,
+      Value<int?> timeQuality,
     });
 
 class $$DayNotesTableFilterComposer
@@ -2038,6 +2399,11 @@ class $$DayNotesTableFilterComposer
         column: $table.mood,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<int> get timeQuality => $composableBuilder(
+    column: $table.timeQuality,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$DayNotesTableOrderingComposer
@@ -2068,6 +2434,11 @@ class $$DayNotesTableOrderingComposer
     column: $table.mood,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get timeQuality => $composableBuilder(
+    column: $table.timeQuality,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DayNotesTableAnnotationComposer
@@ -2090,6 +2461,11 @@ class $$DayNotesTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<DayMood?, String> get mood =>
       $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<int> get timeQuality => $composableBuilder(
+    column: $table.timeQuality,
+    builder: (column) => column,
+  );
 }
 
 class $$DayNotesTableTableManager
@@ -2124,11 +2500,13 @@ class $$DayNotesTableTableManager
                 Value<int> date = const Value.absent(),
                 Value<String?> moment = const Value.absent(),
                 Value<DayMood?> mood = const Value.absent(),
+                Value<int?> timeQuality = const Value.absent(),
               }) => DayNotesCompanion(
                 id: id,
                 date: date,
                 moment: moment,
                 mood: mood,
+                timeQuality: timeQuality,
               ),
           createCompanionCallback:
               ({
@@ -2136,11 +2514,13 @@ class $$DayNotesTableTableManager
                 required int date,
                 Value<String?> moment = const Value.absent(),
                 Value<DayMood?> mood = const Value.absent(),
+                Value<int?> timeQuality = const Value.absent(),
               }) => DayNotesCompanion.insert(
                 id: id,
                 date: date,
                 moment: moment,
                 mood: mood,
+                timeQuality: timeQuality,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -2164,6 +2544,181 @@ typedef $$DayNotesTableProcessedTableManager =
       DayNote,
       PrefetchHooks Function()
     >;
+typedef $$MonthlyGoalsTableCreateCompanionBuilder =
+    MonthlyGoalsCompanion Function({
+      Value<int> id,
+      required int month,
+      required String title,
+      Value<bool> isDone,
+    });
+typedef $$MonthlyGoalsTableUpdateCompanionBuilder =
+    MonthlyGoalsCompanion Function({
+      Value<int> id,
+      Value<int> month,
+      Value<String> title,
+      Value<bool> isDone,
+    });
+
+class $$MonthlyGoalsTableFilterComposer
+    extends Composer<_$AppDatabase, $MonthlyGoalsTable> {
+  $$MonthlyGoalsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get month => $composableBuilder(
+    column: $table.month,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MonthlyGoalsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MonthlyGoalsTable> {
+  $$MonthlyGoalsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get month => $composableBuilder(
+    column: $table.month,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MonthlyGoalsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MonthlyGoalsTable> {
+  $$MonthlyGoalsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get month =>
+      $composableBuilder(column: $table.month, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDone =>
+      $composableBuilder(column: $table.isDone, builder: (column) => column);
+}
+
+class $$MonthlyGoalsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MonthlyGoalsTable,
+          MonthlyGoal,
+          $$MonthlyGoalsTableFilterComposer,
+          $$MonthlyGoalsTableOrderingComposer,
+          $$MonthlyGoalsTableAnnotationComposer,
+          $$MonthlyGoalsTableCreateCompanionBuilder,
+          $$MonthlyGoalsTableUpdateCompanionBuilder,
+          (
+            MonthlyGoal,
+            BaseReferences<_$AppDatabase, $MonthlyGoalsTable, MonthlyGoal>,
+          ),
+          MonthlyGoal,
+          PrefetchHooks Function()
+        > {
+  $$MonthlyGoalsTableTableManager(_$AppDatabase db, $MonthlyGoalsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MonthlyGoalsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MonthlyGoalsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MonthlyGoalsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> month = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
+              }) => MonthlyGoalsCompanion(
+                id: id,
+                month: month,
+                title: title,
+                isDone: isDone,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int month,
+                required String title,
+                Value<bool> isDone = const Value.absent(),
+              }) => MonthlyGoalsCompanion.insert(
+                id: id,
+                month: month,
+                title: title,
+                isDone: isDone,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MonthlyGoalsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MonthlyGoalsTable,
+      MonthlyGoal,
+      $$MonthlyGoalsTableFilterComposer,
+      $$MonthlyGoalsTableOrderingComposer,
+      $$MonthlyGoalsTableAnnotationComposer,
+      $$MonthlyGoalsTableCreateCompanionBuilder,
+      $$MonthlyGoalsTableUpdateCompanionBuilder,
+      (
+        MonthlyGoal,
+        BaseReferences<_$AppDatabase, $MonthlyGoalsTable, MonthlyGoal>,
+      ),
+      MonthlyGoal,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2174,4 +2729,6 @@ class $AppDatabaseManager {
       $$HabitLogsTableTableManager(_db, _db.habitLogs);
   $$DayNotesTableTableManager get dayNotes =>
       $$DayNotesTableTableManager(_db, _db.dayNotes);
+  $$MonthlyGoalsTableTableManager get monthlyGoals =>
+      $$MonthlyGoalsTableTableManager(_db, _db.monthlyGoals);
 }

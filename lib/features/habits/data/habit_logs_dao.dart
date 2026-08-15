@@ -54,6 +54,21 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Watch all logs for ALL habits in a date range (reactive month chart).
+  Stream<List<HabitLog>> watchLogsInRange(
+    int startTimestamp,
+    int endTimestamp,
+  ) {
+    return (select(habitLogs)
+          ..where(
+            (l) =>
+                l.date.isBiggerOrEqualValue(startTimestamp) &
+                l.date.isSmallerThanValue(endTimestamp),
+          )
+          ..orderBy([(l) => OrderingTerm.asc(l.date)]))
+        .watch();
+  }
+
   /// Get ALL logs for backup export.
   Future<List<HabitLog>> getAllLogs() {
     return (select(habitLogs)..orderBy([(l) => OrderingTerm.asc(l.id)])).get();
