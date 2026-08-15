@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../domain/stats_engine.dart';
+import '../../../habits/domain/completion.dart';
 
 /// GitHub-style contribution heatmap: 7 rows (weekdays) × N columns (weeks).
 /// Each cell is colored by the day's completion ratio.

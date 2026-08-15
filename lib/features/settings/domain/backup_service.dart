@@ -112,18 +112,16 @@ class BackupService {
       );
     }
 
-    // Import monthly goals.
+    // Import monthly goals. The insert returns the fresh id, so the done
+    // state is set on that same row — no extra lookup.
     for (final g in goalsList) {
       final map = g as Map<String, dynamic>;
-      await monthlyGoalsDao.addGoal(
+      final id = await monthlyGoalsDao.addGoal(
         map['month'] as int,
         map['title'] as String,
       );
-      // The insert generates a fresh id, so the done state must be set after.
-      final goals = await monthlyGoalsDao.getGoalsForMonth(map['month'] as int);
-      final last = goals.last;
-      if (map['isDone'] == true && !last.isDone) {
-        await monthlyGoalsDao.toggleGoal(last.id);
+      if (map['isDone'] == true) {
+        await monthlyGoalsDao.setGoalDone(id, isDone: true);
       }
     }
 

@@ -11,9 +11,9 @@ import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
 import '../data/monthly_goals_dao.dart';
+import '../domain/completion.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
-import '../../stats/domain/stats_engine.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -192,23 +192,18 @@ final habitMonthLogsProvider = FutureProvider.autoDispose
 
 /// Computed metrics for a specific habit in a specific month.
 /// Auto-disposed — scoped to the detail screen.
+///
+/// Reuses [habitProvider] and [habitMonthLogsProvider] instead of querying
+/// the DB again: the detail screen already watches both for the same
+/// (habit, month), so the habit row and month logs are fetched once per
+/// visit and shared across the metrics, heatmap and history sections.
 final habitMetricsProvider = FutureProvider.autoDispose
     .family<HabitMetrics, ({int habitId, int year, int month})>((
       ref,
       params,
     ) async {
-      final dao = ref.watch(habitLogsDaoProvider);
-      final habitsDao = ref.watch(habitsDaoProvider);
-
-      final habit = await habitsDao.getHabit(params.habitId);
-
-      final monthStart = DateTime.utc(params.year, params.month, 1);
-      final monthEnd = DateTime.utc(params.year, params.month + 1, 1);
-      final logs = await dao.getLogsForHabitInRange(
-        params.habitId,
-        monthStart.unixSeconds,
-        monthEnd.unixSeconds,
-      );
+      final habit = await ref.watch(habitProvider(params.habitId).future);
+      final logs = await ref.watch(habitMonthLogsProvider(params).future);
 
       return HabitEngine.calculateMetrics(
         habit,
@@ -303,8 +298,9 @@ class HabitActions extends Notifier<void> {
     return _goalsDao.addGoal(ts, title);
   }
 
-  /// Toggle the done state of a monthly goal.
-  Future<void> toggleMonthGoal(int goalId) => _goalsDao.toggleGoal(goalId);
+  /// Set the done state of a monthly goal (single UPDATE — no read first).
+  Future<void> setMonthGoalDone(int goalId, {required bool isDone}) =>
+      _goalsDao.setGoalDone(goalId, isDone: isDone);
 
   /// Delete a monthly goal.
   Future<void> deleteMonthGoal(int goalId) => _goalsDao.deleteGoal(goalId);

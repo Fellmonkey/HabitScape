@@ -42,14 +42,14 @@ void main() {
       expect(feb.first.title, 'Февральская цель');
     });
 
-    test('toggleGoal flips the done state', () async {
+    test('setGoalDone writes the done state without a read', () async {
       final id = await db.monthlyGoalsDao.addGoal(janTs, 'Цель');
 
-      await db.monthlyGoalsDao.toggleGoal(id);
+      await db.monthlyGoalsDao.setGoalDone(id, isDone: true);
       var goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
       expect(goals.first.isDone, isTrue);
 
-      await db.monthlyGoalsDao.toggleGoal(id);
+      await db.monthlyGoalsDao.setGoalDone(id, isDone: false);
       goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
       expect(goals.first.isDone, isFalse);
     });

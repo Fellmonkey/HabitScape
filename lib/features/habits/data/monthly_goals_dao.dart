@@ -33,13 +33,11 @@ class MonthlyGoalsDao extends DatabaseAccessor<AppDatabase>
     ).insert(MonthlyGoalsCompanion.insert(month: monthTs, title: title));
   }
 
-  /// Toggle the done state of a goal.
-  Future<void> toggleGoal(int id) async {
-    final goal = await (select(
-      monthlyGoals,
-    )..where((g) => g.id.equals(id))).getSingle();
-    await (update(monthlyGoals)..where((g) => g.id.equals(id))).write(
-      MonthlyGoalsCompanion(isDone: Value(!goal.isDone)),
+  /// Set the done state of a goal. A single UPDATE — no read-before-write
+  /// (the caller supplies the new value instead of flipping a fetched one).
+  Future<void> setGoalDone(int id, {required bool isDone}) {
+    return (update(monthlyGoals)..where((g) => g.id.equals(id))).write(
+      MonthlyGoalsCompanion(isDone: Value(isDone)),
     );
   }
 

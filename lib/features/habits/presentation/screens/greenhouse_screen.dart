@@ -163,8 +163,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         // ── Month goals (Цели месяца) ──
         // Not const: must rebuild after midnight so it switches to the new
-        // month when the greenhouse refreshes via [todayProvider].
-        SliverToBoxAdapter(child: const MonthGoalsCard()),
+        // month when the greenhouse refreshes via [todayProvider]. A const
+        // widget would keep the identical instance and never re-run build().
+        SliverToBoxAdapter(child: MonthGoalsCard()),
 
         if (habits.isEmpty)
           SliverFillRemaining(

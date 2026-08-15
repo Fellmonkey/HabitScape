@@ -3,7 +3,7 @@ import 'package:rythm/core/debug/debug_data_seeder.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/stats/domain/stats_engine.dart';
+import 'package:rythm/features/habits/domain/completion.dart';
 
 import '../../fixtures/test_db.dart';
 

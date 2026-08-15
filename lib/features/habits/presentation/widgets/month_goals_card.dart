@@ -97,7 +97,7 @@ class MonthGoalsCard extends ConsumerWidget {
                   Haptics.tap(ref.read(hapticsEnabledProvider));
                   ref
                       .read(habitActionsProvider.notifier)
-                      .toggleMonthGoal(goal.id);
+                      .setMonthGoalDone(goal.id, isDone: !goal.isDone);
                 },
                 onDelete: () => ref
                     .read(habitActionsProvider.notifier)

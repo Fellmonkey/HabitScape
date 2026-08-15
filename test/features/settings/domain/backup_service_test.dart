@@ -70,7 +70,7 @@ void main() {
       // Monthly goal
       final janTs = DateTime.utc(2026, 1, 1).unixSeconds;
       final goalId = await db.monthlyGoalsDao.addGoal(janTs, 'Снять 4 видео');
-      await db.monthlyGoalsDao.toggleGoal(goalId); // done
+      await db.monthlyGoalsDao.setGoalDone(goalId, isDone: true); // done
 
       // Export
       final exportedJson = await service.exportToJson();

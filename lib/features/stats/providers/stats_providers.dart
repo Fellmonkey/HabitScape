@@ -31,14 +31,18 @@ final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
     yearStart.unixSeconds,
     yearEnd.unixSeconds,
   );
-  final monthNotes = await notesDao.getNotesInRange(
-    monthStart.unixSeconds,
-    monthEnd.unixSeconds,
-  );
   final yearNotes = await notesDao.getNotesInRange(
     yearStart.unixSeconds,
     yearEnd.unixSeconds,
   );
+  // The current month is a subset of the year window — derive month moods
+  // in memory instead of issuing a second overlapping notes query.
+  final monthNotes = yearNotes
+      .where(
+        (n) =>
+            n.date >= monthStart.unixSeconds && n.date < monthEnd.unixSeconds,
+      )
+      .toList();
 
   return buildStatsOverview(
     habits: habits,

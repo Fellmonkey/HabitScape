@@ -10,7 +10,7 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../features/onboarding/showcase_tour.dart';
 import '../../../../features/onboarding/tour_content.dart';
-import '../../../stats/domain/stats_engine.dart';
+import '../../domain/completion.dart';
 import '../../providers/habit_providers.dart';
 import '../widgets/day_moment_sheet.dart';
 import '../widgets/month_goals_card.dart';

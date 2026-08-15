@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/habits/domain/completion.dart';
 import 'package:rythm/features/stats/domain/stats_engine.dart';
 
 import '../../../fixtures/test_factories.dart';
