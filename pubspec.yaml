@@ -26,6 +26,7 @@ dependencies:
   share_plus: ^12.0.1
   file_picker: ^10.3.10
   shared_preferences: ^2.5.3
+  showcaseview: ^5.1.0
 
 dev_dependencies:
   flutter_test:

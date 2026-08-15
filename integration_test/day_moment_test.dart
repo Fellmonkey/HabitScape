@@ -200,6 +200,35 @@ void main() {
       await tester.pumpAndSettle();
       expect((tester.widget<Text>(title)).data, currentTitle);
     });
+
+    testWidgets('swipes horizontally to switch months', (tester) async {
+      db = await pumpApp(tester);
+
+      await tester.tap(find.byKey(K.openMonthSpread));
+      await tester.pumpAndSettle();
+
+      final title = find.byKey(K.monthSpreadTitle);
+      final currentTitle = (tester.widget<Text>(title)).data!;
+
+      // Swipe left → next month.
+      await tester.fling(
+        find.byKey(K.monthSpreadGrid),
+        const Offset(-400, 0),
+        1200,
+      );
+      await tester.pumpAndSettle();
+      final nextTitle = (tester.widget<Text>(title)).data!;
+      expect(nextTitle, isNot(currentTitle));
+
+      // Swipe right → back to the current month.
+      await tester.fling(
+        find.byKey(K.monthSpreadGrid),
+        const Offset(400, 0),
+        1200,
+      );
+      await tester.pumpAndSettle();
+      expect((tester.widget<Text>(title)).data, currentTitle);
+    });
   });
 
   group('Month goals (Цели месяца)', () {

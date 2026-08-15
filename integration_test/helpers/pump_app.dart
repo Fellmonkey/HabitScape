@@ -8,6 +8,7 @@ import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/shell_scaffold.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
+import 'package:rythm/features/onboarding/onboarding_flags.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
@@ -82,7 +83,19 @@ Future<AppDatabase> pumpApp(
   WidgetTester tester, {
   Map<String, Object>? sharedPrefsValues,
 }) async {
-  SharedPreferences.setMockInitialValues(sharedPrefsValues ?? {});
+  // By default all onboarding tours are already seen, so existing tests are
+  // never interrupted by a spotlight. Pass explicit values (e.g. `{}`) to
+  // test the onboarding flow itself.
+  final prefsValues =
+      sharedPrefsValues ??
+      {
+        'onboarding_seen': [
+          OnboardingTours.greenhouse,
+          OnboardingTours.spread,
+          OnboardingTours.settings,
+        ],
+      };
+  SharedPreferences.setMockInitialValues(prefsValues);
   final prefs = await SharedPreferences.getInstance();
   final db = createIntegrationTestDatabase();
 

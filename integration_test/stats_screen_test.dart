@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' hide isNull;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:rythm/core/database/app_database.dart';
@@ -53,15 +54,25 @@ void main() {
       // Week trend sits right under the header.
       expect(find.byKey(K.statsWeekTrend), findsOneWidget);
 
-      // Correlation section (further down the page).
+      // Correlation section (further down the page). The stats screen has
+      // two Scrollables (the vertical list + the heatmap's horizontal one),
+      // so the outer list must be named explicitly.
+      final statsList = find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      );
       await tester.scrollUntilVisible(
         find.text('Настроение и выполнение'),
         200,
+        scrollable: statsList,
       );
       expect(find.byKey(K.statsCorrelation), findsOneWidget);
 
       // Mood counts + rhythm section.
-      await tester.scrollUntilVisible(find.text('Ритм недели'), 200);
+      await tester.scrollUntilVisible(
+        find.text('Ритм недели'),
+        200,
+        scrollable: statsList,
+      );
       expect(find.byKey(K.statsRhythm), findsOneWidget);
       expect(find.text('Настроение за месяц'), findsOneWidget);
     });

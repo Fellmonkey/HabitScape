@@ -55,7 +55,9 @@ class GlassCard extends StatelessWidget {
                     ),
                   ],
           ),
-          child: child,
+          // A Material ancestor lets ListTile children paint their ink on
+          // the card instead of the (hidden) Scaffold surface below.
+          child: Material(color: Colors.transparent, child: child),
         ),
       ),
     );

@@ -9,14 +9,31 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../features/onboarding/onboarding_flags.dart';
+import '../../../../features/onboarding/showcase_tour.dart';
+import '../../../../features/onboarding/tour_content.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../providers/settings_providers.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with OnboardingTourMixin<SettingsScreen> {
+  final _tourExportKey = GlobalKey();
+
+  @override
+  String get tourScope => OnboardingTours.settings;
+
+  @override
+  List<GlobalKey> get tourKeys => [_tourExportKey];
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -27,12 +44,18 @@ class SettingsScreen extends ConsumerWidget {
           // ── Backup section ──────────────────────────────────────
           _SectionHeader(title: 'Резервное копирование', theme: theme),
           const SizedBox(height: 8),
-          _SettingsTile(
-            key: K.settingsExport,
-            icon: Icons.upload_file,
-            title: 'Экспорт данных',
-            subtitle: 'Сохранить все привычки в файл',
-            onTap: () => _exportBackup(context, ref),
+          tourStep(
+            context,
+            scope: tourScope,
+            key: _tourExportKey,
+            content: TourContent.settingsHere,
+            child: _SettingsTile(
+              key: K.settingsExport,
+              icon: Icons.upload_file,
+              title: 'Экспорт данных',
+              subtitle: 'Сохранить все привычки в файл',
+              onTap: () => _exportBackup(context, ref),
+            ),
           ),
           const SizedBox(height: 8),
           _SettingsTile(

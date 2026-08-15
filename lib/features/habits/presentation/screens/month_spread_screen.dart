@@ -7,6 +7,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../features/onboarding/onboarding_flags.dart';
+import '../../../../features/onboarding/showcase_tour.dart';
+import '../../../../features/onboarding/tour_content.dart';
 import '../../../stats/domain/stats_engine.dart';
 import '../../providers/habit_providers.dart';
 import '../widgets/day_moment_sheet.dart';
@@ -22,8 +25,26 @@ class MonthSpreadScreen extends ConsumerStatefulWidget {
   ConsumerState<MonthSpreadScreen> createState() => _MonthSpreadScreenState();
 }
 
-class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen> {
+class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
+    with OnboardingTourMixin<MonthSpreadScreen> {
   late DateTime _month; // first-of-month of the displayed month
+
+  /// Accumulated horizontal drag distance (for slow swipes without flick).
+  double _dragDx = 0;
+
+  /// Direction of the last month change: +1 = forward, -1 = back — used to
+  /// slide the incoming month from the matching side.
+  int _slideDir = 1;
+
+  // ── Onboarding tour targets ──
+  final _tourGridKey = GlobalKey();
+  final _tourDayKey = GlobalKey();
+
+  @override
+  String get tourScope => OnboardingTours.spread;
+
+  @override
+  List<GlobalKey> get tourKeys => [_tourGridKey, _tourDayKey];
 
   @override
   void initState() {
@@ -36,8 +57,25 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen> {
 
   void _shiftMonth(int delta) {
     setState(() {
+      _slideDir = delta;
       _month = DateTime.utc(_month.year, _month.month + delta, 1);
     });
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    _dragDx += details.delta.dx;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    // Fast flick wins by velocity; slow drags by accumulated distance.
+    final dir = velocity.abs() > 300
+        ? (velocity < 0 ? 1 : -1)
+        : _dragDx.abs() > 40
+        ? (_dragDx < 0 ? 1 : -1)
+        : 0;
+    _dragDx = 0;
+    if (dir != 0) _shiftMonth(dir);
   }
 
   void _goToToday() {
@@ -89,12 +127,34 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen> {
             ),
         ],
       ),
-      body: daysAsync.when(
-        // No infinite spinner — a hidden body keeps pumpAndSettle happy and
-        // avoids a layout flash while the drift streams warm up.
-        loading: () => const SizedBox.shrink(),
-        error: (e, _) => Center(child: Text('Ошибка: $e')),
-        data: (days) => _buildBody(context, theme, days),
+      body: GestureDetector(
+        // Horizontal swipes switch months; the vertical CustomScrollView
+        // still owns vertical scrolling (the gesture arena resolves it).
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: _onHorizontalDragUpdate,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => SlideTransition(
+            position: Tween(
+              begin: Offset(_slideDir * 0.18, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+          child: KeyedSubtree(
+            key: ValueKey(_monthTs),
+            child: daysAsync.when(
+              // No infinite spinner — a hidden body keeps pumpAndSettle happy
+              // and avoids a layout flash while the drift streams warm up.
+              loading: () => const SizedBox.shrink(),
+              error: (e, _) => Center(child: Text('Ошибка: $e')),
+              data: (days) => _buildBody(context, theme, days),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -143,7 +203,17 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen> {
 
         // ── Calendar week grid ──
         SliverToBoxAdapter(
-          child: _CalendarGrid(days: days, onDayTap: _openDay),
+          child: tourStep(
+            context,
+            scope: tourScope,
+            key: _tourGridKey,
+            content: TourContent.spreadSwipe,
+            child: _CalendarGrid(
+              days: days,
+              onDayTap: _openDay,
+              tourDayKey: _tourDayKey,
+            ),
+          ),
         ),
 
         // ── Month goals ──
@@ -241,10 +311,17 @@ class _MoodCount extends StatelessWidget {
 // ── Calendar grid ─────────────────────────────────────────────
 
 class _CalendarGrid extends StatelessWidget {
-  const _CalendarGrid({required this.days, required this.onDayTap});
+  const _CalendarGrid({
+    required this.days,
+    required this.onDayTap,
+    this.tourDayKey,
+  });
 
   final List<MonthSpreadDay> days;
   final ValueChanged<DateTime> onDayTap;
+
+  /// When set, today's cell is wrapped in an onboarding spotlight.
+  final GlobalKey? tourDayKey;
 
   @override
   Widget build(BuildContext context) {
@@ -284,10 +361,10 @@ class _CalendarGrid extends StatelessWidget {
             for (var c = 0; c < 7; c++)
               Expanded(
                 child: c < week.length && week[c] != null
-                    ? _DayCell(
-                        day: week[c]!,
+                    ? _wrapDayCell(
+                        context,
+                        cell: week[c]!,
                         isToday: week[c]!.date == today,
-                        onTap: onDayTap,
                       )
                     : const SizedBox.shrink(),
               ),
@@ -307,6 +384,24 @@ class _CalendarGrid extends StatelessWidget {
         ),
         child: Column(children: [header, const SizedBox(height: 6), ...weeks]),
       ),
+    );
+  }
+
+  /// Today's cell is the onboarding target — wrap it in a spotlight.
+  Widget _wrapDayCell(
+    BuildContext context, {
+    required MonthSpreadDay cell,
+    required bool isToday,
+  }) {
+    final cellWidget = _DayCell(day: cell, isToday: isToday, onTap: onDayTap);
+    final key = tourDayKey;
+    if (key == null || !isToday) return cellWidget;
+    return tourStep(
+      context,
+      scope: OnboardingTours.spread,
+      key: key,
+      content: TourContent.spreadDay,
+      child: cellWidget,
     );
   }
 }

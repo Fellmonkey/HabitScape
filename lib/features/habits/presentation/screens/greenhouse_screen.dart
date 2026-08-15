@@ -7,6 +7,9 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../features/onboarding/onboarding_flags.dart';
+import '../../../../features/onboarding/showcase_tour.dart';
+import '../../../../features/onboarding/tour_content.dart';
 import '../../providers/habit_providers.dart';
 import '../../domain/scheduling.dart';
 import 'package:go_router/go_router.dart';
@@ -25,8 +28,27 @@ class GreenhouseScreen extends ConsumerStatefulWidget {
   ConsumerState<GreenhouseScreen> createState() => _GreenhouseScreenState();
 }
 
-class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
+class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
+    with OnboardingTourMixin<GreenhouseScreen> {
   bool _hideCompleted = false;
+
+  // ── Onboarding tour targets ──
+  final _tourMomentKey = GlobalKey();
+  final _tourSpreadKey = GlobalKey();
+  final _tourHabitKey = GlobalKey();
+
+  /// First habit card already wrapped for the tour (once per build pass).
+  bool _habitCardWrapped = false;
+
+  @override
+  String get tourScope => OnboardingTours.greenhouse;
+
+  @override
+  List<GlobalKey> get tourKeys => [
+    _tourMomentKey,
+    _tourSpreadKey,
+    _tourHabitKey,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -91,14 +113,20 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
                   ),
                 ),
                 // Open the month spread (Разворот месяца)
-                IconButton(
-                  key: K.openMonthSpread,
-                  onPressed: () => context.push('/month'),
-                  icon: Icon(
-                    Icons.calendar_month_outlined,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                tourStep(
+                  context,
+                  scope: tourScope,
+                  key: _tourSpreadKey,
+                  content: TourContent.greenhouseSpread,
+                  child: IconButton(
+                    key: K.openMonthSpread,
+                    onPressed: () => context.push('/month'),
+                    icon: Icon(
+                      Icons.calendar_month_outlined,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    tooltip: 'Разворот месяца',
                   ),
-                  tooltip: 'Разворот месяца',
                 ),
                 // Hide completed toggle
                 IconButton(
@@ -121,7 +149,15 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
         ),
 
         // ── Day moment (Момент дня) ──
-        const SliverToBoxAdapter(child: DayMomentCard()),
+        SliverToBoxAdapter(
+          child: tourStep(
+            context,
+            scope: tourScope,
+            key: _tourMomentKey,
+            content: TourContent.greenhouseMoment,
+            child: const DayMomentCard(),
+          ),
+        ),
 
         // ── Month goals (Цели месяца) ──
         const SliverToBoxAdapter(child: MonthGoalsCard()),
@@ -206,10 +242,23 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen> {
           itemBuilder: (context, index) {
             final habit = items[index];
             final log = logs.where((l) => l.habitId == habit.id).firstOrNull;
-            return Padding(
+            final card = Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: HabitCard(habit: habit, log: log),
             );
+            // Wrap only the first habit card in the tour spotlight — it
+            // must not be re-created on later rebuilds (GlobalKey clash).
+            if (!_habitCardWrapped) {
+              _habitCardWrapped = true;
+              return tourStep(
+                context,
+                scope: tourScope,
+                key: _tourHabitKey,
+                content: TourContent.greenhouseHabit,
+                child: card,
+              );
+            }
+            return card;
           },
         ),
       ),

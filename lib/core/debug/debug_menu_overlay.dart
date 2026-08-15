@@ -6,6 +6,7 @@ import '../database/database_provider.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import '../../features/onboarding/onboarding_flags.dart';
 import 'debug_data_seeder.dart';
 
 /// Draggable floating debug button that opens the debug menu.
@@ -201,6 +202,21 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     }
   }
 
+  Future<void> _resetOnboarding() async {
+    try {
+      await ref.read(onboardingFlagsProvider.notifier).resetAll();
+      if (!mounted) return;
+      setState(() {
+        _lastResult = '👋 Подсказки появятся снова при открытии экранов';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -243,6 +259,20 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.dustyRose,
               side: const BorderSide(color: AppColors.dustyRose),
+            ),
+          ),
+        ),
+
+        // Re-show onboarding tours
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _resetOnboarding,
+            icon: const Icon(Icons.tips_and_updates_outlined, size: 18),
+            label: const Text('Показать подсказки снова'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.sageGreen,
+              side: const BorderSide(color: AppColors.sageGreen),
             ),
           ),
         ),
