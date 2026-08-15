@@ -50,12 +50,33 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     _tourHabitKey,
   ];
 
+  /// One-step mini-tour on the first habit card: shown when the first habit
+  /// is created after the main tour ran (its habit step was skipped).
+  @override
+  List<GlobalKey> get pendingTourKeys => [_tourHabitKey];
+
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(activeHabitsProvider);
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
     final theme = Theme.of(context);
+
+    // First habit just appeared → the main tour already ran without a card,
+    // so teach the card gestures in a one-step mini-tour. The pending flag
+    // is set only by HabitActions.createHabit (the UI creation path), so
+    // tests/debug seeder that insert via DAO never trigger this.
+    ref.listen(activeHabitsProvider, (prev, next) {
+      final before = prev?.value?.length ?? 0;
+      final after = next.value?.length ?? 0;
+      if (before == 0 &&
+          after > 0 &&
+          ref.read(onboardingFlagsProvider.notifier).habitTutorialPending) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) startPendingTour();
+        });
+      }
+    });
 
     return Scaffold(
       body: SafeArea(

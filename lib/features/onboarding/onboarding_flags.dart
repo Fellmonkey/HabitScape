@@ -18,14 +18,22 @@ final onboardingFlagsProvider = NotifierProvider<OnboardingFlags, Set<String>>(
 
 class OnboardingFlags extends Notifier<Set<String>> {
   static const _key = 'onboarding_seen';
+  static const _habitPendingKey = 'greenhouse_habit_pending';
+
+  /// True when a first habit was created after the greenhouse tour already
+  /// ran (its habit-card step was skipped — there was no card yet). The
+  /// one-step mini-tour on the first habit card consumes this flag.
+  bool _habitTutorialPending = false;
+  bool get habitTutorialPending => _habitTutorialPending;
 
   @override
   Set<String> build() {
     // One-shot read (not watch): if the SharedPreferences future resolves
     // while `markSeen` is mid-flight, Riverpod re-runs build() and would
     // reset the state we just set.
-    return ref.read(sharedPrefsProvider).value?.getStringList(_key)?.toSet() ??
-        <String>{};
+    final prefs = ref.read(sharedPrefsProvider).value;
+    _habitTutorialPending = prefs?.getBool(_habitPendingKey) ?? false;
+    return prefs?.getStringList(_key)?.toSet() ?? <String>{};
   }
 
   bool isSeen(String tour) => state.contains(tour);
@@ -38,6 +46,7 @@ class OnboardingFlags extends Notifier<Set<String>> {
   Future<void> refresh() async {
     final prefs = await ref.read(sharedPrefsProvider.future);
     state = prefs.getStringList(_key)?.toSet() ?? <String>{};
+    _habitTutorialPending = prefs.getBool(_habitPendingKey) ?? false;
   }
 
   /// Marks [tour] as seen and persists the flag.
@@ -48,11 +57,30 @@ class OnboardingFlags extends Notifier<Set<String>> {
     await prefs.setStringList(_key, state.toList());
   }
 
-  /// Clears all tour flags — used by the debug menu
+  /// Remembers that the first habit was just created, so the greenhouse
+  /// shows a one-step mini-tour on the habit card (the main tour ran without
+  /// a card, so its habit step was skipped).
+  Future<void> setHabitTutorialPending() async {
+    _habitTutorialPending = true;
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    await prefs.setBool(_habitPendingKey, true);
+  }
+
+  /// Consumes the pending first-habit tutorial. Called when the mini-tour
+  /// starts — a dismissed mini-tour never re-shows.
+  Future<void> clearHabitTutorialPending() async {
+    _habitTutorialPending = false;
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    await prefs.remove(_habitPendingKey);
+  }
+
+  /// Clears all tour flags — used by the debug menu and Settings
   /// («Показать подсказки снова»).
   Future<void> resetAll() async {
     state = <String>{};
+    _habitTutorialPending = false;
     final prefs = await ref.read(sharedPrefsProvider.future);
     await prefs.remove(_key);
+    await prefs.remove(_habitPendingKey);
   }
 }

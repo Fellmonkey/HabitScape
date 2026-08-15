@@ -67,4 +67,45 @@ void main() {
     expect(container.read(onboardingFlagsProvider), isEmpty);
     expect(prefs.getStringList('onboarding_seen'), isNull);
   });
+
+  test('habit tutorial pending flag defaults to false', () {
+    expect(
+      container.read(onboardingFlagsProvider.notifier).habitTutorialPending,
+      isFalse,
+    );
+  });
+
+  test('setHabitTutorialPending persists across containers', () async {
+    final notifier = container.read(onboardingFlagsProvider.notifier);
+    await notifier.setHabitTutorialPending();
+    expect(notifier.habitTutorialPending, isTrue);
+    expect(prefs.getBool('greenhouse_habit_pending'), isTrue);
+
+    // A fresh container reading the same prefs sees the pending flag.
+    final second = makeContainer();
+    addTearDown(second.dispose);
+    await second.read(sharedPrefsProvider.future);
+    expect(
+      second.read(onboardingFlagsProvider.notifier).habitTutorialPending,
+      isTrue,
+    );
+  });
+
+  test('clearHabitTutorialPending consumes the flag', () async {
+    final notifier = container.read(onboardingFlagsProvider.notifier);
+    await notifier.setHabitTutorialPending();
+    await notifier.clearHabitTutorialPending();
+
+    expect(notifier.habitTutorialPending, isFalse);
+    expect(prefs.getBool('greenhouse_habit_pending'), isNull);
+  });
+
+  test('resetAll also clears the pending habit tutorial', () async {
+    final notifier = container.read(onboardingFlagsProvider.notifier);
+    await notifier.setHabitTutorialPending();
+    await notifier.resetAll();
+
+    expect(notifier.habitTutorialPending, isFalse);
+    expect(prefs.getBool('greenhouse_habit_pending'), isNull);
+  });
 }

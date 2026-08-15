@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/theme_mode.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../features/onboarding/showcase_tour.dart';
@@ -80,22 +82,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
           const SizedBox(height: 24),
 
+          // ── Appearance section ─────────────────────────────────
+          _SectionHeader(title: 'Внешний вид', theme: theme),
+          const SizedBox(height: 8),
+          _ThemeTile(),
+
+          const SizedBox(height: 24),
+
           // ── Experience section ───────────────────────────────────
           _SectionHeader(title: 'Ощущения', theme: theme),
           const SizedBox(height: 8),
           _HapticsTile(),
+          const SizedBox(height: 8),
+          _SettingsTile(
+            key: K.settingsShowHints,
+            icon: Icons.tips_and_updates_outlined,
+            title: 'Показать подсказки снова',
+            subtitle: 'Показывать обучающие подсказки при открытии экранов',
+            onTap: () => _resetOnboarding(ref),
+          ),
 
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────────────
           _SectionHeader(title: 'О приложении', theme: theme),
           const SizedBox(height: 8),
-          _SettingsTile(
-            icon: Icons.eco,
-            title: 'Rythm',
-            subtitle: 'Версия 1.0.0',
-            onTap: null,
-          ),
+          _AboutCard(onOpenSource: () => _openSource(context)),
 
           const SizedBox(height: 40),
         ],
@@ -186,6 +198,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
   }
 
+  Future<void> _resetOnboarding(WidgetRef ref) async {
+    await ref.read(onboardingFlagsProvider.notifier).resetAll();
+    if (mounted) {
+      _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
+    }
+  }
+
+  Future<void> _openSource(BuildContext context) async {
+    const url = 'https://github.com/Fellmonkey/HabitScape';
+    try {
+      final opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        _showSnackBar(context, 'Не удалось открыть ссылку');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showSnackBar(context, 'Не удалось открыть ссылку');
+      }
+    }
+  }
+
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,
@@ -208,15 +244,195 @@ class _HapticsTile extends ConsumerWidget {
           Icons.vibration,
           color: Theme.of(context).colorScheme.primary,
         ),
-        title: Text('Хептики', style: Theme.of(context).textTheme.titleSmall),
+        title: Text('Вибрация', style: Theme.of(context).textTheme.titleSmall),
         subtitle: Text(
-          'Тактильные отклики при отметках и нажатиях',
+          'Тактильный отклик при отметках и нажатиях',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         value: enabled,
         onChanged: (value) =>
             ref.read(hapticsEnabledProvider.notifier).setEnabled(value),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+      ),
+    );
+  }
+}
+
+// ── Theme picker ─────────────────────────────────────────────────
+
+class _ThemeTile extends ConsumerWidget {
+  const _ThemeTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final mode = ref.watch(themeModeProvider);
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.palette_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text('Тема оформления', style: theme.textTheme.titleSmall),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ThemeMode>(
+                key: K.themeModePicker,
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text('Системная'),
+                  ),
+                  ButtonSegment(value: ThemeMode.light, label: Text('Светлая')),
+                  ButtonSegment(value: ThemeMode.dark, label: Text('Тёмная')),
+                ],
+                selected: {mode},
+                onSelectionChanged: (selection) => ref
+                    .read(themeModeProvider.notifier)
+                    .setMode(selection.first),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── About card ──────────────────────────────────────────────────
+
+class _AboutCard extends StatelessWidget {
+  const _AboutCard({required this.onOpenSource});
+
+  final VoidCallback onOpenSource;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header: logo + name + version ──
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.12),
+                    borderRadius: AppRadius.borderM,
+                  ),
+                  child: Icon(Icons.eco_rounded, color: primary, size: 26),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('HabitScape', style: theme.textTheme.titleLarge),
+                      Text(
+                        'Бережный трекер привычек',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.7,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Версия 1.0.0',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Одна строка о дне — память на годы. 🌱',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const Divider(height: 24),
+            // ── Author ──
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: primary.withValues(alpha: 0.15),
+                  child: Text(
+                    'F',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Fellmonkey', style: theme.textTheme.titleSmall),
+                      Text(
+                        'Автор и разработчик',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // ── GitHub ──
+            ListTile(
+              key: K.settingsAboutAuthor,
+              contentPadding: EdgeInsets.zero,
+              onTap: onOpenSource,
+              leading: Icon(Icons.code_rounded, color: primary),
+              title: Text(
+                'Исходный код на GitHub',
+                style: theme.textTheme.titleSmall,
+              ),
+              subtitle: Text(
+                'github.com/Fellmonkey/HabitScape',
+                style: theme.textTheme.bodySmall,
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

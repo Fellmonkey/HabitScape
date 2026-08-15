@@ -44,8 +44,10 @@ void main() {
 
       // Archive + about.
       expect(find.text('Архивные привычки'), findsOneWidget);
-      expect(find.text('Rythm'), findsOneWidget);
+      expect(find.text('HabitScape'), findsOneWidget);
       expect(find.text('Версия 1.0.0'), findsOneWidget);
+      expect(find.text('Fellmonkey'), findsOneWidget);
+      expect(find.byKey(K.settingsAboutAuthor), findsOneWidget);
     });
 
     testWidgets('import button shows confirmation dialog', (tester) async {
@@ -88,7 +90,7 @@ void main() {
 
       final toggle = find.byKey(K.hapticsToggle);
       expect(toggle, findsOneWidget);
-      expect(find.text('Хептики'), findsOneWidget);
+      expect(find.text('Вибрация'), findsOneWidget);
 
       // Default is ON; flip it OFF.
       final switchFinder = find.descendant(

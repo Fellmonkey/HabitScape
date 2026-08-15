@@ -80,4 +80,7 @@ abstract final class K {
   static const settingsExport = Key('settings_export');
   static const settingsImport = Key('settings_import');
   static const hapticsToggle = Key('haptics_toggle');
+  static const themeModePicker = Key('theme_mode_picker');
+  static const settingsShowHints = Key('settings_show_hints');
+  static const settingsAboutAuthor = Key('settings_about_author');
 }

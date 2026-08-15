@@ -14,6 +14,7 @@ import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
+import '../../onboarding/onboarding_flags.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -240,6 +241,15 @@ class HabitActions extends Notifier<void> {
     bool isFocus = false,
   }) async {
     final now = DateTime.now().toMidnight;
+    // If this is the very first habit, remember to teach the card gestures:
+    // the greenhouse tour's habit step was skipped (there was no card). Set
+    // the flag BEFORE the insert, so the 0→1 stream emission always sees it.
+    final existing = await _habitsDao.getActiveHabits();
+    if (existing.isEmpty) {
+      await ref
+          .read(onboardingFlagsProvider.notifier)
+          .setHabitTutorialPending();
+    }
     return _habitsDao.insertHabit(
       HabitsCompanion(
         name: Value(name),

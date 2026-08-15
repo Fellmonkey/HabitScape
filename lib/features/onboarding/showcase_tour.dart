@@ -27,6 +27,11 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
   /// GlobalKeys of the [Showcase] targets on this screen, in tour order.
   List<GlobalKey> get tourKeys;
 
+  /// Keys of an optional one-step mini-tour shown when a first habit appears
+  /// (the main tour's habit step was skipped — there was no card yet).
+  /// Empty by default; screens opt in by overriding.
+  List<GlobalKey> get pendingTourKeys => const [];
+
   ShowcaseView? _view;
   bool _starting = false;
 
@@ -61,7 +66,18 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     // Re-read the persisted flags: at initState SharedPreferences was still
     // loading, so a returning user must not be shown the tour again.
     await flags.refresh();
-    if (flags.isSeen(tourScope) || !mounted) return;
+    if (!mounted) return;
+    if (flags.isSeen(tourScope)) {
+      // Main tour already shown. If a first habit was created since (its
+      // habit-card step was skipped — no card existed), teach the card
+      // gestures in a one-step mini-tour. Handles the app-restart case;
+      // the in-session case is triggered by the screen on the 0→1
+      // transition via [startPendingTour].
+      if (flags.habitTutorialPending && pendingTourKeys.isNotEmpty) {
+        await startPendingTour();
+      }
+      return;
+    }
     // Poll until the first target is rendered (drift streams may still be
     // warming up), then give up silently after ~3s.
     for (var i = 0; i < 30 && mounted; i++) {
@@ -72,6 +88,24 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     // Marked seen on start, so a tour dismissed halfway never nags again.
     flags.markSeen(tourScope);
     view.startShowCase(tourKeys);
+  }
+
+  /// Starts the one-step mini-tour on [pendingTourKeys] (e.g. the first
+  /// habit card) and consumes the pending flag.
+  Future<void> startPendingTour() async {
+    final view = _view;
+    final flags = _flags;
+    if (view == null || flags == null || pendingTourKeys.isEmpty) return;
+    _starting = true;
+    // Wait until the target (the habit card) is laid out.
+    for (var i = 0; i < 30 && mounted; i++) {
+      if (view.isTargetRendered(pendingTourKeys.first)) break;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    if (!mounted || _view == null) return;
+    // Consumed on start — a dismissed mini-tour never nags again.
+    await flags.clearHabitTutorialPending();
+    view.startShowCase(pendingTourKeys);
   }
 
   @override
@@ -100,6 +134,7 @@ Widget tourStep(
     scope: scope,
     title: content.title,
     description: content.description,
+    movingAnimationDuration: const Duration(milliseconds: 8000),
     tooltipBackgroundColor: isDark ? AppColors.darkSurface : Colors.white,
     textColor: isDark ? AppColors.darkText : AppColors.lightText,
     titleTextStyle: theme.textTheme.titleSmall?.copyWith(
