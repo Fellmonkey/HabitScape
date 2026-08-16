@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:rythm/core/ads/ads_service.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/shell_scaffold.dart';
@@ -15,6 +16,8 @@ import 'package:rythm/features/habits/presentation/screens/month_spread_screen.d
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../test/fixtures/fake_ads_service.dart';
 
 /// Integration-test flags notifier: never arms the one-step «first habit»
 /// mini-tour. Tests create their first habit through the same UI form as a
@@ -118,6 +121,11 @@ Future<AppDatabase> pumpApp(
         databaseProvider.overrideWithValue(db),
         sharedPrefsProvider.overrideWith((_) async => prefs),
         onboardingFlagsProvider.overrideWith(_NoHabitTutorialFlags.new),
+        // No real ads in integration tests — the slot hides and rewarded
+        // flows fall back to the fake (not exercised by existing tests).
+        adsServiceProvider.overrideWithValue(
+          FakeAdsService(isAvailable: false),
+        ),
       ],
       child: MaterialApp.router(
         title: 'HabitScape — integration test',

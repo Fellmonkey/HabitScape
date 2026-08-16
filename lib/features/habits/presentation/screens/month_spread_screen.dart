@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ads/ads_service.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,9 +13,11 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../features/onboarding/showcase_tour.dart';
 import '../../../../features/onboarding/tour_content.dart';
+import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/completion.dart';
 import '../../providers/habit_providers.dart';
 import '../widgets/day_moment_sheet.dart';
+import '../month_spread_exporter.dart';
 import '../widgets/month_goals_card.dart';
 
 /// «Разворот месяца» — the main history screen: a calendar week-grid where
@@ -128,6 +133,12 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
               onPressed: _goToToday,
               child: const Text('Сегодня'),
             ),
+          IconButton(
+            key: K.monthSpreadExport,
+            tooltip: 'Поделиться месяцем',
+            onPressed: _exportMonth,
+            icon: const Icon(Icons.ios_share_rounded),
+          ),
         ],
       ),
       body: GestureDetector(
@@ -167,12 +178,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     ThemeData theme,
     List<MonthSpreadDay> days,
   ) {
-    final moodCounts = <DayMood, int>{for (final m in DayMood.values) m: 0};
-    for (final d in days) {
-      final mood = d.mood;
-      if (mood != null) moodCounts[mood] = moodCounts[mood]! + 1;
-    }
-
+    final moodCounts = _moodCountsOf(days);
     final moments = days.where((d) => d.hasMoment).toList();
     final monthTs = _monthTs;
 
@@ -261,16 +267,217 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     if (mounted) ref.invalidate(monthSpreadProvider(_monthTs));
   }
 
-  String _pluralMoments(int n) {
-    if (n % 10 == 1 && n % 100 != 11) return 'момент';
-    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) {
-      return 'момента';
+  // ── Export «Разворота месяца» (PNG) ────────────────────────
+
+  /// Share a PNG photo of the month. On platforms with ads the user opts in
+  /// via a rewarded ad (never interruptive — fully user-initiated);
+  /// everywhere else the export is simply free.
+  Future<void> _exportMonth() async {
+    final days = ref
+        .read(monthSpreadProvider(_monthTs))
+        .whenOrNull(data: (d) => d);
+    if (days == null || !mounted) return;
+
+    final ads = ref.read(adsServiceProvider);
+    if (ads.isAvailable) {
+      final choice = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const _ExportSheet(),
+      );
+      if (choice != 'rewarded' || !mounted) return;
+
+      final granted = await ads.showRewardedAd();
+      if (!granted) {
+        if (mounted) {
+          _showSnackBar(
+            context,
+            'Не удалось загрузить рекламу. Попробуйте позже.',
+          );
+        }
+        return;
+      }
     }
-    return 'моментов';
+    if (!mounted) return;
+
+    final exporter = ref.read(monthSpreadExporterProvider);
+    final width = MediaQuery.sizeOf(context).width;
+    Uint8List? bytes;
+    try {
+      bytes = await exporter.capturePng(
+        context,
+        _MonthSpreadCapture(days: days),
+        width: width,
+      );
+    } catch (_) {
+      bytes = null;
+    }
+    if (bytes == null) {
+      if (mounted) _showSnackBar(context, 'Не удалось создать изображение.');
+      return;
+    }
+    try {
+      await exporter.sharePng(bytes, fileName: _exportFileName());
+    } catch (e) {
+      if (mounted) _showSnackBar(context, 'Не удалось поделиться: $e');
+    }
+  }
+
+  String _exportFileName() {
+    final m = _month.month.toString().padLeft(2, '0');
+    return 'habitscape_${_month.year}-$m.png';
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
 // ── Mood summary chip ─────────────────────────────────────────
+
+// ── Export bottom sheet ───────────────────────────────────────
+
+/// «Поделиться месяцем»: opt-in rewarded ad (Android) or cancel.
+class _ExportSheet extends StatelessWidget {
+  const _ExportSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    // Material (not Container): ListTile paints ink on the nearest Material
+    // ancestor, so a plain DecoratedBox would hide ripples (debug assert).
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SheetHandle(),
+            const SizedBox(height: 12),
+            Text('Поделиться месяцем', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              'Получите изображение «Разворота месяца» и отправьте его куда угодно.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              key: K.exportRewardedOption,
+              leading: Icon(Icons.play_circle_outline, color: primary),
+              title: Text('Посмотреть рекламу — бесплатно'),
+              subtitle: Text('Реклама займёт примерно 30 секунд'),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+              onTap: () => Navigator.pop(context, 'rewarded'),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(
+                Icons.close,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+              title: const Text('Отмена'),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Offscreen capture copy ────────────────────────────────────
+
+/// A static, non-interactive re-render of the month (summary + grid +
+/// moments) used by [MonthSpreadExporter] to produce the PNG. Lives in the
+/// same file so it can reuse the private `_CalendarGrid`/`_MoodCount`/
+/// `_MomentRow` visuals without duplicating them.
+class _MonthSpreadCapture extends StatelessWidget {
+  const _MonthSpreadCapture({required this.days});
+
+  final List<MonthSpreadDay> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final moodCounts = _moodCountsOf(days);
+    final moments = days.where((d) => d.hasMoment).toList();
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _MoodCount(mood: DayMood.good, count: moodCounts[DayMood.good]!),
+              const SizedBox(width: 12),
+              _MoodCount(mood: DayMood.ok, count: moodCounts[DayMood.ok]!),
+              const SizedBox(width: 12),
+              _MoodCount(mood: DayMood.bad, count: moodCounts[DayMood.bad]!),
+              const Spacer(),
+              Text(
+                '${moments.length} ${_pluralMoments(moments.length)}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _CalendarGrid(
+            days: days,
+            onDayTap: (_) {},
+            gridKey: const Key('month_spread_grid_capture'),
+            debugDayKeys: false,
+          ),
+          if (moments.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Моменты месяца',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            ...moments.map((d) => _MomentRow(day: d, onTap: () {})),
+          ],
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Mood summary chip ─────────────────────────────────────────
+
+Map<DayMood, int> _moodCountsOf(List<MonthSpreadDay> days) {
+  final counts = <DayMood, int>{for (final m in DayMood.values) m: 0};
+  for (final d in days) {
+    final mood = d.mood;
+    if (mood != null) counts[mood] = counts[mood]! + 1;
+  }
+  return counts;
+}
+
+String _pluralMoments(int n) {
+  if (n % 10 == 1 && n % 100 != 11) return 'момент';
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) {
+    return 'момента';
+  }
+  return 'моментов';
+}
 
 class _MoodCount extends StatelessWidget {
   const _MoodCount({required this.mood, required this.count});
@@ -318,6 +525,8 @@ class _CalendarGrid extends StatelessWidget {
     required this.days,
     required this.onDayTap,
     this.tourDayKey,
+    this.gridKey = K.monthSpreadGrid,
+    this.debugDayKeys = true,
   });
 
   final List<MonthSpreadDay> days;
@@ -325,6 +534,14 @@ class _CalendarGrid extends StatelessWidget {
 
   /// When set, today's cell is wrapped in an onboarding spotlight.
   final GlobalKey? tourDayKey;
+
+  /// Key for the grid container. The offscreen PNG capture passes a distinct
+  /// key so the tree doesn't end up with two widgets sharing `K.monthSpreadGrid`.
+  final Key gridKey;
+
+  /// Whether day cells carry their `K.monthSpreadDay(n)` test keys. Disabled
+  /// for the offscreen capture (duplicate local keys would crash the tree).
+  final bool debugDayKeys;
 
   @override
   Widget build(BuildContext context) {
@@ -379,7 +596,7 @@ class _CalendarGrid extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
       child: Container(
-        key: K.monthSpreadGrid,
+        key: gridKey,
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
@@ -396,7 +613,12 @@ class _CalendarGrid extends StatelessWidget {
     required MonthSpreadDay cell,
     required bool isToday,
   }) {
-    final cellWidget = _DayCell(day: cell, isToday: isToday, onTap: onDayTap);
+    final cellWidget = _DayCell(
+      day: cell,
+      isToday: isToday,
+      onTap: onDayTap,
+      dayKey: debugDayKeys ? K.monthSpreadDay(cell.date.day) : null,
+    );
     final key = tourDayKey;
     if (key == null || !isToday) return cellWidget;
     return tourStep(
@@ -415,11 +637,15 @@ class _DayCell extends StatelessWidget {
     required this.day,
     required this.isToday,
     required this.onTap,
+    this.dayKey,
   });
 
   final MonthSpreadDay day;
   final bool isToday;
   final ValueChanged<DateTime> onTap;
+
+  /// Test key (`K.monthSpreadDay(n)`); null in the offscreen capture copy.
+  final Key? dayKey;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +659,7 @@ class _DayCell extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(2),
       child: InkWell(
-        key: K.monthSpreadDay(day.date.day),
+        key: dayKey,
         borderRadius: AppRadius.borderS,
         onTap: () => onTap(day.date),
         child: AnimatedContainer(

@@ -29,6 +29,12 @@ dependencies:
   showcaseview: ^5.1.0
   url_launcher: ^6.3.1
 
+  # Monetization (Android; Yandex Mobile Ads)
+  yandex_mobileads: ^8.3.0
+
+  # Web DOM interop (PNG export download fallback on the Web PWA)
+  web: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -56,6 +56,15 @@ abstract final class K {
   static const monthSpreadToday = Key('month_spread_today');
   static const monthSpreadGrid = Key('month_spread_grid');
 
+  /// Export «Разворота месяца» to PNG (rewarded ad on Android).
+  static const monthSpreadExport = Key('month_spread_export');
+
+  /// «Смотреть рекламу» option in the export bottom sheet.
+  static const exportRewardedOption = Key('export_rewarded_option');
+
+  /// Inline ad slot at the bottom of the Statistics screen.
+  static const statsInlineAd = Key('stats_inline_ad');
+
   /// Per-day cell in the spread grid: `month_spread_day_$day`
   static Key monthSpreadDay(int day) => Key('month_spread_day_$day');
 

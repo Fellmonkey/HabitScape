@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/ads/ads_service.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -19,6 +20,9 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsOverviewProvider);
     final theme = Theme.of(context);
+    // Ads live only on the secondary «Статистика» surface; the inline banner
+    // hides entirely when the platform has no ad stack (Web, desktop, tests).
+    final ads = ref.watch(adsServiceProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -136,7 +140,18 @@ class StatsScreen extends ConsumerWidget {
                     child: _RhythmCard(rhythm: stats.rhythm),
                   ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                if (ads.isAvailable)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                      child: KeyedSubtree(
+                        key: K.statsInlineAd,
+                        child: ads.buildInlineAd(context),
+                      ),
+                    ),
+                  )
+                else
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
               ],
             ),
           ],
