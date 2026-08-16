@@ -114,14 +114,6 @@ void main() {
         expect(isExpectedToday(habit, DateTime.utc(2026, 1, 10)), isTrue);
       });
     });
-
-    group('negative', () {
-      test('always returns true', () {
-        final habit = makeHabit(frequencyType: 'negative');
-        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 5)), isTrue);
-        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 3)), isTrue);
-      });
-    });
   });
 
   // ── parseWeekdays ───────────────────────────────────────────

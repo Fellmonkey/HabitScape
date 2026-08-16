@@ -131,18 +131,6 @@ void main() {
       expect(HabitEngine.calculateRequiredBase(habit, 2026, 1), 31);
     });
 
-    // ── negative ───────────────────────────────────────────────
-
-    test('negative, full month returns 31', () {
-      final habit = makeHabit(frequencyType: 'negative', createdAt: jan1);
-      expect(HabitEngine.calculateRequiredBase(habit, 2026, 1), 31);
-    });
-
-    test('negative, mid-month returns same as daily mid-month (17)', () {
-      final habit = makeHabit(frequencyType: 'negative', createdAt: jan15);
-      expect(HabitEngine.calculateRequiredBase(habit, 2026, 1), 17);
-    });
-
     // ── edge cases ─────────────────────────────────────────────
 
     test('bad JSON for weekdays defaults to Mon-Fri (22)', () {

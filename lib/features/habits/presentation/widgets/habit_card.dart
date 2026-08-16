@@ -8,6 +8,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
@@ -15,7 +16,7 @@ import '../../providers/habit_providers.dart';
 /// - Checkbox on the left for instant marking.
 /// - Tap body → detail bottom sheet.
 /// - Long press → mark done (alt).
-/// - Swipe left → Skip / Fail / Delete menu.
+/// - Swipe left → Skip / Delete menu.
 class HabitCard extends ConsumerStatefulWidget {
   const HabitCard({required this.habit, required this.log, super.key});
 
@@ -95,7 +96,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
     return Dismissible(
       key: ValueKey('habit_${widget.habit.id}'),
       direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) => _showSwipeMenu(context),
+      confirmDismiss: (_) => _showSwipeMenu(),
       background: _buildSwipeBackground(),
       child: ScaleTransition(
         scale: _scaleAnim,
@@ -177,8 +178,8 @@ class _HabitCardState extends ConsumerState<HabitCard>
                         ],
                       ),
                     ),
-                    // ── Seed archetype icon ──
-                    _SeedIcon(archetype: widget.habit.seedArchetype),
+                    // ── Habit icon ──
+                    _HabitIcon(icon: widget.habit.icon),
                   ],
                 ),
               ),
@@ -201,32 +202,44 @@ class _HabitCardState extends ConsumerState<HabitCard>
     );
   }
 
-  Future<bool?> _showSwipeMenu(BuildContext context) async {
+  Future<bool?> _showSwipeMenu() async {
+    final theme = Theme.of(context);
     final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              key: K.swipeSkip,
-              leading: const Icon(
-                Icons.pause_circle_outline,
-                color: AppColors.coolGreyBlue,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SheetHandle(),
+              const SizedBox(height: 8),
+              ListTile(
+                key: K.swipeSkip,
+                leading: const Icon(
+                  Icons.pause_circle_outline,
+                  color: AppColors.coolGreyBlue,
+                ),
+                title: const Text('Уважительный пропуск'),
+                onTap: () => Navigator.pop(ctx, 'skip'),
               ),
-              title: const Text('Уважительный пропуск'),
-              onTap: () => Navigator.pop(ctx, 'skip'),
-            ),
-            ListTile(
-              key: K.swipeDelete,
-              leading: const Icon(
-                Icons.delete_outline,
-                color: AppColors.fadedPlum,
+              ListTile(
+                key: K.swipeDelete,
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.fadedPlum,
+                ),
+                title: const Text('Удалить'),
+                onTap: () => Navigator.pop(ctx, 'delete'),
               ),
-              title: const Text('Удалить'),
-              onTap: () => Navigator.pop(ctx, 'delete'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -238,9 +251,38 @@ class _HabitCardState extends ConsumerState<HabitCard>
       case 'skip':
         await actions.markSkip(widget.habit.id);
       case 'delete':
+        if (!mounted) return false;
+        final confirmed = await _confirmDelete(context);
+        if (confirmed != true) return false;
         await actions.deleteHabit(widget.habit.id);
     }
     return false; // Don't dismiss the Dismissible itself
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить привычку?'),
+        content: Text(
+          '«${widget.habit.name}» будет удалена вместе со всей историей. '
+          'Это нельзя отменить.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openDetail(BuildContext context) {
@@ -374,15 +416,15 @@ class _CheckCircleState extends State<_CheckCircle>
   }
 }
 
-/// Small icon representing the seed archetype.
-class _SeedIcon extends StatelessWidget {
-  const _SeedIcon({required this.archetype});
+/// Small neutral icon representing the habit.
+class _HabitIcon extends StatelessWidget {
+  const _HabitIcon({required this.icon});
 
-  final String archetype;
+  final String icon;
 
   @override
   Widget build(BuildContext context) {
-    final type = SeedArchetype.fromString(archetype);
+    final type = HabitIcon.fromString(icon);
 
     return Icon(
       type.icon,

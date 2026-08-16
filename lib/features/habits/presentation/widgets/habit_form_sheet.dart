@@ -6,6 +6,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
+import 'icon_picker.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
@@ -22,7 +23,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
   late final TextEditingController _nameController;
   late FrequencyType _frequency;
   late TimeOfDay _timeOfDay;
-  late SeedArchetype _archetype;
+  late HabitIcon _icon;
   late final Set<int> _selectedWeekdays;
   late int _xValue;
   late int _everyXDays;
@@ -42,7 +43,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _nameController = TextEditingController(text: h.name);
       _frequency = FrequencyType.fromString(h.frequencyType);
       _timeOfDay = TimeOfDay.fromString(h.timeOfDay);
-      _archetype = SeedArchetype.fromString(h.seedArchetype);
+      _icon = HabitIcon.fromString(h.icon);
 
       _selectedWeekdays = parseWeekdays(h.frequencyValue).toSet();
       final parsedX = parseXValue(h.frequencyValue);
@@ -67,7 +68,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _nameController = TextEditingController();
       _frequency = FrequencyType.daily;
       _timeOfDay = TimeOfDay.anytime;
-      _archetype = SeedArchetype.oak;
+      _icon = HabitIcon.check;
       _selectedWeekdays = {1, 2, 3, 4, 5};
       _xValue = 3;
       _everyXDays = 7;
@@ -116,7 +117,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       await actions.updateHabit(
         habitId: widget.habit!.id,
         name: name,
-        seedArchetype: _archetype,
+        icon: _icon,
         frequencyType: _frequency,
         frequencyValue: freqValue,
         timeOfDay: _timeOfDay,
@@ -125,7 +126,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       actions.createHabit(
         name: name,
         category: 'general',
-        seedArchetype: _archetype,
+        icon: _icon,
         frequencyType: _frequency,
         frequencyValue: freqValue,
         timeOfDay: _timeOfDay,
@@ -224,60 +225,12 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
               ..._buildCycleSelector(theme),
             const SizedBox(height: 8),
 
-            // ── Seed Archetype ──
-            Text('Семечко (растение)', style: theme.textTheme.labelLarge),
+            // ── Habit icon ──
+            Text('Иконка', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: SeedArchetype.values.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final arch = SeedArchetype.values[i];
-                  final selected = _archetype == arch;
-                  return GestureDetector(
-                    onTap: () => setState(() => _archetype = arch),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                            : theme.colorScheme.surface,
-                        borderRadius: AppRadius.borderM,
-                        border: Border.all(
-                          color: selected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.12,
-                                ),
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            arch.icon,
-                            color: selected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            arch.displayName,
-                            style: theme.textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+            IconPicker(
+              selected: _icon,
+              onSelected: (ic) => setState(() => _icon = ic),
             ),
             const SizedBox(height: 24),
 

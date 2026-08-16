@@ -126,6 +126,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                       Text('Теплица', style: theme.textTheme.headlineLarge),
                       Text(
                         _formatToday(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -141,14 +143,15 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                   scope: tourScope,
                   key: _tourSpreadKey,
                   content: TourContent.greenhouseSpread,
-                  child: IconButton(
+                  child: OutlinedButton.icon(
                     key: K.openMonthSpread,
                     onPressed: () => context.push('/month'),
-                    icon: Icon(
-                      Icons.calendar_month_outlined,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                    label: const Text('История'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    tooltip: 'Разворот месяца',
                   ),
                 ),
                 // Hide completed toggle
@@ -251,7 +254,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     color: group.color,
                   ),
                   label: Text(
-                    'Всё',
+                    'Выполнить все',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: group.color,
                     ),

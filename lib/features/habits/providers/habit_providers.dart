@@ -234,7 +234,7 @@ class HabitActions extends Notifier<void> {
   Future<int> createHabit({
     required String name,
     required String category,
-    required SeedArchetype seedArchetype,
+    required HabitIcon icon,
     required FrequencyType frequencyType,
     required String frequencyValue,
     required TimeOfDay timeOfDay,
@@ -254,7 +254,7 @@ class HabitActions extends Notifier<void> {
       HabitsCompanion(
         name: Value(name),
         category: Value(category),
-        seedArchetype: Value(seedArchetype.name),
+        icon: Value(icon.name),
         frequencyType: Value(frequencyType.name),
         frequencyValue: Value(frequencyValue),
         timeOfDay: Value(timeOfDay.name),
@@ -346,11 +346,11 @@ class HabitActions extends Notifier<void> {
     return true;
   }
 
-  /// Update a habit's mutable fields (name, archetype, frequency, timeOfDay).
+  /// Update a habit's mutable fields (name, icon, frequency, timeOfDay).
   Future<void> updateHabit({
     required int habitId,
     required String name,
-    required SeedArchetype seedArchetype,
+    required HabitIcon icon,
     required FrequencyType frequencyType,
     required String frequencyValue,
     required TimeOfDay timeOfDay,
@@ -361,7 +361,7 @@ class HabitActions extends Notifier<void> {
         id: Value(habitId),
         name: Value(name),
         category: Value(existing.category),
-        seedArchetype: Value(seedArchetype.name),
+        icon: Value(icon.name),
         frequencyType: Value(frequencyType.name),
         frequencyValue: Value(frequencyValue),
         timeOfDay: Value(timeOfDay.name),

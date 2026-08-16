@@ -46,17 +46,15 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     requiredDuringInsert: false,
     defaultValue: const Constant('general'),
   );
-  static const VerificationMeta _seedArchetypeMeta = const VerificationMeta(
-    'seedArchetype',
-  );
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
   @override
-  late final GeneratedColumn<String> seedArchetype = GeneratedColumn<String>(
-    'seed_archetype',
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+    'icon',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('oak'),
+    defaultValue: const Constant('check'),
   );
   static const VerificationMeta _frequencyTypeMeta = const VerificationMeta(
     'frequencyType',
@@ -140,7 +138,7 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     id,
     name,
     category,
-    seedArchetype,
+    icon,
     frequencyType,
     frequencyValue,
     timeOfDay,
@@ -177,13 +175,10 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
-    if (data.containsKey('seed_archetype')) {
+    if (data.containsKey('icon')) {
       context.handle(
-        _seedArchetypeMeta,
-        seedArchetype.isAcceptableOrUnknown(
-          data['seed_archetype']!,
-          _seedArchetypeMeta,
-        ),
+        _iconMeta,
+        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
       );
     }
     if (data.containsKey('frequency_type')) {
@@ -251,9 +246,9 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
-      seedArchetype: attachedDatabase.typeMapping.read(
+      icon: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}seed_archetype'],
+        data['${effectivePrefix}icon'],
       )!,
       frequencyType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -292,7 +287,7 @@ class Habit extends DataClass implements Insertable<Habit> {
   final int id;
   final String name;
   final String category;
-  final String seedArchetype;
+  final String icon;
   final String frequencyType;
   final String frequencyValue;
   final String timeOfDay;
@@ -303,7 +298,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     required this.id,
     required this.name,
     required this.category,
-    required this.seedArchetype,
+    required this.icon,
     required this.frequencyType,
     required this.frequencyValue,
     required this.timeOfDay,
@@ -317,7 +312,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
     map['category'] = Variable<String>(category);
-    map['seed_archetype'] = Variable<String>(seedArchetype);
+    map['icon'] = Variable<String>(icon);
     map['frequency_type'] = Variable<String>(frequencyType);
     map['frequency_value'] = Variable<String>(frequencyValue);
     map['time_of_day'] = Variable<String>(timeOfDay);
@@ -332,7 +327,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       id: Value(id),
       name: Value(name),
       category: Value(category),
-      seedArchetype: Value(seedArchetype),
+      icon: Value(icon),
       frequencyType: Value(frequencyType),
       frequencyValue: Value(frequencyValue),
       timeOfDay: Value(timeOfDay),
@@ -351,7 +346,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       category: serializer.fromJson<String>(json['category']),
-      seedArchetype: serializer.fromJson<String>(json['seedArchetype']),
+      icon: serializer.fromJson<String>(json['icon']),
       frequencyType: serializer.fromJson<String>(json['frequencyType']),
       frequencyValue: serializer.fromJson<String>(json['frequencyValue']),
       timeOfDay: serializer.fromJson<String>(json['timeOfDay']),
@@ -367,7 +362,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'category': serializer.toJson<String>(category),
-      'seedArchetype': serializer.toJson<String>(seedArchetype),
+      'icon': serializer.toJson<String>(icon),
       'frequencyType': serializer.toJson<String>(frequencyType),
       'frequencyValue': serializer.toJson<String>(frequencyValue),
       'timeOfDay': serializer.toJson<String>(timeOfDay),
@@ -381,7 +376,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     int? id,
     String? name,
     String? category,
-    String? seedArchetype,
+    String? icon,
     String? frequencyType,
     String? frequencyValue,
     String? timeOfDay,
@@ -392,7 +387,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     id: id ?? this.id,
     name: name ?? this.name,
     category: category ?? this.category,
-    seedArchetype: seedArchetype ?? this.seedArchetype,
+    icon: icon ?? this.icon,
     frequencyType: frequencyType ?? this.frequencyType,
     frequencyValue: frequencyValue ?? this.frequencyValue,
     timeOfDay: timeOfDay ?? this.timeOfDay,
@@ -405,9 +400,7 @@ class Habit extends DataClass implements Insertable<Habit> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       category: data.category.present ? data.category.value : this.category,
-      seedArchetype: data.seedArchetype.present
-          ? data.seedArchetype.value
-          : this.seedArchetype,
+      icon: data.icon.present ? data.icon.value : this.icon,
       frequencyType: data.frequencyType.present
           ? data.frequencyType.value
           : this.frequencyType,
@@ -429,7 +422,7 @@ class Habit extends DataClass implements Insertable<Habit> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('category: $category, ')
-          ..write('seedArchetype: $seedArchetype, ')
+          ..write('icon: $icon, ')
           ..write('frequencyType: $frequencyType, ')
           ..write('frequencyValue: $frequencyValue, ')
           ..write('timeOfDay: $timeOfDay, ')
@@ -445,7 +438,7 @@ class Habit extends DataClass implements Insertable<Habit> {
     id,
     name,
     category,
-    seedArchetype,
+    icon,
     frequencyType,
     frequencyValue,
     timeOfDay,
@@ -460,7 +453,7 @@ class Habit extends DataClass implements Insertable<Habit> {
           other.id == this.id &&
           other.name == this.name &&
           other.category == this.category &&
-          other.seedArchetype == this.seedArchetype &&
+          other.icon == this.icon &&
           other.frequencyType == this.frequencyType &&
           other.frequencyValue == this.frequencyValue &&
           other.timeOfDay == this.timeOfDay &&
@@ -473,7 +466,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<int> id;
   final Value<String> name;
   final Value<String> category;
-  final Value<String> seedArchetype;
+  final Value<String> icon;
   final Value<String> frequencyType;
   final Value<String> frequencyValue;
   final Value<String> timeOfDay;
@@ -484,7 +477,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.category = const Value.absent(),
-    this.seedArchetype = const Value.absent(),
+    this.icon = const Value.absent(),
     this.frequencyType = const Value.absent(),
     this.frequencyValue = const Value.absent(),
     this.timeOfDay = const Value.absent(),
@@ -496,7 +489,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.id = const Value.absent(),
     required String name,
     this.category = const Value.absent(),
-    this.seedArchetype = const Value.absent(),
+    this.icon = const Value.absent(),
     this.frequencyType = const Value.absent(),
     this.frequencyValue = const Value.absent(),
     this.timeOfDay = const Value.absent(),
@@ -509,7 +502,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? category,
-    Expression<String>? seedArchetype,
+    Expression<String>? icon,
     Expression<String>? frequencyType,
     Expression<String>? frequencyValue,
     Expression<String>? timeOfDay,
@@ -521,7 +514,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (category != null) 'category': category,
-      if (seedArchetype != null) 'seed_archetype': seedArchetype,
+      if (icon != null) 'icon': icon,
       if (frequencyType != null) 'frequency_type': frequencyType,
       if (frequencyValue != null) 'frequency_value': frequencyValue,
       if (timeOfDay != null) 'time_of_day': timeOfDay,
@@ -535,7 +528,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Value<int>? id,
     Value<String>? name,
     Value<String>? category,
-    Value<String>? seedArchetype,
+    Value<String>? icon,
     Value<String>? frequencyType,
     Value<String>? frequencyValue,
     Value<String>? timeOfDay,
@@ -547,7 +540,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       id: id ?? this.id,
       name: name ?? this.name,
       category: category ?? this.category,
-      seedArchetype: seedArchetype ?? this.seedArchetype,
+      icon: icon ?? this.icon,
       frequencyType: frequencyType ?? this.frequencyType,
       frequencyValue: frequencyValue ?? this.frequencyValue,
       timeOfDay: timeOfDay ?? this.timeOfDay,
@@ -569,8 +562,8 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
-    if (seedArchetype.present) {
-      map['seed_archetype'] = Variable<String>(seedArchetype.value);
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
     }
     if (frequencyType.present) {
       map['frequency_type'] = Variable<String>(frequencyType.value);
@@ -599,7 +592,7 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('category: $category, ')
-          ..write('seedArchetype: $seedArchetype, ')
+          ..write('icon: $icon, ')
           ..write('frequencyType: $frequencyType, ')
           ..write('frequencyValue: $frequencyValue, ')
           ..write('timeOfDay: $timeOfDay, ')
@@ -1655,7 +1648,7 @@ typedef $$HabitsTableCreateCompanionBuilder =
       Value<int> id,
       required String name,
       Value<String> category,
-      Value<String> seedArchetype,
+      Value<String> icon,
       Value<String> frequencyType,
       Value<String> frequencyValue,
       Value<String> timeOfDay,
@@ -1668,7 +1661,7 @@ typedef $$HabitsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<String> category,
-      Value<String> seedArchetype,
+      Value<String> icon,
       Value<String> frequencyType,
       Value<String> frequencyValue,
       Value<String> timeOfDay,
@@ -1724,8 +1717,8 @@ class $$HabitsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get seedArchetype => $composableBuilder(
-    column: $table.seedArchetype,
+  ColumnFilters<String> get icon => $composableBuilder(
+    column: $table.icon,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1809,8 +1802,8 @@ class $$HabitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get seedArchetype => $composableBuilder(
-    column: $table.seedArchetype,
+  ColumnOrderings<String> get icon => $composableBuilder(
+    column: $table.icon,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1863,10 +1856,8 @@ class $$HabitsTableAnnotationComposer
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
 
-  GeneratedColumn<String> get seedArchetype => $composableBuilder(
-    column: $table.seedArchetype,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
 
   GeneratedColumn<String> get frequencyType => $composableBuilder(
     column: $table.frequencyType,
@@ -1949,7 +1940,7 @@ class $$HabitsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> category = const Value.absent(),
-                Value<String> seedArchetype = const Value.absent(),
+                Value<String> icon = const Value.absent(),
                 Value<String> frequencyType = const Value.absent(),
                 Value<String> frequencyValue = const Value.absent(),
                 Value<String> timeOfDay = const Value.absent(),
@@ -1960,7 +1951,7 @@ class $$HabitsTableTableManager
                 id: id,
                 name: name,
                 category: category,
-                seedArchetype: seedArchetype,
+                icon: icon,
                 frequencyType: frequencyType,
                 frequencyValue: frequencyValue,
                 timeOfDay: timeOfDay,
@@ -1973,7 +1964,7 @@ class $$HabitsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 Value<String> category = const Value.absent(),
-                Value<String> seedArchetype = const Value.absent(),
+                Value<String> icon = const Value.absent(),
                 Value<String> frequencyType = const Value.absent(),
                 Value<String> frequencyValue = const Value.absent(),
                 Value<String> timeOfDay = const Value.absent(),
@@ -1984,7 +1975,7 @@ class $$HabitsTableTableManager
                 id: id,
                 name: name,
                 category: category,
-                seedArchetype: seedArchetype,
+                icon: icon,
                 frequencyType: frequencyType,
                 frequencyValue: frequencyValue,
                 timeOfDay: timeOfDay,

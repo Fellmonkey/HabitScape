@@ -28,7 +28,7 @@ void main() {
       final habitId = await db.habitsDao.insertHabit(
         HabitsCompanion(
           name: const Value('Бег'),
-          seedArchetype: const Value('oak'),
+          icon: const Value('check'),
           frequencyType: const Value('daily'),
           frequencyValue: const Value('{}'),
           timeOfDay: const Value('anytime'),

@@ -426,7 +426,7 @@ class _DayCell extends StatelessWidget {
     final theme = Theme.of(context);
     final mood = day.mood;
     final bg =
-        mood?.color.withValues(alpha: 0.22) ??
+        mood?.color.withValues(alpha: 0.3) ??
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
     final hasHabits = day.expected > 0;
 
@@ -438,7 +438,7 @@ class _DayCell extends StatelessWidget {
         onTap: () => onTap(day.date),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 56,
+          height: 62,
           decoration: BoxDecoration(
             color: bg,
             borderRadius: AppRadius.borderS,
@@ -455,14 +455,14 @@ class _DayCell extends StatelessWidget {
                 children: [
                   Text(
                     '${day.date.day}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w500,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                   if (day.hasMoment)
                     Icon(
                       Icons.auto_awesome_rounded,
-                      size: 10,
+                      size: 13,
                       color: mood?.color ?? theme.colorScheme.primary,
                     ),
                 ],
@@ -474,7 +474,7 @@ class _DayCell extends StatelessWidget {
                   borderRadius: BorderRadius.circular(1.5),
                   child: LinearProgressIndicator(
                     value: day.ratio,
-                    minHeight: 3,
+                    minHeight: 4,
                     backgroundColor: theme.colorScheme.onSurface.withValues(
                       alpha: 0.08,
                     ),
@@ -489,8 +489,8 @@ class _DayCell extends StatelessWidget {
                 Text(
                   day.done == 0 ? '—' : '${day.done}/${day.expected}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 8,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    fontSize: 10,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ] else

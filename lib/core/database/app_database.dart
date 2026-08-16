@@ -38,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -79,6 +79,14 @@ class AppDatabase extends _$AppDatabase {
           'DROP INDEX IF EXISTS idx_habit_logs_habit_date',
         );
         await m.createIndex(idxHabitLogsHabitDate);
+      }
+      // v6 → v7: the garden's «seed archetype» column becomes a neutral
+      // habit icon. Old values ('oak', 'sakura', …) are mapped to the
+      // default icon by HabitIcon.fromString, so only a rename is needed.
+      if (from < 7) {
+        await m.database.customStatement(
+          'ALTER TABLE habits RENAME COLUMN seed_archetype TO icon',
+        );
       }
     },
   );

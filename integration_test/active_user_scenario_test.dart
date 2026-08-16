@@ -28,7 +28,7 @@ void main() {
         return db.habitsDao.insertHabit(
           HabitsCompanion(
             name: Value(name),
-            seedArchetype: const Value('oak'),
+            icon: const Value('check'),
             frequencyType: Value(frequency),
             frequencyValue: const Value('{}'),
             timeOfDay: Value(timeOfDay),
@@ -40,11 +40,7 @@ void main() {
       habitIds['Morning Run'] = await insert('Morning Run', 'morning', 'daily');
       habitIds['Read Books'] = await insert('Read Books', 'evening', 'daily');
       habitIds['Workout'] = await insert('Workout', 'afternoon', 'daily');
-      habitIds['No Smoking'] = await insert(
-        'No Smoking',
-        'anytime',
-        'negative',
-      );
+      habitIds['No Smoking'] = await insert('No Smoking', 'anytime', 'daily');
       habitIds['Meditation'] = await insert('Meditation', 'morning', 'daily');
 
       // Today's logs: Morning Run done, Workout skip, rest pending.

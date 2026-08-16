@@ -73,7 +73,11 @@ class BackupService {
         HabitsCompanion(
           name: Value(map['name'] as String),
           category: Value(map['category'] as String? ?? 'general'),
-          seedArchetype: Value(map['seedArchetype'] as String? ?? 'oak'),
+          icon: Value(
+            map['icon'] as String? ??
+                map['seedArchetype'] as String? ??
+                'check',
+          ),
           frequencyType: Value(map['frequencyType'] as String? ?? 'daily'),
           frequencyValue: Value(map['frequencyValue'] as String? ?? '{}'),
           timeOfDay: Value(map['timeOfDay'] as String? ?? 'anytime'),
@@ -134,7 +138,7 @@ class BackupService {
     'id': h.id,
     'name': h.name,
     'category': h.category,
-    'seedArchetype': h.seedArchetype,
+    'icon': h.icon,
     'frequencyType': h.frequencyType,
     'frequencyValue': h.frequencyValue,
     'timeOfDay': h.timeOfDay,

@@ -64,10 +64,6 @@ class HabitEngine {
           if (cycle.days.contains(currentDay)) expected++;
         }
         return expected;
-
-      case FrequencyType.negative:
-        // For negative habits, the base = all active days
-        return activeDays;
     }
   }
 

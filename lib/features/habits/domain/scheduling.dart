@@ -60,8 +60,6 @@ bool isExpectedToday(Habit habit, DateTime today) {
       if (diff < 0) return false;
       final currentDayOfCycle = (diff % cycle.length) + 1;
       return cycle.days.contains(currentDayOfCycle);
-    case FrequencyType.negative:
-      return true;
   }
 }
 
@@ -164,7 +162,6 @@ String frequencyLabel(Habit habit) {
     FrequencyType.xPerWeek => '${parseXValue(habit.frequencyValue)}× в нед',
     FrequencyType.everyXDays => _everyXLabel(parseXValue(habit.frequencyValue)),
     FrequencyType.cycle => _cycleLabel(habit.frequencyValue),
-    FrequencyType.negative => 'Негативная',
   };
 }
 

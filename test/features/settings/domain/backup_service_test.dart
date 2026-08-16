@@ -48,7 +48,7 @@ void main() {
         makeHabitCompanion(
           name: 'Morning Run',
           category: 'fitness',
-          seedArchetype: 'sakura',
+          icon: 'fitness',
           frequencyType: 'daily',
           frequencyValue: '{}',
           timeOfDay: 'morning',
@@ -92,7 +92,7 @@ void main() {
       expect(habits, hasLength(1));
       expect(habits.first.name, 'Morning Run');
       expect(habits.first.category, 'fitness');
-      expect(habits.first.seedArchetype, 'sakura');
+      expect(habits.first.icon, 'fitness');
       expect(habits.first.frequencyType, 'daily');
       expect(habits.first.timeOfDay, 'morning');
       expect(habits.first.isFocus, true);
@@ -141,7 +141,7 @@ void main() {
           {
             'name': 'New Habit',
             'category': 'general',
-            'seedArchetype': 'oak',
+            'icon': 'check',
             'frequencyType': 'daily',
             'frequencyValue': '{}',
             'timeOfDay': 'anytime',

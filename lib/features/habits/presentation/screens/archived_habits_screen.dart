@@ -77,7 +77,7 @@ class _ArchivedHabitTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final archetype = SeedArchetype.fromString(habit.seedArchetype);
+    final icon = HabitIcon.fromString(habit.icon);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -88,7 +88,7 @@ class _ArchivedHabitTile extends ConsumerWidget {
             horizontal: 16,
             vertical: 4,
           ),
-          leading: _ArchetypeIcon(archetype: archetype),
+          leading: _HabitIcon(icon: icon),
           title: Text(habit.name, style: theme.textTheme.titleSmall),
           subtitle: Text(
             _subtitleText(habit),
@@ -168,22 +168,23 @@ class _ArchivedHabitTile extends ConsumerWidget {
   }
 }
 
-// ── Archetype icon chip ──────────────────────────────────────
+// ── Habit icon chip ──────────────────────────────────────────
 
-class _ArchetypeIcon extends StatelessWidget {
-  const _ArchetypeIcon({required this.archetype});
-  final SeedArchetype archetype;
+class _HabitIcon extends StatelessWidget {
+  const _HabitIcon({required this.icon});
+  final HabitIcon icon;
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: archetype.color.withValues(alpha: 0.15),
+        color: primary.withValues(alpha: 0.15),
         borderRadius: AppRadius.borderS,
       ),
-      child: Center(child: Icon(archetype.icon, color: archetype.color)),
+      child: Center(child: Icon(icon.icon, color: primary)),
     );
   }
 }

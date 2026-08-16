@@ -206,9 +206,25 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
               }).toList(),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Как рационально использовал время?',
-              style: theme.textTheme.labelLarge,
+            Row(
+              children: [
+                Text(
+                  'Как рационально использовал время?',
+                  style: theme.textTheme.labelLarge,
+                ),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message:
+                      'Оцени по шкале 1–5: 1 — впустую, 2 — лениво, '
+                      '3 — нормально, 4 — хорошо, 5 — максимально',
+                  triggerMode: TooltipTriggerMode.tap,
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             _TimeQualitySelector(

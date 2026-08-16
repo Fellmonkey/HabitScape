@@ -4,14 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
 
 /// «Цели месяца» — things to achieve *through* habits this month
 /// (e.g. «снять 4 ютуба», «сдать тесты»). Checkboxes to mark done.
-class MonthGoalsCard extends ConsumerWidget {
+class MonthGoalsCard extends ConsumerStatefulWidget {
   const MonthGoalsCard({super.key, this.monthTs});
 
   /// First-of-month unix timestamp of the month whose goals to show.
@@ -19,9 +21,17 @@ class MonthGoalsCard extends ConsumerWidget {
   final int? monthTs;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MonthGoalsCard> createState() => _MonthGoalsCardState();
+}
+
+class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final now = DateTime.now();
-    final ts = monthTs ?? DateTime.utc(now.year, now.month, 1).unixSeconds;
+    final ts =
+        widget.monthTs ?? DateTime.utc(now.year, now.month, 1).unixSeconds;
     final async = ref.watch(monthGoalsProvider(ts));
     final theme = Theme.of(context);
     final month = dateFromUnix(ts);
@@ -31,21 +41,22 @@ class MonthGoalsCard extends ConsumerWidget {
       child: async.when(
         loading: () => const SizedBox.shrink(),
         error: (_, _) => const SizedBox.shrink(),
-        data: (goals) => _buildCard(ref, context, theme, month, goals),
+        data: (goals) => _buildCard(context, theme, month, goals, ts),
       ),
     );
   }
 
   Widget _buildCard(
-    WidgetRef ref,
     BuildContext context,
     ThemeData theme,
     DateTime month,
     List<MonthlyGoal> goals,
+    int ts,
   ) {
+    final doneCount = goals.where((g) => g.isDone).length;
     return Container(
       key: K.monthGoalsCard,
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderL,
@@ -53,68 +64,101 @@ class MonthGoalsCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Цели · ${monthNamesGenitive[month.month]}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      letterSpacing: 0.2,
+          // Collapsed header — always visible; tap anywhere to expand.
+          InkWell(
+            borderRadius: AppRadius.borderS,
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Цели · ${monthNamesGenitive[month.month]}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  key: K.monthGoalsAdd,
-                  tooltip: 'Добавить цель',
-                  onPressed: () => _openAddGoalSheet(context, monthTs),
-                  icon: Icon(
-                    Icons.add_circle_outline_rounded,
-                    size: 20,
-                    color: theme.colorScheme.primary,
+                  if (goals.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        '$doneCount/${goals.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: doneCount == goals.length
+                              ? AppColors.emeraldGlow
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  IconButton(
+                    key: K.monthGoalsAdd,
+                    tooltip: 'Добавить цель',
+                    onPressed: () => _openAddGoalSheet(ts),
+                    icon: Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
-              ],
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
             ),
           ),
-          if (goals.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, right: 12, bottom: 6),
-              child: Text(
-                'Чего достичь через привычки в этом месяце?',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+          if (_expanded) ...[
+            if (goals.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 4, right: 12, bottom: 6),
+                child: Text(
+                  'Чего достичь через привычки в этом месяце?',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
                 ),
-              ),
-            )
-          else
-            for (final goal in goals)
-              _GoalRow(
-                goal: goal,
-                onToggle: () {
-                  Haptics.tap(ref.read(hapticsEnabledProvider));
-                  ref
+              )
+            else
+              for (final goal in goals)
+                _GoalRow(
+                  goal: goal,
+                  onToggle: () {
+                    Haptics.tap(ref.read(hapticsEnabledProvider));
+                    ref
+                        .read(habitActionsProvider.notifier)
+                        .setMonthGoalDone(goal.id, isDone: !goal.isDone);
+                  },
+                  onDelete: () => ref
                       .read(habitActionsProvider.notifier)
-                      .setMonthGoalDone(goal.id, isDone: !goal.isDone);
-                },
-                onDelete: () => ref
-                    .read(habitActionsProvider.notifier)
-                    .deleteMonthGoal(goal.id),
-              ),
+                      .deleteMonthGoal(goal.id),
+                ),
+          ],
         ],
       ),
     );
   }
 
-  void _openAddGoalSheet(BuildContext context, int? monthTs) {
-    showModalBottomSheet<void>(
+  Future<void> _openAddGoalSheet(int ts) async {
+    final added = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddGoalSheet(monthTs: monthTs),
+      builder: (_) => _AddGoalSheet(monthTs: ts),
     );
+    // Show the just-added goal: expand the card once the sheet closes.
+    if (added == true && mounted) setState(() => _expanded = true);
   }
 }
 
@@ -221,7 +265,7 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
     await ref
         .read(habitActionsProvider.notifier)
         .addMonthGoal(title, monthTs: widget.monthTs);
-    if (mounted) Navigator.pop(context);
+    if (mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -241,16 +285,7 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            const SheetHandle(),
             const SizedBox(height: 16),
             Text('Цель месяца', style: theme.textTheme.headlineMedium),
             const SizedBox(height: 4),

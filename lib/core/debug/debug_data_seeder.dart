@@ -229,7 +229,6 @@ const _freqTemplates = [
   _FreqTemplate(FrequencyType.xPerWeek, '{"x":5}'),
   _FreqTemplate(FrequencyType.everyXDays, '{"x":2}'),
   _FreqTemplate(FrequencyType.everyXDays, '{"x":3}'),
-  _FreqTemplate(FrequencyType.negative, '{}'),
 ];
 
 /// Seeds the database with realistic data for a [DebugScenario].
@@ -271,7 +270,7 @@ class DebugDataSeeder {
       final suffix = i >= _habitNames.length
           ? ' (${i ~/ _habitNames.length + 1})'
           : '';
-      final arch = SeedArchetype.values[i % SeedArchetype.values.length];
+      final icon = HabitIcon.values[i % HabitIcon.values.length];
       final freq = _freqTemplates[i % _freqTemplates.length];
       final tod = _timeSlots[i % _timeSlots.length];
 
@@ -302,7 +301,7 @@ class DebugDataSeeder {
         HabitsCompanion.insert(
           name: '$name$suffix',
           createdAt: createdDate.unixSeconds,
-          seedArchetype: Value(arch.name),
+          icon: Value(icon.name),
           frequencyType: Value(freq.type.name),
           frequencyValue: Value(freq.value),
           timeOfDay: Value(tod.name),
@@ -313,7 +312,7 @@ class DebugDataSeeder {
       habitMeta.add(
         _HabitMeta(
           id: id,
-          archetype: arch,
+          icon: icon,
           freq: freq,
           tod: tod,
           createdAt: createdDate,
@@ -540,7 +539,6 @@ class DebugDataSeeder {
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {
     switch (meta.freq.type) {
       case FrequencyType.daily:
-      case FrequencyType.negative:
         return true;
       case FrequencyType.weekdays:
         final days = parseWeekdays(meta.freq.value);
@@ -602,7 +600,7 @@ const _momentPool = [
 class _HabitMeta {
   _HabitMeta({
     required this.id,
-    required this.archetype,
+    required this.icon,
     required this.freq,
     required this.tod,
     required this.createdAt,
@@ -610,7 +608,7 @@ class _HabitMeta {
   });
 
   final int id;
-  final SeedArchetype archetype;
+  final HabitIcon icon;
   final _FreqTemplate freq;
   final TimeOfDay tod;
   final DateTime createdAt;

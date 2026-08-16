@@ -235,7 +235,7 @@ class _HabitInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final archetype = SeedArchetype.fromString(habit.seedArchetype);
+    final icon = HabitIcon.fromString(habit.icon);
     final tod = TimeOfDay.fromString(habit.timeOfDay);
 
     final freqLabel = frequencyLabel(habit);
@@ -244,7 +244,7 @@ class _HabitInfoRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _InfoChip(icon: archetype.icon, label: archetype.displayName),
+        _InfoChip(icon: icon.icon, label: icon.label),
         _InfoChip(icon: Icons.repeat, label: freqLabel),
         _InfoChip(icon: Icons.schedule, label: tod.localizedName),
         if (habit.category.isNotEmpty)

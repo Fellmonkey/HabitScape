@@ -10,7 +10,6 @@ enum FrequencyType {
   weekdays,
   xPerWeek,
   everyXDays,
-  negative,
   cycle;
 
   static FrequencyType fromString(String value) => FrequencyType.values
@@ -21,7 +20,6 @@ enum FrequencyType {
     FrequencyType.weekdays => 'Дни недели',
     FrequencyType.xPerWeek => 'X раз/нед',
     FrequencyType.everyXDays => 'Каждые N дней',
-    FrequencyType.negative => 'Негативная',
     FrequencyType.cycle => 'Динамичный цикл',
   };
 }
@@ -59,43 +57,52 @@ enum TimeOfDay {
   };
 }
 
-enum SeedArchetype {
-  oak,
-  sakura,
-  pine,
-  willow,
-  baobab,
-  palm;
+/// Neutral icon shown on a habit card — replaces the removed garden
+/// «seed archetype». The stored string is the enum name; unknown legacy
+/// values (e.g. 'oak' from the garden era) fall back to [HabitIcon.check].
+enum HabitIcon {
+  check(Icons.check_circle_outline, 'Цель'),
+  fitness(Icons.fitness_center, 'Спорт'),
+  book(Icons.menu_book_outlined, 'Чтение'),
+  water(Icons.water_drop_outlined, 'Вода'),
+  meditation(Icons.self_improvement, 'Медитация'),
+  walk(Icons.directions_walk, 'Прогулка'),
+  food(Icons.restaurant_outlined, 'Питание'),
+  study(Icons.school_outlined, 'Учёба'),
+  work(Icons.work_outline, 'Работа'),
+  music(Icons.music_note_outlined, 'Музыка'),
+  art(Icons.palette_outlined, 'Творчество'),
+  sleep(Icons.bedtime_outlined, 'Сон'),
+  finance(Icons.savings_outlined, 'Финансы'),
+  code(Icons.code, 'Код'),
+  photo(Icons.photo_camera_outlined, 'Фото'),
+  language(Icons.translate, 'Язык'),
+  cleaning(Icons.cleaning_services_outlined, 'Уборка'),
+  pet(Icons.pets, 'Питомец'),
+  run(Icons.directions_run, 'Бег'),
+  bike(Icons.directions_bike, 'Велосипед'),
+  pool(Icons.pool, 'Плавание'),
+  games(Icons.sports_esports, 'Игры'),
+  movie(Icons.movie_outlined, 'Кино'),
+  coffee(Icons.local_cafe_outlined, 'Кофе'),
+  wakeup(Icons.alarm, 'Подъём'),
+  screen(Icons.smartphone, 'Экран'),
+  home(Icons.home_outlined, 'Дом'),
+  science(Icons.science_outlined, 'Наука'),
+  favorite(Icons.favorite_outline, 'Любимое'),
+  ideas(Icons.lightbulb_outline, 'Идеи'),
+  volunteer(Icons.volunteer_activism, 'Волонтёрство'),
+  travel(Icons.flight_takeoff, 'Путешествия');
 
-  static SeedArchetype fromString(String value) =>
-      SeedArchetype.values.firstWhere((e) => e.name == value);
+  const HabitIcon(this.icon, this.label);
 
-  String get displayName => switch (this) {
-    oak => 'Дуб',
-    sakura => 'Сакура',
-    pine => 'Сосна',
-    willow => 'Плакучая Ива',
-    baobab => 'Баобаб',
-    palm => 'Тропическая Пальма',
-  };
+  final IconData icon;
+  final String label;
 
-  IconData get icon => switch (this) {
-    oak => Icons.park_rounded,
-    sakura => Icons.filter_vintage_rounded,
-    pine => Icons.nature_rounded,
-    willow => Icons.grass_rounded,
-    baobab => Icons.forest_rounded,
-    palm => Icons.beach_access_rounded,
-  };
-
-  Color get color => switch (this) {
-    oak => AppColors.sageGreen,
-    sakura => AppColors.dustyRose,
-    pine => AppColors.sageGreen,
-    willow => AppColors.softLavender,
-    baobab => AppColors.warmAmber,
-    palm => AppColors.warmAmber,
-  };
+  static HabitIcon fromString(String value) => HabitIcon.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => HabitIcon.check,
+  );
 }
 
 enum LogStatus {

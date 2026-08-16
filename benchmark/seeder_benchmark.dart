@@ -58,12 +58,7 @@ void main() {
   });
 }
 
-typedef _SeedResult = ({
-  int habits,
-  int logs,
-  int notes,
-  Duration elapsed,
-});
+typedef _SeedResult = ({int habits, int logs, int notes, Duration elapsed});
 
 Future<_SeedResult> _seed(AppDatabase db, DebugScenario scenario) async {
   final stopwatch = Stopwatch()..start();

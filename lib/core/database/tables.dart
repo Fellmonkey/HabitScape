@@ -7,7 +7,7 @@ class Habits extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get category => text().withDefault(const Constant('general'))();
-  TextColumn get seedArchetype => text().withDefault(const Constant('oak'))();
+  TextColumn get icon => text().withDefault(const Constant('check'))();
   TextColumn get frequencyType => text().withDefault(const Constant('daily'))();
   TextColumn get frequencyValue => text().withDefault(const Constant('{}'))();
   TextColumn get timeOfDay => text().withDefault(const Constant('anytime'))();

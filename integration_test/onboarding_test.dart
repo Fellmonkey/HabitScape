@@ -69,7 +69,7 @@ void main() {
     final habitId = await db.habitsDao.insertHabit(
       HabitsCompanion(
         name: const Value('Зарядка'),
-        seedArchetype: const Value('oak'),
+        icon: const Value('check'),
         frequencyType: const Value('daily'),
         frequencyValue: const Value('{}'),
         timeOfDay: const Value('anytime'),
@@ -119,7 +119,7 @@ void main() {
     expect(find.text(TourContent.spreadDay.description), findsNothing);
   });
 
-  testWidgets('settings tour shows on first open of the «Ещё» tab', (
+  testWidgets('settings tour shows on first open of the «Настройки» tab', (
     tester,
   ) async {
     db = await pumpApp(tester, sharedPrefsValues: {});

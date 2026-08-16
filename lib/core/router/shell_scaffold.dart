@@ -27,7 +27,7 @@ class ShellScaffold extends StatelessWidget {
     (
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings,
-      label: 'Ещё',
+      label: 'Настройки',
       path: '/settings',
     ),
   ];
