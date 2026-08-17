@@ -11,8 +11,7 @@ import '../../domain/stats_engine.dart';
 import '../../providers/stats_providers.dart';
 import '../widgets/github_heatmap.dart';
 
-/// Statistics screen — an informative dashboard across everything:
-/// GitHub-style year heatmap, current-month summary and habit ranking.
+/// Statistics screen — an informative dashboard across everything.
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
@@ -20,9 +19,7 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsOverviewProvider);
     final theme = Theme.of(context);
-    // Ads live only on the secondary «Статистика» surface; the inline banner
-    // hides entirely when the platform has no ad stack (Web, desktop, tests).
-    final ads = ref.watch(adsServiceProvider);
+    final ads = ref.watch(adsServiceProvider); // banner hides without ad stack
 
     return Scaffold(
       body: SafeArea(

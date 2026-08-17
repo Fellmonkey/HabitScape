@@ -10,7 +10,7 @@ class MonthlyGoalsDao extends DatabaseAccessor<AppDatabase>
     with _$MonthlyGoalsDaoMixin {
   MonthlyGoalsDao(super.db);
 
-  /// Watch the goals of one month (first-of-month unix timestamp).
+  /// Watches the goals of one month (first-of-month unix timestamp).
   Stream<List<MonthlyGoal>> watchGoalsForMonth(int monthTs) {
     return (select(monthlyGoals)
           ..where((g) => g.month.equals(monthTs))
@@ -18,7 +18,7 @@ class MonthlyGoalsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
-  /// Get the goals of one month (one-shot).
+  /// Gets the goals of one month (one-shot).
   Future<List<MonthlyGoal>> getGoalsForMonth(int monthTs) {
     return (select(monthlyGoals)
           ..where((g) => g.month.equals(monthTs))
@@ -26,34 +26,33 @@ class MonthlyGoalsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Add a goal to a month. Returns the new id.
+  /// Adds a goal to a month and returns its id.
   Future<int> addGoal(int monthTs, String title) {
     return into(
       monthlyGoals,
     ).insert(MonthlyGoalsCompanion.insert(month: monthTs, title: title));
   }
 
-  /// Set the done state of a goal. A single UPDATE — no read-before-write
-  /// (the caller supplies the new value instead of flipping a fetched one).
+  /// Sets the done state of a goal (single UPDATE, no read first).
   Future<void> setGoalDone(int id, {required bool isDone}) {
     return (update(monthlyGoals)..where((g) => g.id.equals(id))).write(
       MonthlyGoalsCompanion(isDone: Value(isDone)),
     );
   }
 
-  /// Delete a goal.
+  /// Deletes a goal.
   Future<int> deleteGoal(int id) {
     return (delete(monthlyGoals)..where((g) => g.id.equals(id))).go();
   }
 
-  /// Get ALL goals for backup export.
+  /// Gets all goals for backup export.
   Future<List<MonthlyGoal>> getAllGoals() {
     return (select(
       monthlyGoals,
     )..orderBy([(g) => OrderingTerm.asc(g.id)])).get();
   }
 
-  /// Delete all goals (for import / debug seeding).
+  /// Deletes all goals (for import / debug seeding).
   Future<int> deleteAllGoals() {
     return delete(monthlyGoals).go();
   }

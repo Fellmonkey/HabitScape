@@ -41,25 +41,20 @@ final activeHabitsProvider = StreamProvider<List<Habit>>((ref) {
   return ref.watch(habitsDaoProvider).watchActiveHabits();
 });
 
-/// Stream of all archived habits. Auto-disposed — only the archive screen
-/// watches it, so the drift stream must not outlive the screen.
+/// Stream of all archived habits (auto-disposed with the archive screen).
 final archivedHabitsProvider = StreamProvider.autoDispose<List<Habit>>((ref) {
   return ref.watch(habitsDaoProvider).watchArchivedHabits();
 });
 
-/// Watch a single habit by id. Auto-disposed per habit — browsing many
-/// detail screens must not accumulate forever-live drift streams.
+/// Watch a single habit by id (auto-disposed per habit).
 final habitProvider = StreamProvider.autoDispose.family<Habit, int>((ref, id) {
   return ref.watch(habitsDaoProvider).watchHabit(id);
 });
 
 // ── Today (reactive) ─────────────────────────────────────────
 
-/// The current calendar day as a unix midnight timestamp.
-///
-/// Non-autoDispose — lives for the app's lifetime. Re-invalidates itself
-/// shortly after the next midnight, so today-scoped providers (greenhouse,
-/// stats) don't go stale in an app left open overnight.
+/// Current calendar day as a unix midnight timestamp. Re-invalidates itself
+/// shortly after midnight so today-scoped providers never go stale overnight.
 final todayProvider = NotifierProvider<TodayNotifier, int>(TodayNotifier.new);
 
 class TodayNotifier extends Notifier<int> {
@@ -69,8 +64,7 @@ class TodayNotifier extends Notifier<int> {
   int build() {
     final now = DateTime.now();
     final today = now.toMidnight;
-    // Refresh a moment after the next midnight (small buffer in case the
-    // timer fires a hair early or the OS clock adjusts).
+    // Refresh a moment after midnight (buffer for clock/timer jitter).
     _midnightTimer?.cancel();
     _midnightTimer = Timer(
       today.add(const Duration(days: 1)).difference(now) +
@@ -90,34 +84,26 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
   return ref.watch(habitLogsDaoProvider).watchLogsForDate(ts);
 });
 
-// ── Day Note (Момент дня) ────────────────────────────────────
+// ── Day note ─────────────────────────────────────────────────
 
-/// Today's day note («Момент дня»): the most memorable moment + mood.
-/// Refreshes when the day changes.
+/// Today's day note: the most memorable moment + mood.
 final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
   return ref
       .watch(dayNotesDaoProvider)
       .watchNoteForDate(ref.watch(todayProvider));
 });
 
-// ── Monthly goals (Цели месяца) ──────────────────────────────
+// ── Monthly goals ────────────────────────────────────────────
 
-/// Stream of a month's goals («Цели месяца»), family keyed by first-of-month
-/// unix timestamp.
-///
-/// Auto-disposed per month: a non-autoDispose family would keep one drift
-/// watch-stream alive per visited month forever (a growing leak over years).
+/// Stream of a month's goals, keyed by first-of-month unix timestamp
+/// (auto-disposed per month).
 final monthGoalsProvider = StreamProvider.autoDispose
     .family<List<MonthlyGoal>, int>((ref, monthTs) {
       return ref.watch(monthlyGoalsDaoProvider).watchGoalsForMonth(monthTs);
     });
 
-/// Per-day data for the «Разворот месяца» of one month (family keyed by
-/// first-of-month unix timestamp).
-///
-/// One-shot fetch (like `statsOverviewProvider`): the spread screen refreshes
-/// it after editing a day, so no drift watch-stream subscriptions linger and
-/// `db.close()` in tests teardown never hangs.
+/// Per-day data for the month spread of one month, keyed by first-of-month
+/// unix timestamp. One-shot fetch — the screen invalidates it after edits.
 final monthSpreadProvider = FutureProvider.autoDispose
     .family<List<MonthSpreadDay>, int>((ref, monthTs) async {
       final habitsDao = ref.watch(habitsDaoProvider);
@@ -143,8 +129,6 @@ final monthSpreadProvider = FutureProvider.autoDispose
 // ── Day Progress ─────────────────────────────────────────────
 
 /// Today's completion ratio: done / total expected.
-/// Watches [todayProvider] so it recomputes after midnight, not just on
-/// log changes.
 final dayProgressProvider = Provider<double>((ref) {
   ref.watch(todayProvider);
   final habitsAsync = ref.watch(activeHabitsProvider);
@@ -154,10 +138,8 @@ final dayProgressProvider = Provider<double>((ref) {
   final logs = logsAsync.value;
   if (habits == null || logs == null || habits.isEmpty) return 0.0;
 
-  // Index logs by habit id once — avoids a linear scan per habit.
   final logByHabit = {for (final l in logs) l.habitId: l};
 
-  // Count how many are expected today
   final now = DateTime.now();
   var expected = 0;
   var done = 0;
@@ -177,8 +159,7 @@ final dayProgressProvider = Provider<double>((ref) {
 
 // ── Habit Engine provider (metrics for a month) ──────────────
 
-/// One month of logs for a habit — shared by the detail screen's heatmap
-/// and the history pager, so each month is fetched once per screen visit.
+/// One month of logs for a habit — shared by the heatmap and history pager.
 final habitMonthLogsProvider = FutureProvider.autoDispose
     .family<List<HabitLog>, ({int habitId, int year, int month})>((ref, p) {
       final dao = ref.watch(habitLogsDaoProvider);
@@ -191,13 +172,8 @@ final habitMonthLogsProvider = FutureProvider.autoDispose
       );
     });
 
-/// Computed metrics for a specific habit in a specific month.
-/// Auto-disposed — scoped to the detail screen.
-///
-/// Reuses [habitProvider] and [habitMonthLogsProvider] instead of querying
-/// the DB again: the detail screen already watches both for the same
-/// (habit, month), so the habit row and month logs are fetched once per
-/// visit and shared across the metrics, heatmap and history sections.
+/// Computed metrics for a habit in a month. Reuses [habitProvider] and
+/// [habitMonthLogsProvider] so the DB is queried once per visit.
 final habitMetricsProvider = FutureProvider.autoDispose
     .family<HabitMetrics, ({int habitId, int year, int month})>((
       ref,
@@ -270,7 +246,7 @@ class HabitActions extends Notifier<void> {
     await _logsDao.markDone(habitId, now.toMidnight.unixSeconds, now.hour);
   }
 
-  /// Mark many habits done for today in a single DB transaction.
+  /// Marks many habits done for today in a single DB transaction.
   Future<void> markAllDone(List<int> habitIds) {
     if (habitIds.isEmpty) return Future.value();
     final now = DateTime.now();
@@ -282,9 +258,8 @@ class HabitActions extends Notifier<void> {
     await _logsDao.markSkip(habitId, todayTimestamp());
   }
 
-  /// Save a day note («Момент дня»): memorable moment + mood +
-  /// time quality («Рациональность времени», 1–5).
-  /// [dateTimestamp] defaults to today (unix midnight).
+  /// Saves a day note: moment + mood + time quality (1–5).
+  /// [dateTimestamp] defaults to today.
   Future<void> saveDayNote({
     String? moment,
     DayMood? mood,
@@ -308,15 +283,14 @@ class HabitActions extends Notifier<void> {
     return _goalsDao.addGoal(ts, title);
   }
 
-  /// Set the done state of a monthly goal (single UPDATE — no read first).
+  /// Sets the done state of a monthly goal.
   Future<void> setMonthGoalDone(int goalId, {required bool isDone}) =>
       _goalsDao.setGoalDone(goalId, isDone: isDone);
 
   /// Delete a monthly goal.
   Future<void> deleteMonthGoal(int goalId) => _goalsDao.deleteGoal(goalId);
 
-  /// Clear a day note entirely (both moment and mood).
-  /// [dateTimestamp] defaults to today (unix midnight).
+  /// Clears a day note entirely. [dateTimestamp] defaults to today.
   Future<void> clearDayNote([int? dateTimestamp]) {
     return _dayNotesDao.clearNote(dateTimestamp ?? todayTimestamp());
   }

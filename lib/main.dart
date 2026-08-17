@@ -12,10 +12,8 @@ import 'core/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Fire-and-forget: on Android the SDK auto-initializes at app start anyway;
-  // on Web this is a no-op. Never await before runApp — an extra async gap
-  // before the first frame widens the web startup race where the browser's
-  // initial focus event hits an unlaid-out tree (flutter/flutter#187939).
+  // Fire-and-forget: never await before runApp — an extra async gap widens
+  // the web startup race (flutter/flutter#187939).
   unawaited(initializeAdsIfSupported());
   runApp(const ProviderScope(child: RythmApp()));
 }

@@ -25,7 +25,7 @@ class BackupService {
   final DayNotesDao dayNotesDao;
   final MonthlyGoalsDao monthlyGoalsDao;
 
-  /// Export the entire database to a JSON string.
+  /// Exports the entire database to a JSON string.
   Future<String> exportToJson() async {
     final habits = await habitsDao.getAllHabits();
     final logs = await habitLogsDao.getAllLogs();
@@ -44,7 +44,7 @@ class BackupService {
     return jsonEncode(data);
   }
 
-  /// Import a full backup from JSON, replacing all existing data.
+  /// Imports a full backup from JSON, replacing all existing data.
   /// Returns the number of habits imported.
   Future<int> importFromJson(String jsonString) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -66,7 +66,6 @@ class BackupService {
     await monthlyGoalsDao.deleteAllGoals();
     await habitsDao.deleteAllHabits();
 
-    // Import habits.
     for (final h in habitsList) {
       final map = h as Map<String, dynamic>;
       await habitsDao.insertHabit(
@@ -88,7 +87,6 @@ class BackupService {
       );
     }
 
-    // Import logs.
     for (final l in logsList) {
       final map = l as Map<String, dynamic>;
       await habitLogsDao.upsertLog(
@@ -103,7 +101,6 @@ class BackupService {
       );
     }
 
-    // Import day notes.
     for (final n in notesList) {
       final map = n as Map<String, dynamic>;
       await dayNotesDao.upsertNote(
@@ -116,8 +113,7 @@ class BackupService {
       );
     }
 
-    // Import monthly goals. The insert returns the fresh id, so the done
-    // state is set on that same row — no extra lookup.
+    // Import monthly goals; the fresh id lets us set done on the same row.
     for (final g in goalsList) {
       final map = g as Map<String, dynamic>;
       final id = await monthlyGoalsDao.addGoal(

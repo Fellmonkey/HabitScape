@@ -9,7 +9,7 @@ part 'habits_dao.g.dart';
 class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
   HabitsDao(super.db);
 
-  /// Watch all active (non-archived) habits ordered by creation time.
+  /// Watches all active (non-archived) habits, ordered by creation time.
   Stream<List<Habit>> watchActiveHabits() {
     return (select(habits)
           ..where((h) => h.isArchived.equals(false))
@@ -17,7 +17,7 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
         .watch();
   }
 
-  /// Get all active habits (one-shot).
+  /// Gets all active habits (one-shot).
   Future<List<Habit>> getActiveHabits() {
     return (select(habits)
           ..where((h) => h.isArchived.equals(false))
@@ -25,51 +25,51 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
         .get();
   }
 
-  /// Get a single habit by id.
+  /// Gets a single habit by id.
   Future<Habit> getHabit(int id) {
     return (select(habits)..where((h) => h.id.equals(id))).getSingle();
   }
 
-  /// Watch a single habit by id.
+  /// Watches a single habit by id.
   Stream<Habit> watchHabit(int id) {
     return (select(habits)..where((h) => h.id.equals(id))).watchSingle();
   }
 
-  /// Get ALL habits (including archived) for backup export.
+  /// Gets all habits (including archived) for backup export.
   Future<List<Habit>> getAllHabits() {
     return (select(habits)..orderBy([(h) => OrderingTerm.asc(h.id)])).get();
   }
 
-  /// Delete all habits (for import).
+  /// Deletes all habits (for import).
   Future<int> deleteAllHabits() {
     return delete(habits).go();
   }
 
-  /// Insert a new habit and return its id.
+  /// Inserts a new habit and returns its id.
   Future<int> insertHabit(HabitsCompanion entry) {
     return into(habits).insert(entry);
   }
 
-  /// Update a habit.
+  /// Updates a habit.
   Future<bool> updateHabit(HabitsCompanion entry) {
     return update(habits).replace(entry);
   }
 
-  /// Archive a habit (soft delete).
+  /// Archives a habit (soft delete).
   Future<int> archiveHabit(int id) {
     return (update(habits)..where((h) => h.id.equals(id))).write(
       const HabitsCompanion(isArchived: Value(true)),
     );
   }
 
-  /// Restore an archived habit back to active.
+  /// Restores an archived habit back to active.
   Future<int> unarchiveHabit(int id) {
     return (update(habits)..where((h) => h.id.equals(id))).write(
       const HabitsCompanion(isArchived: Value(false)),
     );
   }
 
-  /// Watch all archived habits ordered by most-recently created first.
+  /// Watches all archived habits, most recently created first.
   Stream<List<Habit>> watchArchivedHabits() {
     return (select(habits)
           ..where((h) => h.isArchived.equals(true))
@@ -77,19 +77,19 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
         .watch();
   }
 
-  /// Delete a habit permanently.
+  /// Deletes a habit permanently.
   Future<int> deleteHabit(int id) {
     return (delete(habits)..where((h) => h.id.equals(id))).go();
   }
 
-  /// Toggle the focus flag on a habit.
+  /// Sets the focus flag on a habit.
   Future<void> toggleFocus(int id, {required bool isFocus}) {
     return (update(habits)..where((h) => h.id.equals(id))).write(
       HabitsCompanion(isFocus: Value(isFocus)),
     );
   }
 
-  /// Count how many habits are currently marked as focus.
+  /// Counts habits currently marked as focus.
   Future<int> countFocusHabits() async {
     final query = selectOnly(habits)
       ..addColumns([habits.id.count()])

@@ -9,9 +9,7 @@ import '../theme/app_theme.dart';
 import '../../features/onboarding/onboarding_flags.dart';
 import 'debug_data_seeder.dart';
 
-/// Draggable floating debug button that opens the debug menu.
-///
-/// Only rendered in debug mode (wrapped with [kDebugMode] check in main.dart).
+/// Draggable floating button that opens the debug menu (debug builds only).
 class DebugMenuOverlay extends StatefulWidget {
   const DebugMenuOverlay({required this.child, super.key});
 
@@ -166,8 +164,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             '✅ ${scenario.name}: $count привычек за ${sw.elapsedMilliseconds} мс';
       });
 
-      // Refresh providers so the UI updates
-      ref.invalidate(databaseProvider);
+      ref.invalidate(databaseProvider); // refresh the UI
     } catch (e) {
       if (!mounted) return;
       setState(() {

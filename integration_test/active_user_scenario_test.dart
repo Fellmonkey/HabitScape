@@ -70,7 +70,7 @@ void main() {
       expect(find.text('Утро'), findsOneWidget); // Morning Run + Meditation
       expect(find.text('День'), findsOneWidget); // Workout
       expect(find.text('Вечер'), findsOneWidget); // Read Books
-      // No Smoking → anytime → "Весь день" group
+      // No Smoking → anytime → "All day" group
       expect(find.text('Весь день'), findsOneWidget);
     });
   });

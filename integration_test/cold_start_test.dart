@@ -30,7 +30,7 @@ void main() {
       // FAB to create habit is present.
       expect(find.byKey(K.fabCreateHabit), findsOneWidget);
 
-      // Title "Теплица" is displayed (also in nav bar, so at least 1).
+      // Title "Greenhouse" is displayed (also in nav bar, so at least 1).
       expect(find.text('Теплица'), findsWidgets);
     });
 
@@ -42,7 +42,7 @@ void main() {
       // ── Tab 0: Greenhouse (default) ──
       expect(find.byKey(K.emptyHabitsMessage), findsOneWidget);
 
-      // ── Tab 1: Settings (Ещё) ──
+      // ── Tab 1: Settings (More) ──
       await tester.tap(find.text('Ещё'));
       await tester.pumpAndSettle();
       expect(find.text('Настройки'), findsOneWidget);

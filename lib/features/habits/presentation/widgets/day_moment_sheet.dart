@@ -11,8 +11,8 @@ import '../../../../core/utils/date_helpers.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
 
-/// Bottom sheet for editing the «Момент дня»: the most memorable moment
-/// of a day + the day mood (🟢 хорошо / 🟡 так себе / 🔴 плохо).
+/// Bottom sheet for editing the day moment: the memorable moment of a
+/// day + the day mood (🟢 good / 🟡 so-so / 🔴 bad).
 class DayMomentSheet extends ConsumerStatefulWidget {
   const DayMomentSheet({super.key, this.initial, this.dateTimestamp});
 
@@ -42,8 +42,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     _mood = note?.mood;
     _timeQuality = note?.timeQuality;
 
-    // Opened for a specific date (e.g. tap on the month chart) — load the
-    // existing note for that day so it can be edited.
+    // Opened for a specific date — load the existing note for editing.
     if (note == null && widget.dateTimestamp != null) {
       _loadNote();
     }
@@ -68,8 +67,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   }
 
   Future<void> _loadNote() async {
-    // One-shot read — a drift watch stream would only be used for the
-    // first event anyway.
+    // One-shot read — a watch stream would only be used for the first event.
     final dao = ref.read(dayNotesDaoProvider);
     final note = await dao.getNoteForDate(widget.dateTimestamp!);
     if (!mounted) return;
@@ -89,8 +87,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     final ts = widget.dateTimestamp ?? todayTimestamp();
 
     if (moment.isEmpty && _mood == null && _timeQuality == null) {
-      // Nothing to remember — clear the note entirely.
-      await actions.clearDayNote(ts);
+      await actions.clearDayNote(ts); // nothing to remember — clear the note
     } else {
       await actions.saveDayNote(
         dateTimestamp: ts,
@@ -103,8 +100,9 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     if (mounted) {
       Haptics.tap(ref.read(hapticsEnabledProvider));
       _saveController.forward(from: 0);
-      // Let the squish finish before closing the sheet.
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(
+        const Duration(milliseconds: 200),
+      ); // let the squish finish
       if (mounted) Navigator.pop(context);
     }
   }
@@ -253,7 +251,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   }
 }
 
-/// Short «why» sheet — the essence of the «Момент дня» idea.
+/// Short "why" sheet — the essence of the day-moment idea.
 class _DayMomentHelpSheet extends StatelessWidget {
   const _DayMomentHelpSheet();
 
@@ -312,9 +310,8 @@ class _DayMomentHelpSheet extends StatelessWidget {
   }
 }
 
-/// «Рациональность времени» — 5 levels from «Впустую» (1) to
-/// «Максимально» (5). Rendered as a row of tappable drops with the
-/// selected level's label below.
+/// Time quality selector — 5 levels from "Wasted" (1) to "Max" (5),
+/// rendered as a row of tappable drops.
 class _TimeQualitySelector extends StatelessWidget {
   const _TimeQualitySelector({required this.selected, required this.onChanged});
 
@@ -325,7 +322,7 @@ class _TimeQualitySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final levels = TimeQuality.values.reversed.toList(); // 5 → 1 visually
+    final levels = TimeQuality.values.reversed.toList(); // show 5 → 1
     final current = TimeQuality.fromValue(selected);
 
     return Column(

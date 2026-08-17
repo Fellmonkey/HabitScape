@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 
 import 'enums.dart';
 
-/// ── Habits table ──────────────────────────────────────────────
 class Habits extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 200)();
@@ -16,9 +15,7 @@ class Habits extends Table {
   IntColumn get createdAt => integer()();
 }
 
-/// ── Day Notes table (Момент дня) ────────────────────────────
-/// One row per day: the most memorable moment + day mood (🟢/🟡/🔴)
-/// + how rationally the day's time was used (1–5).
+/// One row per day: moment + day mood + time quality (1–5).
 class DayNotes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get date => integer().unique()();
@@ -27,21 +24,17 @@ class DayNotes extends Table {
   IntColumn get timeQuality => integer().nullable()();
 }
 
-/// ── Monthly Goals table (Цели месяца) ────────────────────────
-/// Things to achieve *through* habits this month (e.g. «снять 4 ютуба»).
+/// Things to achieve this month.
 class MonthlyGoals extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  /// First-of-month unix timestamp the goal belongs to.
+  /// First-of-month unix timestamp.
   IntColumn get month => integer()();
   TextColumn get title => text().withLength(min: 1, max: 200)();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
 }
 
-/// ── Habit Logs table ──────────────────────────────────────────
-/// Unique so a (habitId, date) pair maps to exactly one row — lets
-/// `upsertLog` use a single `INSERT … ON CONFLICT DO UPDATE` instead of
-/// a read-then-write pair.
+/// Unique (habitId, date) so an upsert needs no read-before-write.
 @TableIndex(
   name: 'idx_habit_logs_habit_date',
   columns: {#habitId, #date},

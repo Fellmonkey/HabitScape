@@ -43,11 +43,11 @@ void main() {
       expect(qualities, isNotEmpty);
       expect(qualities.every((q) => q >= 1 && q <= 5), isTrue);
 
-      // Today is the user's live «Момент дня» — never pre-filled.
+      // Today is the user's live day note — never pre-filled.
       final today = DateTime.now().toMidnight;
       expect(notes.where((n) => n.date == today.unixSeconds), isEmpty);
 
-      // The current month gets «Цели месяца».
+      // The current month gets month goals.
       final monthTs = DateTime.utc(today.year, today.month, 1).unixSeconds;
       final goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
       expect(goals, isNotEmpty);

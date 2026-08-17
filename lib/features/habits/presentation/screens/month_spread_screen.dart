@@ -20,9 +20,8 @@ import '../widgets/day_moment_sheet.dart';
 import '../month_spread_exporter.dart';
 import '../widgets/month_goals_card.dart';
 
-/// «Разворот месяца» — the main history screen: a calendar week-grid where
-/// each day cell shows mood colour + habit marks + a «Момент дня» dot, with
-/// the month's goals and the chronological «one line about the day» feed.
+/// Month spread — the history screen: a calendar week-grid with mood
+/// colours, habit marks and the "one line about the day" feed.
 class MonthSpreadScreen extends ConsumerStatefulWidget {
   const MonthSpreadScreen({super.key});
 
@@ -37,8 +36,8 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   /// Accumulated horizontal drag distance (for slow swipes without flick).
   double _dragDx = 0;
 
-  /// Direction of the last month change: +1 = forward, -1 = back — used to
-  /// slide the incoming month from the matching side.
+  /// Direction of the last month change (+1 forward, -1 back), used to slide
+  /// the incoming month from the matching side.
   int _slideDir = 1;
 
   // ── Onboarding tour targets ──
@@ -73,7 +72,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
   void _onHorizontalDragEnd(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
-    // Fast flick wins by velocity; slow drags by accumulated distance.
+    // Fast flicks win by velocity, slow drags by accumulated distance.
     final dir = velocity.abs() > 300
         ? (velocity < 0 ? 1 : -1)
         : _dragDx.abs() > 40
@@ -95,9 +94,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Rebuild on day change: keeps the «today» frame and «Сегодня» button
-    // correct if this screen stays open across midnight.
-    ref.watch(todayProvider);
+    ref.watch(todayProvider); // keep «today» frame correct across midnight
     final theme = Theme.of(context);
     final daysAsync = ref.watch(monthSpreadProvider(_monthTs));
 
@@ -142,8 +139,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
         ],
       ),
       body: GestureDetector(
-        // Horizontal swipes switch months; the vertical CustomScrollView
-        // still owns vertical scrolling (the gesture arena resolves it).
+        // Horizontal swipes switch months; vertical scrolling stays with the list.
         behavior: HitTestBehavior.opaque,
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
@@ -161,8 +157,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
           child: KeyedSubtree(
             key: ValueKey(_monthTs),
             child: daysAsync.when(
-              // No infinite spinner — a hidden body keeps pumpAndSettle happy
-              // and avoids a layout flash while the drift streams warm up.
+              // Hidden body avoids a layout flash while data loads.
               loading: () => const SizedBox.shrink(),
               error: (e, _) => Center(child: Text('Ошибка: $e')),
               data: (days) => _buildBody(context, theme, days),
@@ -228,7 +223,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
         // ── Month goals ──
         SliverToBoxAdapter(child: MonthGoalsCard(monthTs: monthTs)),
 
-        // ── «Момент дня» feed (хронологическая лента) ──
+        // ── Day-moment feed (chronological) ──
         if (moments.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -267,11 +262,9 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     if (mounted) ref.invalidate(monthSpreadProvider(_monthTs));
   }
 
-  // ── Export «Разворота месяца» (PNG) ────────────────────────
+  // ── Month spread export (PNG) ───────────────────────────────
 
-  /// Share a PNG photo of the month. On platforms with ads the user opts in
-  /// via a rewarded ad (never interruptive — fully user-initiated);
-  /// everywhere else the export is simply free.
+  /// Shares a PNG photo of the month; a rewarded ad gates it on ad platforms.
   Future<void> _exportMonth() async {
     final days = ref
         .read(monthSpreadProvider(_monthTs))
@@ -339,7 +332,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
 // ── Export bottom sheet ───────────────────────────────────────
 
-/// «Поделиться месяцем»: opt-in rewarded ad (Android) or cancel.
+/// "Share the month" sheet: opt-in rewarded ad (Android) or cancel.
 class _ExportSheet extends StatelessWidget {
   const _ExportSheet();
 
@@ -347,8 +340,7 @@ class _ExportSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
-    // Material (not Container): ListTile paints ink on the nearest Material
-    // ancestor, so a plain DecoratedBox would hide ripples (debug assert).
+    // Material ancestor so ListTile ink ripples paint correctly.
     return Material(
       color: theme.colorScheme.surface,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -397,10 +389,8 @@ class _ExportSheet extends StatelessWidget {
 
 // ── Offscreen capture copy ────────────────────────────────────
 
-/// A static, non-interactive re-render of the month (summary + grid +
-/// moments) used by [MonthSpreadExporter] to produce the PNG. Lives in the
-/// same file so it can reuse the private `_CalendarGrid`/`_MoodCount`/
-/// `_MomentRow` visuals without duplicating them.
+/// Static, non-interactive re-render of the month for the PNG exporter.
+/// Lives in this file to reuse the private grid/mood/moment visuals.
 class _MonthSpreadCapture extends StatelessWidget {
   const _MonthSpreadCapture({required this.days});
 
@@ -535,12 +525,12 @@ class _CalendarGrid extends StatelessWidget {
   /// When set, today's cell is wrapped in an onboarding spotlight.
   final GlobalKey? tourDayKey;
 
-  /// Key for the grid container. The offscreen PNG capture passes a distinct
-  /// key so the tree doesn't end up with two widgets sharing `K.monthSpreadGrid`.
+  /// Grid container key; the PNG capture passes a distinct one to avoid
+  /// two widgets sharing `K.monthSpreadGrid`.
   final Key gridKey;
 
-  /// Whether day cells carry their `K.monthSpreadDay(n)` test keys. Disabled
-  /// for the offscreen capture (duplicate local keys would crash the tree).
+  /// Whether day cells carry `K.monthSpreadDay(n)` test keys (disabled in
+  /// the offscreen capture — duplicate local keys would crash the tree).
   final bool debugDayKeys;
 
   @override
@@ -548,14 +538,13 @@ class _CalendarGrid extends StatelessWidget {
     final theme = Theme.of(context);
     final today = DateTime.now().toMidnight;
     final first = days.first.date;
-    final firstWeekday = first.weekday; // 1 = Пн … 7 = Вс
+    final firstWeekday = first.weekday; // 1 = Mon … 7 = Sun
     // Leading blanks so day 1 lands on its weekday column.
     final cells = <MonthSpreadDay?>[
       for (var i = 1; i < firstWeekday; i++) null,
       ...days,
     ];
 
-    // Weekday header row (Пн … Вс).
     final header = Row(
       children: [
         for (final w in shortWeekdayNames.skip(1))
@@ -631,7 +620,8 @@ class _CalendarGrid extends StatelessWidget {
   }
 }
 
-/// A single day cell: mood-tinted background, habit progress line,\n/// a dot when a «Момент дня» was written, today highlighted with a ring.
+/// A single day cell: mood-tinted background, habit progress, a dot when a
+/// day moment was written, today highlighted with a ring.
 class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
@@ -695,7 +685,6 @@ class _DayCell extends StatelessWidget {
               ),
               const Spacer(),
               if (hasHabits) ...[
-                // Tiny completion bar.
                 ClipRRect(
                   borderRadius: BorderRadius.circular(1.5),
                   child: LinearProgressIndicator(
@@ -734,7 +723,7 @@ class _DayCell extends StatelessWidget {
   }
 }
 
-// ── «Момент дня» row ──────────────────────────────────────────
+// ── Day-moment row ─────────────────────────────────────────────
 
 class _MomentRow extends StatelessWidget {
   const _MomentRow({required this.day, required this.onTap});

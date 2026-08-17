@@ -16,7 +16,7 @@ part 'app_database.g.dart';
   daos: [HabitsDao, HabitLogsDao, DayNotesDao, MonthlyGoalsDao],
 )
 class AppDatabase extends _$AppDatabase {
-  /// Flag to indicate if this is a test database (in-memory) or a real one.
+  /// Whether this is an in-memory test database.
   final bool isTest;
 
   AppDatabase()
@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
 
-  /// Test constructor that creates an in-memory database.
+  /// Test constructor creating an in-memory database.
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
@@ -44,33 +44,28 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      // v1 → v2: the "fail" status was removed. Migrate legacy rows to
-      // "pending" so the enum stays the single source of truth.
+      // v1 → v2: legacy "fail" status becomes "pending".
       if (from < 2) {
         await m.database.customStatement(
           "UPDATE habit_logs SET status = 'pending' WHERE status = 'fail'",
         );
       }
-      // v2 → v3: new DayNotes table («Момент дня»).
+      // v2 → v3: new DayNotes table.
       if (from < 3) {
         await m.createTable(dayNotes);
       }
-      // v3 → v4: index on habit_logs(habitId, date) — speeds up month
-      // queries in the detail screen and the greenhouse.
+      // v3 → v4: index on habit_logs(habitId, date) for month queries.
       if (from < 4) {
         await m.createIndex(idxHabitLogsHabitDate);
       }
-      // v4 → v5: MonthlyGoals table («Цели месяца») + timeQuality column
-      // on DayNotes («Рациональность времени», 1–5).
+      // v4 → v5: MonthlyGoals table + DayNotes.timeQuality column.
       if (from < 5) {
         await m.createTable(monthlyGoals);
         await m.addColumn(dayNotes, dayNotes.timeQuality);
       }
-      // v5 → v6: habit_logs(habitId, date) becomes UNIQUE — enables a single
-      // INSERT … ON CONFLICT DO UPDATE for marking (no read-before-write).
+      // v5 → v6: unique (habitId, date) index for single upserts.
       if (from < 6) {
-        // Drop rows that already duplicate (habitId, date) — the unique
-        // index can only be created on deduplicated data.
+        // Deduplicate rows first — a unique index needs unique data.
         await m.database.customStatement(
           'DELETE FROM habit_logs WHERE id NOT IN '
           '(SELECT MIN(id) FROM habit_logs GROUP BY habit_id, date)',
@@ -80,9 +75,7 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.createIndex(idxHabitLogsHabitDate);
       }
-      // v6 → v7: the garden's «seed archetype» column becomes a neutral
-      // habit icon. Old values ('oak', 'sakura', …) are mapped to the
-      // default icon by HabitIcon.fromString, so only a rename is needed.
+      // v6 → v7: rename garden's seed_archetype column to icon.
       if (from < 7) {
         await m.database.customStatement(
           'ALTER TABLE habits RENAME COLUMN seed_archetype TO icon',

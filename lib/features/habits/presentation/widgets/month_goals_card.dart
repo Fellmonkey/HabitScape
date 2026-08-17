@@ -11,8 +11,7 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
 
-/// «Цели месяца» — things to achieve *through* habits this month
-/// (e.g. «снять 4 ютуба», «сдать тесты»). Checkboxes to mark done.
+/// Month goals — things to achieve this month, with checkboxes.
 class MonthGoalsCard extends ConsumerStatefulWidget {
   const MonthGoalsCard({super.key, this.monthTs});
 
@@ -64,8 +63,8 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Collapsed header — always visible; tap anywhere to expand.
           InkWell(
+            // collapsed header — tap anywhere to expand
             borderRadius: AppRadius.borderS,
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(

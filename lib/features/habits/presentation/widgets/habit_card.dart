@@ -12,11 +12,8 @@ import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
-/// A single habit row in the Greenhouse list.
-/// - Checkbox on the left for instant marking.
-/// - Tap body → detail bottom sheet.
-/// - Long press → mark done (alt).
-/// - Swipe left → Skip / Delete menu.
+/// A single habit row in the Greenhouse list: checkbox, tap → detail,
+/// long press → mark done, swipe → Skip / Delete menu.
 class HabitCard extends ConsumerStatefulWidget {
   const HabitCard({required this.habit, required this.log, super.key});
 
@@ -48,9 +45,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
     final type = FrequencyType.fromString(widget.habit.frequencyType);
     if (type != FrequencyType.cycle) return name;
 
-    // We assume the card is showing for "today" (Greenhouse view).
-    // If you need exact date, it should be passed from parent, but here we use now.
-    final label = getCycleLabelForDate(widget.habit, DateTime.now());
+    final label = getCycleLabelForDate(
+      widget.habit,
+      DateTime.now(),
+    ); // "today" view
     if (label != null && label.isNotEmpty) {
       return '$name: $label';
     }
@@ -256,7 +254,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
         if (confirmed != true) return false;
         await actions.deleteHabit(widget.habit.id);
     }
-    return false; // Don't dismiss the Dismissible itself
+    return false; // don't dismiss the Dismissible itself
   }
 
   Future<bool?> _confirmDelete(BuildContext context) {
@@ -291,7 +289,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
 }
 
 /// Circular check indicator with color-coded states and a water-drop
-/// ripple burst when tapped.
+/// ripple burst on tap.
 class _CheckCircle extends StatefulWidget {
   const _CheckCircle({
     super.key,
@@ -373,8 +371,8 @@ class _CheckCircleState extends State<_CheckCircle>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Expanding water-drop ripple ring.
             AnimatedBuilder(
+              // expanding water-drop ripple ring
               animation: _dropController,
               builder: (context, child) {
                 return Container(
@@ -392,8 +390,8 @@ class _CheckCircleState extends State<_CheckCircle>
                 );
               },
             ),
-            // The check circle itself.
             AnimatedContainer(
+              // the check circle itself
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOut,
               width: 28,
@@ -416,7 +414,7 @@ class _CheckCircleState extends State<_CheckCircle>
   }
 }
 
-/// Small neutral icon representing the habit.
+/// Small icon representing the habit.
 class _HabitIcon extends StatelessWidget {
   const _HabitIcon({required this.icon});
 

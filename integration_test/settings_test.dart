@@ -56,7 +56,7 @@ void main() {
       await tester.tap(find.text('Ещё'));
       await tester.pumpAndSettle();
 
-      // Tap "Импорт данных".
+      // Tap "Import data".
       await tester.tap(find.byKey(K.settingsImport));
       await tester.pumpAndSettle();
 
@@ -84,7 +84,7 @@ void main() {
       await tester.tap(find.text('Ещё'));
       await tester.pumpAndSettle();
 
-      // Scroll down to the «Ощущения» section.
+      // Scroll down to the "Experience" section.
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
 

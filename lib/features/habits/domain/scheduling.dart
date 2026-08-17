@@ -7,13 +7,9 @@ import '../../../core/utils/localized_dates.dart';
 
 // ── Memoized frequency parsing ───────────────────────────────
 //
-// Frequency values are short JSON strings that repeat across habits and
-// rebuilds. The hot paths (`computeDailyCompletion` for stats, the greenhouse
-// grouping, day progress) call `isExpectedToday` once per habit *per day* —
-// 365 × habits per stats visit — so re-running `jsonDecode` every call burns
-// real main-isolate time on low-end devices and drains battery. Parsing is
-// pure (same string → same result), so results are cached content-addressed;
-// the cache is bounded and cleared wholesale when it overflows.
+// Frequency values are short JSON strings parsed on hot paths, so results
+// are cached per input string. The cache is bounded and cleared wholesale
+// when it overflows.
 const _maxParseCacheEntries = 128;
 
 final Map<String, List<int>> _weekdaysCache = {};
@@ -33,7 +29,7 @@ T _parseCached<T>(Map<String, T> cache, String key, T Function() compute) {
   return computed;
 }
 
-/// Check if a habit is expected to be performed on [today].
+/// Whether a habit is expected on [today].
 bool isExpectedToday(Habit habit, DateTime today) {
   final freqType = FrequencyType.fromString(habit.frequencyType);
   switch (freqType) {
@@ -63,9 +59,8 @@ bool isExpectedToday(Habit habit, DateTime today) {
   }
 }
 
-/// Parse weekday list from JSON frequency value.
-/// Returns [1,2,3,4,5] (Mon-Fri) as default. Result is cached per input
-/// string — callers must not mutate the returned list.
+/// Parses a weekday list from a JSON frequency value (default Mon–Fri).
+/// Cached per input string — callers must not mutate the result.
 List<int> parseWeekdays(String json) {
   return _parseCached(_weekdaysCache, json, () {
     try {
@@ -79,8 +74,8 @@ List<int> parseWeekdays(String json) {
   });
 }
 
-/// Parse a single integer value from JSON frequency value.
-/// Returns 1 as default. Result is cached per input string.
+/// Parses a single integer from a JSON frequency value (default 1).
+/// Cached per input string.
 int parseXValue(String json) {
   return _parseCached(_xValueCache, json, () {
     try {
@@ -94,9 +89,8 @@ int parseXValue(String json) {
   });
 }
 
-/// Parse cycle configuration.
-/// Returns a record with length, active days, and optional labels for days.
-/// Result is cached per input string — callers must not mutate `days`/`labels`.
+/// Parses cycle configuration (length, active days, optional labels).
+/// Cached per input string — callers must not mutate `days`/`labels`.
 ({int length, List<int> days, Map<int, String> labels, int? startDate})
 parseCycle(String json) {
   return _parseCached(_cycleCache, json, () {
@@ -132,7 +126,7 @@ parseCycle(String json) {
   });
 }
 
-/// Returns the label for the current cycle day, if any.
+/// Label for the current cycle day, if any.
 String? getCycleLabelForDate(Habit habit, DateTime date) {
   final freqType = FrequencyType.fromString(habit.frequencyType);
   if (freqType != FrequencyType.cycle) return null;
@@ -150,8 +144,7 @@ String? getCycleLabelForDate(Habit habit, DateTime date) {
 
 // ── Human-readable labels ────────────────────────────────────
 
-/// Returns a short human-readable description of a habit's frequency,
-/// including the actual values (e.g. "Пн, Ср, Пт", "3× в нед", "Каждые 5 дн").
+/// Short human-readable frequency description, e.g. "Mon, Wed, Fri", "3×/week".
 String frequencyLabel(Habit habit) {
   final type = FrequencyType.fromString(habit.frequencyType);
   return switch (type) {

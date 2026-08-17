@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// Small grabber bar at the top of draggable bottom sheets.
-/// Shared so every sheet renders the same handle.
+/// Grabber bar at the top of draggable bottom sheets, shared by all sheets.
 class SheetHandle extends StatelessWidget {
   const SheetHandle({super.key});
 

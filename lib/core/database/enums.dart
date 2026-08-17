@@ -2,9 +2,6 @@ import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-// All domain enums used across the app.
-// Drift type converters are defined alongside the tables.
-
 enum FrequencyType {
   daily,
   weekdays,
@@ -57,9 +54,7 @@ enum TimeOfDay {
   };
 }
 
-/// Neutral icon shown on a habit card — replaces the removed garden
-/// «seed archetype». The stored string is the enum name; unknown legacy
-/// values (e.g. 'oak' from the garden era) fall back to [HabitIcon.check].
+/// Icon shown on a habit card. Unknown legacy values fall back to [HabitIcon.check].
 enum HabitIcon {
   check(Icons.check_circle_outline, 'Цель'),
   fitness(Icons.fitness_center, 'Спорт'),
@@ -110,8 +105,7 @@ enum LogStatus {
   skip,
   pending;
 
-  /// Parse a stored status string. Unknown values (e.g. legacy "fail")
-  /// fall back to [LogStatus.pending] so old data never crashes the app.
+  /// Parse a stored status string; unknown values fall back to [LogStatus.pending].
   static LogStatus fromString(String value) => LogStatus.values.firstWhere(
     (e) => e.name == value,
     orElse: () => LogStatus.pending,
@@ -136,8 +130,7 @@ enum LogStatus {
   };
 }
 
-/// Drift type converter between the [LogStatus] enum and its stored string
-/// value. Keeps `LogStatus` the single source of truth for log statuses.
+/// Drift type converter between [LogStatus] and its stored string value.
 class LogStatusConverter extends TypeConverter<LogStatus, String> {
   const LogStatusConverter();
 
@@ -148,7 +141,7 @@ class LogStatusConverter extends TypeConverter<LogStatus, String> {
   String toSql(LogStatus value) => value.name;
 }
 
-/// Mood of the day («Момент дня»): 🟢 хорошо / 🟡 так себе / 🔴 плохо.
+/// Day mood: 🟢 good / 🟡 ok / 🔴 bad.
 enum DayMood {
   good,
   ok,
@@ -172,7 +165,7 @@ enum DayMood {
   };
 }
 
-/// Drift type converter between the [DayMood] enum and its stored string value.
+/// Drift type converter between [DayMood] and its stored string value.
 class DayMoodConverter extends TypeConverter<DayMood, String> {
   const DayMoodConverter();
 
@@ -183,9 +176,7 @@ class DayMoodConverter extends TypeConverter<DayMood, String> {
   String toSql(DayMood value) => value.name;
 }
 
-/// «Рациональность времени» — how rationally the day's time was used.
-/// Five levels from 5 (максимально) to 1 (впустую), stored as int 1–5.
-/// Idea: «чем выше точка — тем я счастливее» (прямая корреляция).
+/// How rationally the day's time was used, from 1 (wasted) to 5 (max).
 enum TimeQuality {
   wasted(1, 'Впустую', AppColors.dustyRose),
   lazy(2, 'Лениво', AppColors.mutedTerracotta),

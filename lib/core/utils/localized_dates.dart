@@ -1,6 +1,6 @@
-// Localized (Russian) date labels — single source of truth used across the app.
+// Russian date labels — single source of truth used across the app.
 
-/// Month names in nominative case (e.g. «Январь»), indexed 1–12, [0] unused.
+/// Month names in nominative case, indexed 1–12, [0] unused.
 const monthNames = [
   '',
   'Январь',
@@ -17,7 +17,7 @@ const monthNames = [
   'Декабрь',
 ];
 
-/// Month names in genitive case (e.g. «января»), indexed 1–12, [0] unused.
+/// Month names in genitive case, indexed 1–12, [0] unused.
 const monthNamesGenitive = [
   '',
   'января',
@@ -34,8 +34,7 @@ const monthNamesGenitive = [
   'декабря',
 ];
 
-/// Short weekday names indexed by [DateTime.weekday] (1 = Пн … 7 = Вс),
-/// [0] unused so `shortWeekdayNames[date.weekday]` always works.
+/// Short weekday names indexed by [DateTime.weekday], [0] unused.
 const shortWeekdayNames = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 /// Full weekday names in nominative case, indexed 1–7, [0] unused.
@@ -50,6 +49,6 @@ const weekdayNames = [
   'Воскресенье',
 ];
 
-/// Formats a date as e.g. «Понедельник, 14 августа».
+/// Formats a full Russian date, e.g. "Monday, 14 August".
 String formatFullDate(DateTime date) =>
     '${weekdayNames[date.weekday]}, ${date.day} ${monthNamesGenitive[date.month]}';

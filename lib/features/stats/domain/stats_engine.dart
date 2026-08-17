@@ -4,9 +4,8 @@ import 'package:rythm/core/utils/date_helpers.dart';
 
 import '../../habits/domain/completion.dart';
 
-/// Insight: «в дни, когда всё выполнено, настроение 🟢 в X% случаев».
-/// Pairs per-day habit completion (from [computeDailyCompletion]) with the
-/// day mood from «Момент дня» (day_notes).
+/// Insight: on fully-done days the mood is 🟢 in X% of cases; on empty days
+/// it's 🔴 in Y%. Pairs per-day completion with day mood.
 class MoodCorrelation {
   const MoodCorrelation({
     required this.fullDays,
@@ -15,16 +14,16 @@ class MoodCorrelation {
     required this.emptyDaysBad,
   });
 
-  /// Days with a mood note where every expected habit was done.
+  /// Days where every expected habit was done (with a mood note).
   final int fullDays;
 
-  /// Of [fullDays] — how many had a 🟢 mood.
+  /// Of [fullDays], how many had a 🟢 mood.
   final int fullDaysGood;
 
-  /// Days with a mood note where nothing was done (but something expected).
+  /// Days where nothing was done despite expectations (with a mood note).
   final int emptyDays;
 
-  /// Of [emptyDays] — how many had a 🔴 mood.
+  /// Of [emptyDays], how many had a 🔴 mood.
   final int emptyDaysBad;
 
   bool get hasData => fullDays > 0 || emptyDays > 0;
@@ -38,8 +37,8 @@ class MoodCorrelation {
       emptyDays == 0 ? null : emptyDaysBad / emptyDays * 100.0;
 }
 
-/// Computes the mood ↔ completion correlation over [days] × [notes].
-/// Pure function — no DB access. Days without a mood note are ignored.
+/// Computes the mood ↔ completion correlation. Pure — no DB access.
+/// Days without a mood note are ignored.
 MoodCorrelation computeMoodCorrelation({
   required List<DayCompletion> days,
   required List<DayNote> notes,
@@ -74,7 +73,7 @@ MoodCorrelation computeMoodCorrelation({
   );
 }
 
-/// This week vs last week (Monday-start weeks) — «тренд недель».
+/// This week vs last week (Monday-start weeks).
 class WeekTrend {
   const WeekTrend({
     required this.thisWeekPct,
@@ -102,10 +101,8 @@ class WeekTrend {
 }
 
 /// Computes the week-over-week trend. Pure — no DB access.
-///
-/// Mid-week the current week is compared like-for-like: only days
-/// Mon…today are counted, against the same days of the previous week
-/// (future days of this week are not penalized as «expected»).
+/// Mid-week the current week is compared like-for-like (Mon…today vs the
+/// same days of the previous week), so future days aren't penalized.
 WeekTrend computeWeekTrend({
   required List<Habit> habits,
   required List<HabitLog> logs,
@@ -114,7 +111,7 @@ WeekTrend computeWeekTrend({
   final today = now.toMidnight;
   final thisWeekStart = today.subtract(Duration(days: today.weekday - 1));
   final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
-  // Days elapsed this week (Mon…today): both windows share this length.
+  // Mon…today — both windows share this length.
   final windowDays = today.weekday;
 
   ({double pct, int days, int done, int expected}) weekStats(
@@ -173,7 +170,7 @@ class WeekdayStat {
     required this.expected,
   });
 
-  /// 1 = Пн … 7 = Вс.
+  /// 1 = Mon … 7 = Sun.
   final int weekday;
   final int done;
   final int expected;
@@ -181,7 +178,7 @@ class WeekdayStat {
   double get ratio => expected == 0 ? 0.0 : done / expected;
 }
 
-/// «Пн — твой день-провал», «пик — вечером»: weekly rhythm insights.
+/// Weekly rhythm insights: best/worst weekday and peak activity time.
 class RhythmStats {
   const RhythmStats({
     required this.weekdays,
@@ -242,8 +239,7 @@ RhythmStats computeRhythmStats({
     }
   }
 
-  // Time of day from loggedHour of done logs.
-  const buckets = ['morning', 'day', 'evening', 'night'];
+  const buckets = ['morning', 'day', 'evening', 'night']; // from loggedHour
   final counts = <String, int>{for (final b in buckets) b: 0};
   for (final log in logs) {
     if (log.status != LogStatus.done) continue;
@@ -297,13 +293,8 @@ class StatsOverview {
 
   final int yearTotalDone;
 
-  /// Insight: настроение ↔ выполнение (из yearNotes + days).
   final MoodCorrelation moodCorrelation;
-
-  /// Эта неделя vs прошлая.
   final WeekTrend weekTrend;
-
-  /// Лучший/худший день недели и пик активности.
   final RhythmStats rhythm;
 }
 
@@ -325,7 +316,6 @@ StatsOverview buildStatsOverview({
     end: yearEnd,
   );
 
-  // Mood counts for the month.
   final monthMoods = <DayMood, int>{for (final m in DayMood.values) m: 0};
   for (final note in monthNotes) {
     final mood = note.mood;

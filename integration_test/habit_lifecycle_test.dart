@@ -7,7 +7,7 @@ import 'package:rythm/core/keys.dart';
 import 'helpers/pump_app.dart';
 
 /// Helper: opens the create-habit sheet, fills in [name], picks [timeOfDay]
-/// chip label, and taps "Посадить".
+/// chip label, and taps the create button.
 Future<void> createHabit(
   WidgetTester tester, {
   required String name,
@@ -27,7 +27,7 @@ Future<void> createHabit(
   await tester.drag(find.text('Семечко'), const Offset(0, -200));
   await tester.pumpAndSettle();
 
-  // Tap "Посадить".
+  // Tap the create button.
   await tester.tap(find.byKey(K.habitCreateButton));
   await tester.pumpAndSettle();
 }
@@ -77,7 +77,7 @@ void main() {
       await tester.fling(dismissible, const Offset(-500, 0), 1500);
       await tester.pumpAndSettle();
 
-      // The swipe menu appears. Tap "Уважительный пропуск" (skip).
+      // The swipe menu appears. Tap "Respectful skip".
       expect(find.byKey(K.swipeSkip), findsOneWidget);
       await tester.tap(find.byKey(K.swipeSkip));
       await tester.pumpAndSettle();
@@ -96,7 +96,7 @@ void main() {
       await tester.fling(dismissible, const Offset(-500, 0), 1500);
       await tester.pumpAndSettle();
 
-      // Tap "Удалить".
+      // Tap "Delete".
       expect(find.byKey(K.swipeDelete), findsOneWidget);
       await tester.tap(find.byKey(K.swipeDelete));
       await tester.pumpAndSettle();

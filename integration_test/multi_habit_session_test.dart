@@ -7,7 +7,7 @@ import 'package:rythm/core/keys.dart';
 import 'helpers/pump_app.dart';
 
 /// Helper: opens the create-habit sheet, fills in [name], picks [timeOfDay]
-/// chip label, and taps "Посадить".
+/// chip label, and taps the create button.
 Future<void> _createHabit(
   WidgetTester tester, {
   required String name,
@@ -110,7 +110,7 @@ void main() {
         await _createHabit(tester, name: 'Видимая', timeOfDay: 'Утро');
         await _createHabit(tester, name: 'Скрываемая', timeOfDay: 'Утро');
 
-        // Mark "Скрываемая" as done.
+        // Mark "Hidden" as done.
         await tester.tap(find.byKey(K.habitCheck(2)));
         await tester.pumpAndSettle();
 
@@ -144,7 +144,7 @@ void main() {
       // 0% initially.
       expect(find.text('0%'), findsOneWidget);
 
-      // Tap "Всё" (mark all) for the "Утро" group.
+      // Tap "All" (mark all) for the "Morning" group.
       await tester.tap(find.byKey(K.markAllGroup('Утро')));
       await tester.pumpAndSettle();
 

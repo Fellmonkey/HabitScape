@@ -13,7 +13,7 @@ import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 import '../widgets/habit_form_sheet.dart';
 
-/// Habit detail screen — shows stats, heatmap, streak info, time distribution.
+/// Habit detail screen — stats, heatmap, streak info, time distribution.
 class HabitDetailScreen extends ConsumerWidget {
   const HabitDetailScreen({required this.habitId, super.key});
 
@@ -21,9 +21,7 @@ class HabitDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Rebuild on day change: the heatmap month and «today» highlights must
-    // not stay stale if this screen is left open across midnight.
-    ref.watch(todayProvider);
+    ref.watch(todayProvider); // keep heatmap «today» highlights fresh
     final habitAsync = ref.watch(habitProvider(habitId));
     final theme = Theme.of(context);
     final now = DateTime.now();
@@ -428,10 +426,7 @@ class _MonthHeatmap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // A Riverpod provider instead of a FutureBuilder created in build():
-    // the future used to be re-created (and the query re-run) on every
-    // rebuild of the screen — the provider fetches once per screen visit
-    // and is shared with the metrics computation.
+    // Provider fetches once per visit and is shared with metrics.
     final logsAsync = ref.watch(
       habitMonthLogsProvider((habitId: habitId, year: year, month: month)),
     );
@@ -464,8 +459,7 @@ class _HeatmapGrid extends StatelessWidget {
     final totalDays = daysInMonth(year, month);
     final today = DateTime.now();
 
-    // Build status map: day → status
-    final statusMap = <int, LogStatus>{};
+    final statusMap = <int, LogStatus>{}; // day → status
     for (final log in logs) {
       final d = dateFromUnix(log.date);
       if (d.year == year && d.month == month) {
@@ -681,9 +675,8 @@ class _MonthLogGroup {
   int get skipCount => logs.where((l) => l.status == LogStatus.skip).length;
 }
 
-/// Lazily loads the habit's history month by month (newest first), so
-/// opening the detail screen never fetches or builds the whole history at
-/// once. As the user scrolls to the bottom, older months are appended.
+/// Lazily loads the habit's history month by month (newest first) as the
+/// user scrolls — never fetches or builds the whole history at once.
 class _HistorySection extends ConsumerStatefulWidget {
   const _HistorySection({required this.habitId});
 
@@ -734,13 +727,11 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
               );
             });
           }
-          // Critical: advance the cursor so the next trigger loads a NEW
-          // month — otherwise the same month is appended forever.
-          _stepBack();
+          _stepBack(); // advance the cursor — otherwise the month repeats forever
           return;
         }
-        // Month is empty — step back and try the previous one.
         if (!_stepBack()) {
+          // empty month — walk back
           _allLoaded = true;
           if (mounted) setState(() {});
           return;
@@ -751,8 +742,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
     }
   }
 
-  /// Move [_year]/[_month] one month back. Returns false when we've gone
-  /// too far back (year < 2000) — everything is loaded.
+  /// Moves the cursor one month back; false when history is exhausted.
   bool _stepBack() {
     if (_month == 1) {
       if (_year <= 2000) return false;
@@ -765,7 +755,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
   }
 
   /// Total sliver items: one header per month + one log row per log +
-  /// a trailing spacer item when there may be more history.
+  /// a trailing spacer when there may be more history.
   int get _itemCount {
     var count = _months.length; // headers
     for (final m in _months) {
@@ -796,8 +786,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
     return SliverList.builder(
       itemCount: _itemCount,
       itemBuilder: (context, index) {
-        // Map the flat index to (month, log) pairs.
-        var remaining = index;
+        var remaining = index; // map flat index to (month, log) pairs
         for (final m in _months) {
           if (remaining == 0) {
             return _MonthHeader(group: m);
@@ -808,7 +797,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
           }
           remaining -= m.logs.length;
         }
-        // Footer: visible when the user scrolls to the end — load more.
+        // Footer visible at the end — load more on scroll.
         WidgetsBinding.instance.addPostFrameCallback((_) => _loadNextMonth());
         return const SizedBox(height: 40);
       },

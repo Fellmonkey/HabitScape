@@ -4,13 +4,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../habits/domain/completion.dart';
 
-/// GitHub-style contribution heatmap: 7 rows (weekdays) × N columns (weeks).
-/// Each cell is colored by the day's completion ratio.
-///
-/// The whole grid (weekday labels + month labels + cells) is painted by one
-/// [CustomPainter] instead of ~380 individual widgets. On low-end devices
-/// (e.g. an iPhone 7 running the web build) laying out and rasterising that
-/// many rounded `Container`s per visit is a real source of jank.
+/// GitHub-style heatmap: 7 weekday rows × N week columns, each cell colored
+/// by the day's completion ratio. One [CustomPainter] paints the whole grid
+/// instead of ~380 individual widgets (layout cost on low-end devices).
 class GithubHeatmap extends StatelessWidget {
   const GithubHeatmap({
     required this.days,
@@ -131,7 +127,7 @@ class _HeatmapPainter extends CustomPainter {
       );
     }
 
-    // ── Weekday labels (Пн/Ср/Пт) ─────────────────────────────
+    // ── Weekday labels ────────────────────────────────────────
     for (var dow = 0; dow < 7; dow++) {
       final label = switch (dow) {
         0 => 'Пн',
@@ -190,7 +186,7 @@ class _HeatmapPainter extends CustomPainter {
   }
 }
 
-/// Small legend for the heatmap («Меньше → Больше»).
+/// Small legend for the heatmap ("Less → More").
 class HeatmapLegend extends StatelessWidget {
   const HeatmapLegend({super.key});
 

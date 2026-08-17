@@ -44,13 +44,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(prefs.getString('theme_mode'), 'dark');
 
-    // «Показать подсказки снова» tile is in the «Ощущения» section.
+    // "Show hints again" tile is in the "Experience" section.
     await tester.drag(find.byType(ListView), const Offset(0, -400));
     await tester.pumpAndSettle();
     expect(find.text('Показать подсказки снова'), findsOneWidget);
     expect(find.byKey(K.settingsShowHints), findsOneWidget);
 
-    // «О приложении» card: author + GitHub link.
+    // "About" card: author + GitHub link.
     await tester.drag(find.byType(ListView), const Offset(0, -400));
     await tester.pumpAndSettle();
     expect(find.text('HabitScape'), findsOneWidget);

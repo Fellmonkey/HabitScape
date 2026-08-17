@@ -5,9 +5,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Glassmorphism card.
-/// Semi-transparent backdrop-blurred container for overlays,
-/// analytics cards, and bottom sheets.
+/// Glassmorphism card: semi-transparent, backdrop-blurred container for
+/// overlays, analytics cards and bottom sheets.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     required this.child,
@@ -55,8 +54,7 @@ class GlassCard extends StatelessWidget {
                     ),
                   ],
           ),
-          // A Material ancestor lets ListTile children paint their ink on
-          // the card instead of the (hidden) Scaffold surface below.
+          // Material ancestor so ListTile children paint their ink here.
           child: Material(color: Colors.transparent, child: child),
         ),
       ),

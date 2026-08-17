@@ -8,8 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
 
-/// Card on the greenhouse screen showing today's «Момент дня»
-/// (the most memorable moment + mood). Tap to edit.
+/// Greenhouse card showing today's day moment (moment + mood). Tap to edit.
 class DayMomentCard extends ConsumerWidget {
   const DayMomentCard({super.key});
 
@@ -45,8 +44,8 @@ class DayMomentCard extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mood indicator
               Container(
+                // mood indicator
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(

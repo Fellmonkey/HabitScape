@@ -9,7 +9,7 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import 'shell_scaffold.dart';
 
-/// Root navigator key — used by the debug overlay to access the Navigator.
+/// Root navigator key, used by the debug overlay.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(

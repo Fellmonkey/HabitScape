@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Minimum border radius used across the app
+/// Border radius scale used across the app.
 abstract final class AppRadius {
   static const double s = 12;
   static const double m = 16;

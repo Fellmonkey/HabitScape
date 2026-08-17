@@ -56,11 +56,11 @@ void main() {
   ) async {
     db = await pumpApp(tester, sharedPrefsValues: {});
 
-    // Step 1 — «Момент дня».
+    // Step 1 — day moment.
     await waitForTour(tester);
     expect(find.text(TourContent.greenhouseMoment.description), findsOneWidget);
 
-    // Step 2 — «Разворот месяца» (calendar icon).
+    // Step 2 — month spread (calendar icon).
     await tapThrough(tester, find.byKey(K.dayMomentCard));
     expect(find.text(TourContent.greenhouseSpread.description), findsOneWidget);
 

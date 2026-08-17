@@ -26,7 +26,7 @@ class DebugScenario {
   final String icon;
 }
 
-/// All available scenarios for the debug menu.
+/// Available scenarios for the debug menu.
 const debugScenarios = [
   // ── Small ──
   DebugScenario(
@@ -232,14 +232,13 @@ const _freqTemplates = [
 ];
 
 /// Seeds the database with realistic data for a [DebugScenario].
-///
-/// **Wipes all existing data** before inserting.
+/// **Wipes all existing data** first.
 class DebugDataSeeder {
   DebugDataSeeder(this.db);
 
   final AppDatabase db;
 
-  /// Clear the database and populate it with the given scenario.
+  /// Clears the database and populates it with the given scenario.
   /// Returns the number of habits created.
   Future<int> seed(DebugScenario scenario) async {
     // 1. Wipe everything
@@ -348,12 +347,10 @@ class DebugDataSeeder {
     // 5. Generate today's logs as pending (so Greenhouse shows them)
     await _generateTodayLogs(habitMeta, now);
 
-    // 6. Day notes («Момент дня»): mood + time quality correlated with
-    //    daily completion, so the stats insights and month charts look
-    //    meaningful.
+    // 6. Day notes: mood + time quality correlated with daily completion.
     await _generateDayNotes(dayAgg, now, rng);
 
-    // 7. A few month goals for the current month (Цели месяца).
+    // 7. Month goals for the current month.
     await _generateMonthGoals(now);
 
     return scenario.habitCount;
@@ -372,14 +369,14 @@ class DebugDataSeeder {
     final effectiveStart = meta.createdAt.isAfter(monthStart)
         ? meta.createdAt
         : monthStart;
-    // Don't generate logs for the current month — that's "live" data
+    // Skip the current month — that's "live" data.
     final currentMonthStart = DateTime.utc(now.year, now.month, 1);
     if (!monthStart.isBefore(currentMonthStart)) return;
 
     final totalDays = daysBetweenInclusive(effectiveStart, monthEnd);
     if (totalDays <= 0) return;
 
-    // Quality drifts upward over months (simulates user getting better)
+    // Quality drifts upward over months (simulates the user improving).
     final monthIndex =
         (year - meta.createdAt.year) * 12 + (month - meta.createdAt.month);
     final quality = (meta.quality + monthIndex * 0.06 + rng.nextDouble() * 0.1)
@@ -389,8 +386,7 @@ class DebugDataSeeder {
     final isSlump = rng.nextDouble() < 0.12;
     final effectiveQuality = isSlump ? quality * 0.4 : quality;
 
-    // Collect this (habit, month)'s logs and write them in ONE batched
-    // transaction instead of a query per day.
+    // Write this (habit, month)'s logs in one batched transaction.
     final entries = <HabitLogsCompanion>[];
     for (var d = 0; d < totalDays; d++) {
       final date = effectiveStart.add(Duration(days: d));
@@ -429,9 +425,8 @@ class DebugDataSeeder {
     await db.habitLogsDao.upsertLogs(entries);
   }
 
-  /// Generate a «Момент дня» note for every past day that had expectations:
-  /// mood 🟢/🟡/🔴 + time quality (1–5) correlated with that day's completion
-  /// ratio, plus a memorable moment line for ~half of the days.
+  /// Generates a day note for every past day with expectations: mood + time
+  /// quality correlated with completion, a moment line for ~half the days.
   Future<void> _generateDayNotes(
     Map<int, _DayAgg> dayAgg,
     DateTime now,
@@ -439,8 +434,7 @@ class DebugDataSeeder {
   ) async {
     for (final entry in dayAgg.entries) {
       final date = dateFromUnix(entry.key);
-      // Today is the user's live «Момент дня» — don't pre-fill it.
-      if (!date.isBefore(now)) continue;
+      if (!date.isBefore(now)) continue; // today is the user's live note
 
       final agg = entry.value;
       final ratio = agg.expected == 0 ? 0.0 : agg.done / agg.expected;
@@ -458,11 +452,9 @@ class DebugDataSeeder {
     }
   }
 
-  /// Maps a day's completion ratio to «рациональность времени» (1–5)
-  /// with noise — mirrors the idea's «чем выше точка, тем я счастливее».
+  /// Maps a day's completion ratio to time quality (1–5) with noise.
   static int? _qualityForRatio(double ratio, Random rng) {
-    // ~15% of days have no rating at all (user skipped the ritual).
-    if (rng.nextDouble() < 0.15) return null;
+    if (rng.nextDouble() < 0.15) return null; // ~15% of days unrated
     final roll = rng.nextDouble();
     if (ratio >= 0.8) {
       return roll < 0.7
@@ -485,7 +477,7 @@ class DebugDataSeeder {
     }
   }
 
-  /// Seed a few «Цели месяца» for the current month so the card has content.
+  /// Seeds a few month goals for the current month.
   Future<void> _generateMonthGoals(DateTime now) async {
     final monthTs = DateTime.utc(now.year, now.month, 1).unixSeconds;
     final goals = [
@@ -498,8 +490,7 @@ class DebugDataSeeder {
     }
   }
 
-  /// Maps a day's completion ratio to a mood with noise — good days are
-  /// usually 🟢, skipped days usually 🟡, empty days usually 🔴.
+  /// Maps a day's completion ratio to a mood with noise.
   static DayMood _moodForRatio(double ratio, Random rng) {
     final roll = rng.nextDouble();
     if (ratio >= 0.8) {
@@ -523,7 +514,7 @@ class DebugDataSeeder {
     }
   }
 
-  /// Generate pending logs for today so the Greenhouse screen shows habits.
+  /// Generates pending logs for today so the Greenhouse shows habits.
   Future<void> _generateTodayLogs(List<_HabitMeta> metas, DateTime now) async {
     await db.habitLogsDao.upsertLogs([
       for (final meta in metas)
@@ -563,13 +554,13 @@ class DebugDataSeeder {
   };
 }
 
-/// Per-day done/expected counts across all habits (for mood generation).
+/// Per-day done/expected counts across all habits.
 class _DayAgg {
   int expected = 0;
   int done = 0;
 }
 
-/// Memorable-moment lines for the seeded «Момент дня» notes.
+/// Memorable-moment lines for seeded day notes.
 const _momentPool = [
   'Встретил друга, гуляли у залива',
   'Красивый закат после работы',
@@ -613,6 +604,6 @@ class _HabitMeta {
   final TimeOfDay tod;
   final DateTime createdAt;
 
-  /// Base "quality" of the user's habit — how likely they are to do it.
+  /// Base quality — how likely the user is to do this habit.
   final double quality;
 }

@@ -5,7 +5,7 @@ import '../keys.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
-/// Persistent bottom navigation bar shared across main tabs.
+/// Bottom navigation shell shared across the main tabs.
 class ShellScaffold extends StatelessWidget {
   const ShellScaffold({required this.child, super.key});
 

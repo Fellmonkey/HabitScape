@@ -1,5 +1,4 @@
-/// One step of an onboarding tour: a short title + one-line description
-/// shown in the spotlight tooltip.
+/// One onboarding tour step: a title + one-line description.
 class TourStep {
   const TourStep(this.title, this.description);
 
@@ -7,10 +6,9 @@ class TourStep {
   final String description;
 }
 
-/// Copy for all onboarding tours. Kept in one place so the integration
-/// tests can assert on the exact texts.
+/// Copy for all onboarding tours, kept in one place so tests can assert on it.
 abstract final class TourContent {
-  // ── Greenhouse (Теплица) ─────────────────────────────────
+  // ── Greenhouse ────────────────────────────────────────────
   static const greenhouseMoment = TourStep(
     'Момент дня',
     'Сердце приложения: одна строка о том, что запомнилось, и цвет дня. '
@@ -26,7 +24,7 @@ abstract final class TourContent {
         'Удерживай палец, чтобы выполнить.',
   );
 
-  // ── Month spread (Разворот месяца) ───────────────────────
+  // ── Month spread ──────────────────────────────────────────
   static const spreadSwipe = TourStep(
     'Листай месяцы',
     'Листай влево-вправо или стрелки вверху — прошлые месяцы тоже открыты.',
@@ -36,7 +34,7 @@ abstract final class TourContent {
     'Тапни по дню: настроение, момент и как прошёл день.',
   );
 
-  // ── Settings (Настройки) ───────────────────────────────────
+  // ── Settings ──────────────────────────────────────────────
   static const settingsHere = TourStep(
     'Настройки',
     'Здесь резервное копирование, архив привычек, тема и вибрация. '

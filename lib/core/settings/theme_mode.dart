@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'shared_prefs.dart';
 
-/// App-wide setting: which theme to use (follow the system / light / dark).
-/// Persisted in SharedPreferences under `theme_mode`.
+/// App-wide theme setting (system / light / dark). Persisted in
+/// SharedPreferences under `theme_mode`.
 final themeModeProvider = NotifierProvider<ThemeModeSetting, ThemeMode>(
   ThemeModeSetting.new,
 );
@@ -14,8 +14,7 @@ class ThemeModeSetting extends Notifier<ThemeMode> {
 
   @override
   ThemeMode build() {
-    // Default: follow the system. The FutureProvider may still be loading,
-    // in which case SharedPreferences is not yet available — keep default.
+    // Default: follow the system while SharedPreferences is still loading.
     final stored = ref.watch(sharedPrefsProvider).value?.getString(_key);
     return ThemeMode.values.firstWhere(
       (mode) => mode.name == stored,

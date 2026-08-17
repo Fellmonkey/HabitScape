@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'shared_prefs.dart';
 
-/// App-wide setting: are haptic feedbacks enabled? Persisted in
+/// App-wide setting: whether haptic feedback is enabled. Persisted in
 /// SharedPreferences under `haptics_enabled`.
 final hapticsEnabledProvider = NotifierProvider<HapticsEnabled, bool>(
   HapticsEnabled.new,
@@ -14,8 +14,7 @@ class HapticsEnabled extends Notifier<bool> {
 
   @override
   bool build() {
-    // Default ON; the FutureProvider may still be loading, in which case
-    // SharedPreferences is not yet available — keep the default.
+    // Default ON while SharedPreferences is still loading.
     return ref.watch(sharedPrefsProvider).value?.getBool(_key) ?? true;
   }
 
@@ -26,9 +25,7 @@ class HapticsEnabled extends Notifier<bool> {
   }
 }
 
-/// Haptic feedback wrappers that respect the [hapticsEnabledProvider]
-/// setting. Always pass the current value from
-/// `ref.watch(hapticsEnabledProvider)` so disabling works instantly.
+/// Haptic feedback wrappers that respect the [hapticsEnabledProvider] setting.
 abstract final class Haptics {
   static Future<void> tap(bool enabled) async {
     if (enabled) await HapticFeedback.selectionClick();

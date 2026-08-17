@@ -6,27 +6,22 @@ import '../../../core/utils/date_helpers.dart';
 
 import 'scheduling.dart';
 
-/// Pure computation engine for habit metrics.
-/// No side-effects, no DB access — operates on pre-fetched data.
+/// Pure engine for habit metrics — no side effects, no DB access.
 class HabitEngine {
   const HabitEngine._();
 
-  // Dynamic base calculation
-
-  /// Calculate the required base for a habit in a given month.
-  /// The base accounts for creation date (mid-month start).
+  /// Required base for a habit in a month, accounting for creation date.
   static int calculateRequiredBase(Habit habit, int year, int month) {
     final freqType = FrequencyType.fromString(habit.frequencyType);
     final createdAt = dateFromUnix(habit.createdAt);
     final monthStart = DateTime.utc(year, month, 1);
     final monthEnd = DateTime.utc(year, month + 1, 0);
 
-    // Effective start: max(month start, habit creation date)
+    // Effective start: max(month start, habit creation date).
     final effectiveStart = createdAt.isAfter(monthStart)
         ? createdAt
         : monthStart;
-
-    // If habit was created after this month, base is 0
+    // Created later than this month — no base.
     if (effectiveStart.isAfter(monthEnd)) return 0;
 
     final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
@@ -67,9 +62,7 @@ class HabitEngine {
     }
   }
 
-  // Completion percentage
-
-  /// Calculate completion metrics for a habit in a month.
+  /// Calculates completion metrics for a habit in a month.
   static HabitMetrics calculateMetrics(
     Habit habit,
     List<HabitLog> logs,
@@ -78,7 +71,6 @@ class HabitEngine {
   ) {
     final rawBase = calculateRequiredBase(habit, year, month);
 
-    // Count statuses
     var doneCount = 0;
     var skipCount = 0;
     var maxStreak = 0;
@@ -87,7 +79,6 @@ class HabitEngine {
     var afternoonCount = 0;
     var eveningCount = 0;
 
-    // Sort logs by date
     final sorted = List<HabitLog>.from(logs)
       ..sort((a, b) => a.date.compareTo(b.date));
 
@@ -97,7 +88,7 @@ class HabitEngine {
           doneCount++;
           currentStreak++;
           maxStreak = max(maxStreak, currentStreak);
-          // Categorize time of day for leaf colors
+          // Categorize time of day.
           final hour = log.loggedHour;
           if (hour != null) {
             if (hour >= 5 && hour < 12) {
@@ -109,21 +100,17 @@ class HabitEngine {
             }
           }
         case LogStatus.skip:
-          skipCount++;
-        // Skip doesn't break streak
+          skipCount++; // doesn't break the streak
         case LogStatus.pending:
-          // Pending doesn't affect calculations
-          break;
+          break; // doesn't affect calculations
       }
     }
 
-    // Adjusted base: skip subtracts from required base
+    // Skips subtract from the required base.
     final adjustedBase = max(1, rawBase - skipCount);
 
-    // Completion percentage
     final pct = (doneCount / adjustedBase * 100.0).clamp(0.0, 100.0);
 
-    // Time-of-day ratios for leaf coloring
     final totalTimed = morningCount + afternoonCount + eveningCount;
     final mRatio = totalTimed > 0 ? morningCount / totalTimed : 0.33;
     final aRatio = totalTimed > 0 ? afternoonCount / totalTimed : 0.33;

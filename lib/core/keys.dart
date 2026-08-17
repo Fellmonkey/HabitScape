@@ -28,19 +28,19 @@ abstract final class K {
   static const habitNameField = Key('habit_name_field');
   static const habitCreateButton = Key('habit_create_button');
 
-  // ── Day moment (Момент дня) ────────────────────────────────
+  // ── Day moment ────────────────────────────────────────────
   static const dayMomentCard = Key('day_moment_card');
   static const dayMomentField = Key('day_moment_field');
   static const dayMomentSave = Key('day_moment_save');
   static const dayMomentHelp = Key('day_moment_help');
 
-  /// Open the «Разворот месяца» from the greenhouse header.
+  /// Opens the month spread from the greenhouse header.
   static const openMonthSpread = Key('open_month_spread');
 
   /// Per-level drop in the day-moment sheet: `time_quality_level_$value`
   static Key timeQualityLevel(int value) => Key('time_quality_level_$value');
 
-  // ── Month goals (Цели месяца) ──────────────────────────────
+  // ── Month goals ────────────────────────────────────────────
   static const monthGoalsCard = Key('month_goals_card');
   static const monthGoalsAdd = Key('month_goals_add');
   static const monthGoalsField = Key('month_goals_field');
@@ -49,17 +49,17 @@ abstract final class K {
   /// Per-goal row: `month_goal_$id`
   static Key monthGoal(int id) => Key('month_goal_$id');
 
-  // ── Month spread (Разворот месяца) ─────────────────────────
+  // ── Month spread ───────────────────────────────────────────
   static const monthSpreadTitle = Key('month_spread_title');
   static const monthSpreadPrev = Key('month_spread_prev');
   static const monthSpreadNext = Key('month_spread_next');
   static const monthSpreadToday = Key('month_spread_today');
   static const monthSpreadGrid = Key('month_spread_grid');
 
-  /// Export «Разворота месяца» to PNG (rewarded ad on Android).
+  /// Exports the month spread to PNG (rewarded ad on Android).
   static const monthSpreadExport = Key('month_spread_export');
 
-  /// «Смотреть рекламу» option in the export bottom sheet.
+  /// "Watch ad" option in the export bottom sheet.
   static const exportRewardedOption = Key('export_rewarded_option');
 
   /// Inline ad slot at the bottom of the Statistics screen.
@@ -68,7 +68,7 @@ abstract final class K {
   /// Per-day cell in the spread grid: `month_spread_day_$day`
   static Key monthSpreadDay(int day) => Key('month_spread_day_$day');
 
-  /// «Момент дня» feed under the grid.
+  /// Day-moment feed under the grid.
   static const monthSpreadMoments = Key('month_spread_moments');
 
   // ── Habit card ─────────────────────────────────────────────

@@ -11,24 +11,22 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     with _$DayNotesDaoMixin {
   DayNotesDao(super.db);
 
-  /// Watch the day note («Момент дня») for a specific date.
+  /// Watches the day note for a specific date.
   Stream<DayNote?> watchNoteForDate(int dateTimestamp) {
     return (select(
       dayNotes,
     )..where((n) => n.date.equals(dateTimestamp))).watchSingleOrNull();
   }
 
-  /// Get the day note for a specific date (one-shot).
+  /// Gets the day note for a specific date (one-shot).
   Future<DayNote?> getNoteForDate(int dateTimestamp) {
     return (select(
       dayNotes,
     )..where((n) => n.date.equals(dateTimestamp))).getSingleOrNull();
   }
 
-  /// Upsert a day note — one row per date (the date column is unique).
-  ///
-  /// A single `INSERT … ON CONFLICT(date) DO UPDATE`, so saving a note
-  /// never reads before it writes.
+  /// Upserts a day note — one row per date — with a single
+  /// INSERT … ON CONFLICT UPDATE, no read-before-write.
   Future<void> upsertNote(
     int dateTimestamp, {
     String? moment,
@@ -53,12 +51,12 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Delete the note for a specific date (clears moment and mood).
+  /// Deletes the note for a specific date.
   Future<int> clearNote(int dateTimestamp) {
     return (delete(dayNotes)..where((n) => n.date.equals(dateTimestamp))).go();
   }
 
-  /// Get all day notes in a date range (stats).
+  /// Gets all day notes in a date range.
   Future<List<DayNote>> getNotesInRange(int startTimestamp, int endTimestamp) {
     return (select(dayNotes)
           ..where(
@@ -70,12 +68,12 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Get ALL day notes for backup export.
+  /// Gets all day notes for backup export.
   Future<List<DayNote>> getAllNotes() {
     return (select(dayNotes)..orderBy([(n) => OrderingTerm.asc(n.date)])).get();
   }
 
-  /// Delete all day notes (for import).
+  /// Deletes all day notes (for import).
   Future<int> deleteAllNotes() {
     return delete(dayNotes).go();
   }

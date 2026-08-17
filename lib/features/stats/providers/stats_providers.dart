@@ -4,18 +4,12 @@ import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../domain/stats_engine.dart';
 
-/// Aggregated statistics for the stats screen: GitHub-style year heatmap,
-/// per-habit current-month ranking and mood counts.
-///
-/// Auto-disposed: the stats tab is a screen, so each visit recomputes from
-/// fresh data (a forever-cached FutureProvider would show stale numbers
-/// after habits are marked in the greenhouse).
+/// Aggregated statistics for the stats screen. Auto-disposed so each visit
+/// recomputes from fresh data.
 final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
   ref,
 ) async {
-  // Recompute after midnight — an app left open overnight must not keep
-  // showing yesterday's "current month/year".
-  ref.watch(todayProvider);
+  ref.watch(todayProvider); // recompute after midnight
   final habitsDao = ref.watch(habitsDaoProvider);
   final logsDao = ref.watch(habitLogsDaoProvider);
   final notesDao = ref.watch(dayNotesDaoProvider);
@@ -35,8 +29,7 @@ final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
     yearStart.unixSeconds,
     yearEnd.unixSeconds,
   );
-  // The current month is a subset of the year window — derive month moods
-  // in memory instead of issuing a second overlapping notes query.
+  // Month moods derive from the year window — no second notes query.
   final monthNotes = yearNotes
       .where(
         (n) =>

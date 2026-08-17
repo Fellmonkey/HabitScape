@@ -7,8 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../providers/habit_providers.dart';
 
-/// Screen listing all archived habits.
-/// Users can restore a habit (unarchive) or permanently delete it.
+/// Lists archived habits; users can restore or permanently delete them.
 class ArchivedHabitsScreen extends ConsumerWidget {
   const ArchivedHabitsScreen({super.key});
 
@@ -99,13 +98,11 @@ class _ArchivedHabitTile extends ConsumerWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Restore button
               IconButton(
                 tooltip: 'Восстановить',
                 icon: Icon(Icons.restore_rounded, color: AppColors.sageGreen),
                 onPressed: () => _restore(context, ref),
               ),
-              // Permanent delete button
               IconButton(
                 tooltip: 'Удалить навсегда',
                 icon: Icon(

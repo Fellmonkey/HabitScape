@@ -7,17 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'png_share_stub.dart' if (dart.library.js_interop) 'png_share_web.dart';
 
-/// Captures and shares a «photo» of the «Разворот месяца» (PNG), like
-/// photographing a paper planner spread.
-///
-/// Rendering happens off-screen (an invisible overlay entry far off the
-/// screen edge), so the full month — grid + moments, taller than one screen —
-/// lands in the image, not just the visible viewport.
+/// Captures and shares a PNG "photo" of the month spread.
+/// Rendering happens off-screen so the full month — grid + moments, taller
+/// than one screen — lands in the image.
 class MonthSpreadExporter {
   const MonthSpreadExporter();
 
-  /// Renders [widget] at [width] off-screen and returns PNG bytes,
-  /// or `null` when the capture failed (test doubles override this method).
+  /// Renders the widget at [width] off-screen and returns PNG bytes,
+  /// or null when the capture failed.
   Future<ui.Image?> _capture(GlobalKey key) async {
     final boundary = key.currentContext?.findRenderObject();
     if (boundary is! RenderRepaintBoundary) return null;
@@ -33,8 +30,7 @@ class MonthSpreadExporter {
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => Positioned(
-        // Far off the left edge: painted but invisible, so there is no flash
-        // and no ancestor clipping affects the RepaintBoundary's own layer.
+        // Far off the left edge: painted but invisible, no flash or clipping.
         left: -100000,
         top: 0,
         width: width,
@@ -63,8 +59,7 @@ class MonthSpreadExporter {
     }
   }
 
-  /// Shares the PNG bytes. On the web this may fall back to a download;
-  /// on native platforms it opens the system share sheet. Throws on failure.
+  /// Shares PNG bytes (web may fall back to a download). Throws on failure.
   Future<void> sharePng(Uint8List bytes, {required String fileName}) {
     return sharePngBytes(bytes, fileName: fileName);
   }

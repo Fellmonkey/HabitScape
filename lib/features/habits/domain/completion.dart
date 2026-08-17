@@ -4,8 +4,7 @@ import '../../../core/utils/date_helpers.dart';
 
 import 'scheduling.dart';
 
-/// Completion level of a single day — feeds the GitHub-style heatmap and the
-/// «Разворот месяца».
+/// Completion level of a single day — feeds the heatmap and month spread.
 class DayCompletion {
   const DayCompletion({
     required this.date,
@@ -15,7 +14,7 @@ class DayCompletion {
 
   final DateTime date;
 
-  /// How many active habits were expected this day.
+  /// Active habits expected this day.
   final int expected;
 
   /// How many of them were marked done.
@@ -26,15 +25,14 @@ class DayCompletion {
 }
 
 /// Computes per-day completion for [start, end) across all [habits].
-/// Pure function — no DB access.
+/// Pure — no DB access.
 List<DayCompletion> computeDailyCompletion({
   required List<Habit> habits,
   required List<HabitLog> logs,
   required DateTime start,
   required DateTime end,
 }) {
-  // Index logs by date (unix midnight).
-  final logsByDay = <int, List<HabitLog>>{};
+  final logsByDay = <int, List<HabitLog>>{}; // keyed by unix midnight
   for (final log in logs) {
     logsByDay.putIfAbsent(log.date, () => []).add(log);
   }
@@ -63,8 +61,8 @@ List<DayCompletion> computeDailyCompletion({
   return result;
 }
 
-/// One day of the «Разворот месяца»: completion + mood + time quality
-/// + the «Момент дня» line.
+/// One day of the month spread: completion + mood + time quality
+/// + the day-moment line.
 class MonthSpreadDay {
   const MonthSpreadDay({
     required this.date,
@@ -79,13 +77,13 @@ class MonthSpreadDay {
   final int expected;
   final int done;
 
-  /// Day mood from «Момент дня» (null when not recorded).
+  /// Day mood (null when not recorded).
   final DayMood? mood;
 
-  /// «Рациональность времени» 1–5 (null when not recorded).
+  /// Time quality 1–5 (null when not recorded).
   final int? timeQuality;
 
-  /// «Момент дня» — the memorable line (null when not written).
+  /// The memorable day-moment line (null when not written).
   final String? moment;
 
   bool get hasMoment => moment != null && moment!.trim().isNotEmpty;
@@ -94,9 +92,8 @@ class MonthSpreadDay {
   double get ratio => expected == 0 ? 0.0 : (done / expected).clamp(0.0, 1.0);
 }
 
-/// Builds the «Разворот месяца» days for one month from raw DAO data.
-/// Pure — no DB access. Days without any data are still present so the
-/// calendar grid stays dense.
+/// Builds the month-spread days for one month from raw DAO data.
+/// Pure — no DB access. Empty days stay present so the grid stays dense.
 List<MonthSpreadDay> computeMonthSpreadDays({
   required List<Habit> habits,
   required List<HabitLog> logs,

@@ -11,14 +11,14 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     with _$HabitLogsDaoMixin {
   HabitLogsDao(super.db);
 
-  /// Watch logs for a specific date (unix timestamp normalized to midnight).
+  /// Watches logs for a specific date (unix midnight timestamp).
   Stream<List<HabitLog>> watchLogsForDate(int dateTimestamp) {
     return (select(
       habitLogs,
     )..where((l) => l.date.equals(dateTimestamp))).watch();
   }
 
-  /// Get all logs for a habit in a given month (start <= date < end).
+  /// Gets all logs for a habit in [startTimestamp, endTimestamp).
   Future<List<HabitLog>> getLogsForHabitInRange(
     int habitId,
     int startTimestamp,
@@ -35,7 +35,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Get all logs for ALL habits in a date range (stats heatmap).
+  /// Gets all logs in a date range (stats heatmap).
   Future<List<HabitLog>> getLogsInRange(int startTimestamp, int endTimestamp) {
     return (select(habitLogs)
           ..where(
@@ -47,21 +47,18 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Get ALL logs for backup export.
+  /// Gets all logs for backup export.
   Future<List<HabitLog>> getAllLogs() {
     return (select(habitLogs)..orderBy([(l) => OrderingTerm.asc(l.id)])).get();
   }
 
-  /// Delete all logs (for import).
+  /// Deletes all logs (for import).
   Future<int> deleteAllLogs() {
     return delete(habitLogs).go();
   }
 
-  /// Upsert a log entry — insert or update the status for (habitId, date).
-  ///
-  /// A single `INSERT … ON CONFLICT(habitId, date) DO UPDATE` (the pair is
-  /// covered by a unique index), so marking a habit never reads before it
-  /// writes. Only the mutable columns are touched on conflict.
+  /// Upserts a log for (habitId, date) with a single INSERT … ON CONFLICT
+  /// UPDATE — no read-before-write.
   Future<void> upsertLog(HabitLogsCompanion entry) {
     return into(habitLogs).insert(
       entry,
@@ -75,7 +72,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Upsert many logs in one transaction (e.g. «Отметить всё»).
+  /// Upserts many logs in one transaction (e.g. "Mark all").
   Future<void> upsertLogs(List<HabitLogsCompanion> entries) {
     if (entries.isEmpty) return Future.value();
     return batch((batch) {
@@ -95,7 +92,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  /// Mark a habit as done for today.
+  /// Marks a habit as done.
   Future<void> markDone(int habitId, int dateTimestamp, int hour) {
     return upsertLog(
       HabitLogsCompanion(
@@ -107,7 +104,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Mark many habits done for the same date in a single transaction.
+  /// Marks many habits done for the same date in a single transaction.
   Future<void> markAllDone(List<int> habitIds, int dateTimestamp, int hour) {
     return upsertLogs([
       for (final habitId in habitIds)
@@ -120,7 +117,7 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     ]);
   }
 
-  /// Mark a habit as skipped.
+  /// Marks a habit as skipped.
   Future<void> markSkip(int habitId, int dateTimestamp) {
     return upsertLog(
       HabitLogsCompanion(

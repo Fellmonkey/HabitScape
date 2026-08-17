@@ -38,7 +38,7 @@ void main() {
       await tester.tap(find.text('Хороший день'));
       await tester.pumpAndSettle();
 
-      // Pick time quality (level 5 — «Максимально»).
+      // Pick time quality (level 5 — max).
       await tester.tap(find.byKey(K.timeQualityLevel(5)));
       await tester.pumpAndSettle();
 
@@ -195,7 +195,7 @@ void main() {
       final nextTitle = (tester.widget<Text>(title)).data!;
       expect(nextTitle, isNot(currentTitle));
 
-      // «Сегодня» returns to the current month.
+      // "Today" returns to the current month.
       await tester.tap(find.byKey(K.monthSpreadToday));
       await tester.pumpAndSettle();
       expect((tester.widget<Text>(title)).data, currentTitle);

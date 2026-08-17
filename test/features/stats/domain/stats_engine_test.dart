@@ -202,7 +202,7 @@ void main() {
       final d2 = days[1];
       expect(d2.mood, DayMood.bad);
       expect(d2.ratio, 1.0);
-      expect(d2.timeQuality, 1); // «Впустую»
+      expect(d2.timeQuality, 1); // wasted
       expect(d2.hasMoment, isTrue);
       expect(d2.moment, 'Голова болела');
     });

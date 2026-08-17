@@ -19,8 +19,8 @@ import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
 
-/// Main daily screen — the "Greenhouse" (Теплица).
-/// Shows today's habits grouped by time of day with a progress ring.
+/// Main daily screen — the "Greenhouse": today's habits grouped by time
+/// of day with a progress ring.
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
 
@@ -37,7 +37,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   final _tourSpreadKey = GlobalKey();
   final _tourHabitKey = GlobalKey();
 
-  /// First habit card already wrapped for the tour (once per build pass).
+  /// Whether the first habit card is already wrapped for the tour.
   bool _habitCardWrapped = false;
 
   @override
@@ -62,10 +62,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final dayProgress = ref.watch(dayProgressProvider);
     final theme = Theme.of(context);
 
-    // First habit just appeared → the main tour already ran without a card,
-    // so teach the card gestures in a one-step mini-tour. The pending flag
-    // is set only by HabitActions.createHabit (the UI creation path), so
-    // tests/debug seeder that insert via DAO never trigger this.
+    // First habit appeared after the tour ran without a card — start the
+    // one-step mini-tour. The pending flag is only set by the UI create path.
     ref.listen(activeHabitsProvider, (prev, next) {
       final before = prev?.value?.length ?? 0;
       final after = next.value?.length ?? 0;
@@ -104,8 +102,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<HabitLog> logs,
     double dayProgress,
   ) {
-    // Group habits by time of day; index logs by habit id once so the
-    // per-habit lookup is O(1) instead of a linear scan per card.
+    // Index logs by habit id so per-habit lookup is O(1).
     final groups = _groupByTimeOfDay(habits, logs);
     final logByHabit = {for (final l in logs) l.habitId: l};
 
@@ -137,7 +134,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     ],
                   ),
                 ),
-                // Open the month spread (Разворот месяца)
                 tourStep(
                   context,
                   scope: tourScope,
@@ -174,7 +170,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           ),
         ),
 
-        // ── Day moment (Момент дня) ──
+        // ── Day moment ──
         SliverToBoxAdapter(
           child: tourStep(
             context,
@@ -185,10 +181,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           ),
         ),
 
-        // ── Month goals (Цели месяца) ──
-        // Not const: must rebuild after midnight so it switches to the new
-        // month when the greenhouse refreshes via [todayProvider]. A const
-        // widget would keep the identical instance and never re-run build().
+        // ── Month goals ──
+        // Not const: must rebuild after midnight to switch to the new month.
         SliverToBoxAdapter(child: MonthGoalsCard()),
 
         if (habits.isEmpty)
@@ -217,7 +211,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   ) {
     var items = group.habits;
 
-    // Filter out completed if toggle is active
     if (_hideCompleted) {
       items = items.where((h) {
         final log = logByHabit[h.id];
@@ -271,17 +264,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           itemBuilder: (context, index) {
             final habit = items[index];
             final log = logByHabit[habit.id];
-            // RepaintBoundary isolates the tap bounce / drop-ripple animations
-            // to this card so a single card animating doesn't repaint the
-            // whole sliver (cheaper frames + less battery on low-end devices).
+            // Isolates card animations so one card doesn't repaint the sliver.
             final card = RepaintBoundary(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: HabitCard(habit: habit, log: log),
               ),
             );
-            // Wrap only the first habit card in the tour spotlight — it
-            // must not be re-created on later rebuilds (GlobalKey clash).
+            // Only the first card is wrapped; re-wrapping would clash keys.
             if (!_habitCardWrapped) {
               _habitCardWrapped = true;
               return tourStep(
@@ -301,8 +291,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   void _markAllInGroup(List<Habit> habits) {
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    // One batched transaction instead of N read-then-write upserts.
     ref.read(habitActionsProvider.notifier).markAllDone([
+      // one batched write
       for (final h in habits) h.id,
     ]);
   }

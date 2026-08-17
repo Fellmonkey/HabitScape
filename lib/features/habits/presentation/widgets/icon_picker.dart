@@ -4,12 +4,8 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 
-/// Compact adaptive habit icon picker.
-///
-/// A single line of rounded-square icon chips in enum order (as many as the
-/// screen allows; the picked chip stays highlighted) and a trailing «…»
-/// button that opens a bottom sheet with a full grid of every available
-/// icon (icon + label).
+/// Compact adaptive icon picker: a single line of chips in enum order plus
+/// a «…» button opening a bottom sheet with the full grid (icon + label).
 class IconPicker extends StatelessWidget {
   const IconPicker({
     required this.selected,
@@ -36,13 +32,11 @@ class IconPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Enum order — chips never move around the selection.
-    final icons = HabitIcon.values;
+    final icons = HabitIcon.values; // enum order — chips never move
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Reserve space for the trailing «…» button, then fit as many
-        // chips as fit on one line (adaptive — more on wide screens).
+        // Reserve space for «…», then fit as many chips as fit on one line.
         var available = constraints.maxWidth - _chipSize - _gap;
         final visible = <HabitIcon>[];
         for (final ic in icons) {
@@ -61,8 +55,8 @@ class IconPicker extends StatelessWidget {
               ),
               const SizedBox(width: _gap),
             ],
-            // «…» — open the full grid with every icon.
             Tooltip(
+              // «…» — open the full grid
               message: 'Все иконки',
               child: GestureDetector(
                 onTap: () => _openGrid(context),
@@ -94,7 +88,7 @@ class IconPicker extends StatelessWidget {
   }
 }
 
-/// A single round icon chip in the compact strip.
+/// A single icon chip in the compact strip.
 class _IconChip extends StatelessWidget {
   const _IconChip({
     required this.icon,
@@ -141,7 +135,7 @@ class _IconChip extends StatelessWidget {
   }
 }
 
-/// Bottom sheet with a full grid of every available icon.
+/// Bottom sheet with the full grid of every available icon.
 class _IconGridSheet extends StatelessWidget {
   const _IconGridSheet({required this.selected, required this.onSelected});
 

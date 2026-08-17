@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Semantic color system.
-/// No red-green "good/bad" dichotomy — colors are nature-inspired.
+/// Semantic color system — nature-inspired, no red/green "good/bad" split.
 abstract final class AppColors {
   // ── Light mode backgrounds ──────────────────────────────────
   static const Color lightBackground = Color(0xFFFAF7F2); // Oatmeal
