@@ -2,7 +2,8 @@
 
 Thanks for your interest in HabitScape! This guide covers everything you need
 to build, test and contribute to the project. Product overview and features
-live in [README.md](README.md) ([Russian](README.ru.md)).
+live in the [README](https://github.com/Fellmonkey/HabitScape) ([Russian
+version](README.ru.md)).
 
 ## 🛠 Tech Stack
 

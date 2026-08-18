@@ -4,7 +4,7 @@
 
 [![Flutter](https://img.shields.io/badge/Built_with-Flutter-02569B?logo=flutter)](https://flutter.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)
 [![Platform: Android | Web](https://img.shields.io/badge/Platform-Android%20%7C%20Web%20(PWA)-lightgrey)](#)
 
 > **Жизнь не по расписанию. Привычки — тоже.**
@@ -53,12 +53,12 @@ HabitScape — это **мобильный трекер привычек с ум
 ## 🚀 Быстрый старт
 
 Требования, команды для запуска и полное руководство разработчика (тесты,
-архитектура, конвенции кода) — в **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+архитектура, конвенции кода) — во **[вкладке Contributing](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)**.
 
 ## 🤝 Контрибуции
 
 HabitScape — открытый проект, и мы будем рады помощи! Как собирать, тестировать
-и вносить свой вклад — в **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+и вносить свой вклад — во **[вкладке Contributing](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)**.
 
 ## 📄 Лицензия
 

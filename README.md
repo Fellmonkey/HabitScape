@@ -4,7 +4,7 @@
 
 [![Flutter](https://img.shields.io/badge/Built_with-Flutter-02569B?logo=flutter)](https://flutter.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)
 [![Platform: Android | Web](https://img.shields.io/badge/Platform-Android%20%7C%20Web%20(PWA)-lightgrey)](#)
 
 > **Life isn't on a schedule. Your habits don't have to be.**
@@ -53,12 +53,14 @@ No servers. No accounts. No subscriptions. Your data lives on your device.
 ## 🚀 Quick Start
 
 Prerequisites, setup commands and the full developer guide (testing,
-architecture, code conventions) live in **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+architecture, code conventions) live in the
+**[Contributing tab](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)**.
 
 ## 🤝 Contributing
 
-HabitScape is open source, and we'd love your help! See
-**[CONTRIBUTING.md](CONTRIBUTING.md)** for how to build, test and contribute.
+HabitScape is open source, and we'd love your help! See the
+**[Contributing tab](https://github.com/Fellmonkey/HabitScape?tab=contributing-ov-file)**
+for how to build, test and contribute.
 
 ## 📄 License
 
