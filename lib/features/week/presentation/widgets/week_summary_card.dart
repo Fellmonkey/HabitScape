@@ -7,6 +7,7 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../features/capsule/domain/capsule.dart';
 import '../../domain/week_summary.dart';
 import '../../providers/week_providers.dart';
 
@@ -259,6 +260,15 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
           '${summary.weakest!.$3} из ${summary.weakest!.$4}',
           style: theme.textTheme.bodySmall?.copyWith(color: muted),
         ),
+        if (summary.nextWeekPlannedDays[summary.weakest!.$1] != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            'На следующей неделе — ${summary.nextWeekPlannedDays[summary.weakest!.$1]} ${pluralDays(summary.nextWeekPlannedDays[summary.weakest!.$1]!)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+          ),
+        ],
       ],
       if (summary.weakest == null && summary.hasHabitData) ...[
         const SizedBox(height: 6),

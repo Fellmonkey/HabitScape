@@ -18,6 +18,7 @@ class WeekSummary {
     required this.bestDay,
     required this.completionPct,
     required this.weakest,
+    this.nextWeekPlannedDays = const {},
   });
 
   /// Days (of the week so far) whose mood was good.
@@ -34,6 +35,11 @@ class WeekSummary {
 
   /// The habit with the lowest done/expected ratio (the adjustment point).
   final (int habitId, String name, int done, int expected)? weakest;
+
+  /// How many days each active habit is planned on the *next* week
+  /// (habitId → days). Lets the card explain a low ratio: «Бег: на
+  /// следующей неделе 2 плановых дня» instead of leaving the user to guess.
+  final Map<int, int> nextWeekPlannedDays;
 
   bool get hasMoodData => totalDays > 0;
   bool get hasHabitData => completionPct != null;
@@ -150,11 +156,28 @@ WeekSummary computeWeekSummary({
     }
   }
 
+  // ── Next week's schedule ──────────────────────────────────
+  // How many days each habit is planned on the coming week — lets the card
+  // explain why a ratio is low (a habit planned only 2 days can only score
+  // 0–2, not 7).
+  final nextWeekStart = start.add(const Duration(days: 7));
+  final nextWeekPlannedDays = <int, int>{};
+  for (final habit in activeHabits) {
+    var days = 0;
+    for (var i = 0; i < 7; i++) {
+      if (isExpectedToday(habit, nextWeekStart.add(Duration(days: i)))) {
+        days++;
+      }
+    }
+    if (days > 0) nextWeekPlannedDays[habit.id] = days;
+  }
+
   return WeekSummary(
     greenDays: greenDays,
     totalDays: moodDays.length,
     bestDay: bestDay,
     completionPct: completionPct,
     weakest: weakest,
+    nextWeekPlannedDays: nextWeekPlannedDays,
   );
 }

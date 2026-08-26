@@ -185,6 +185,30 @@ void main() {
       expect(summary.weakest!.$4, 1);
     });
 
+    test('rare frequency reports next-week planned days', () {
+      // everyXDays x=7 → planned exactly once per 7 days. This week has one
+      // scheduled day (Monday). Next week also has exactly one.
+      final rare = makeHabit(
+        id: 1,
+        name: 'Пробежка 7км',
+        createdAt: mon.unixSeconds,
+        frequencyType: 'everyXDays',
+        frequencyValue: '{"x":7}',
+      );
+      final logs = [
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),
+      ];
+      final summary = computeWeekSummary(
+        habits: [rare],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+      expect(summary.completionPct, 100.0);
+      expect(summary.weakest!.$4, 1);
+      expect(summary.nextWeekPlannedDays[1], 1);
+    });
+
     test('best day ignores days with no scheduled habits', () {
       // Weekdays habit (Mon/Wed/Fri) + daily habit. Saturday has a daily log
       // but no weekdays log — Saturday is still a scheduled day for daily,
