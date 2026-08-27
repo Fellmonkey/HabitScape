@@ -1,6 +1,7 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../habits/domain/scheduling.dart';
 
 /// Monday of [date]'s week (ISO weeks start on Monday).
 DateTime weekStartOf(DateTime date) {
@@ -41,8 +42,11 @@ class WeekSummary {
 /// Builds the week summary from raw DAO data.
 ///
 /// Pure: no DB, no clock. [today] is passed in so tests can pin it.
-/// Only habits that were expected on at least one elapsed day count toward
-/// the weakest pick.
+///
+/// Expected days come from the habit's own schedule (`isExpectedToday`), not
+/// from the number of logged rows — so smart frequencies (weekdays,
+/// everyXDays, cycles) stay honest: a missed scheduled day counts as missed,
+/// and a day the habit wasn't scheduled for is simply ignored.
 WeekSummary computeWeekSummary({
   required List<Habit> habits,
   required List<HabitLog> logs,
@@ -62,37 +66,51 @@ WeekSummary computeWeekSummary({
   }).toList();
   final greenDays = moodDays.where((n) => n.mood == DayMood.good).length;
 
-  // ── Per-habit completion over elapsed days ─────────────────
-  final expected = <int, int>{};
-  final done = <int, int>{};
-  final logsByHabit = <int, List<HabitLog>>{};
-
+  // Logs by (date, habitId) → status.
+  final logByDayHabit = <int, Map<int, LogStatus>>{};
   for (final log in logs) {
     if (log.date >= start.unixSeconds && log.date < end.unixSeconds) {
-      logsByHabit.putIfAbsent(log.habitId, () => []).add(log);
+      logByDayHabit.putIfAbsent(log.date, () => {})[log.habitId] = log.status;
     }
   }
 
-  for (final habit in habits) {
-    if (habit.isArchived) continue;
-    final habitLogs = logsByHabit[habit.id] ?? const <HabitLog>[];
+  final elapsedDays = <DateTime>[];
+  for (var i = 0; i < 7; i++) {
+    final day = start.add(Duration(days: i));
+    if (day.isAfter(today.toMidnight)) break;
+    elapsedDays.add(day);
+  }
+
+  // A week with zero interactions (no logs at all) is not a failed week —
+  // it's an unused one. The card stays hidden until there is something to
+  // summarize, so a fresh install never reads as "0%".
+  final hasAnyLogThisWeek = logByDayHabit.isNotEmpty;
+
+  // ── Per-habit completion over scheduled days ───────────────
+  final activeHabits = habits.where((h) => !h.isArchived).toList();
+
+  final expected = <int, int>{};
+  final done = <int, int>{};
+
+  for (final habit in activeHabits) {
     var habitExpected = 0;
     var habitDone = 0;
-    for (final log in habitLogs) {
-      if (log.date > todayTs) continue;
+    for (final day in elapsedDays) {
+      if (!isExpectedToday(habit, day)) continue;
       habitExpected++;
-      if (log.status == LogStatus.done) habitDone++;
+      final status = logByDayHabit[day.unixSeconds]?[habit.id];
+      if (status == LogStatus.done) habitDone++;
     }
-    if (habitExpected == 0) continue;
-    expected[habit.id] = habitExpected;
-    done[habit.id] = habitDone;
-    logsByHabit[habit.id] = habitLogs;
+    if (habitExpected > 0) {
+      expected[habit.id] = habitExpected;
+      done[habit.id] = habitDone;
+    }
   }
 
   var totalExpected = 0;
   var totalDone = 0;
   (int habitId, String name, int done, int expected)? weakest;
-  for (final habit in habits) {
+  for (final habit in activeHabits) {
     final habitExpected = expected[habit.id] ?? 0;
     if (habitExpected == 0) continue;
     totalExpected += habitExpected;
@@ -105,23 +123,24 @@ WeekSummary computeWeekSummary({
     }
   }
 
-  final completionPct = totalExpected == 0
+  final completionPct = (!hasAnyLogThisWeek || totalExpected == 0)
       ? null
       : totalDone / totalExpected * 100;
+  if (!hasAnyLogThisWeek) weakest = null;
 
   // ── Best day ──────────────────────────────────────────────
+  // The day with the best scheduled-completion ratio. Days where nothing was
+  // scheduled are skipped, so a quiet Sunday never reads as "best".
   DateTime? bestDay;
   double bestRatio = -1;
-  for (var i = 0; i < 7; i++) {
-    final day = start.add(Duration(days: i));
-    if (day.isAfter(today.toMidnight)) break;
+  for (final day in elapsedDays) {
     var dayExpected = 0;
     var dayDone = 0;
-    for (final log in logs) {
-      if (log.date == day.unixSeconds) {
-        dayExpected++;
-        if (log.status == LogStatus.done) dayDone++;
-      }
+    for (final habit in activeHabits) {
+      if (!isExpectedToday(habit, day)) continue;
+      dayExpected++;
+      final status = logByDayHabit[day.unixSeconds]?[habit.id];
+      if (status == LogStatus.done) dayDone++;
     }
     if (dayExpected == 0) continue;
     final ratio = dayDone / dayExpected;

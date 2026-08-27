@@ -56,17 +56,17 @@ void main() {
     });
 
     test('computes completion and picks the weakest habit', () {
-      // Habit A: 3 done / 4 expected. Habit B: 1 done / 4 expected.
+      // Two daily habits over 7 days: A done 3/7, B done 1/7.
       final a = makeHabit(id: 1, name: 'Бег', createdAt: mon.unixSeconds);
       final b = makeHabit(id: 2, name: 'Чтение', createdAt: mon.unixSeconds);
       final logs = [
-        for (var i = 0; i < 4; i++)
+        for (var i = 0; i < 7; i++)
           makeLog(
             habitId: 1,
             date: mon.add(Duration(days: i)).unixSeconds,
             status: i < 3 ? LogStatus.done : LogStatus.pending,
           ),
-        for (var i = 0; i < 4; i++)
+        for (var i = 0; i < 7; i++)
           makeLog(
             habitId: 2,
             date: mon.add(Duration(days: i)).unixSeconds,
@@ -79,11 +79,11 @@ void main() {
         notes: const [],
         today: sun,
       );
-      expect(summary.completionPct, 50.0);
+      expect(summary.completionPct, closeTo(4 / 14 * 100, 0.01));
       expect(summary.weakest, isNotNull);
       expect(summary.weakest!.$2, 'Чтение');
       expect(summary.weakest!.$3, 1);
-      expect(summary.weakest!.$4, 4);
+      expect(summary.weakest!.$4, 7);
     });
 
     test('picks the best day by completion ratio', () {
@@ -112,6 +112,109 @@ void main() {
         today: sun,
       );
       expect(summary.hasHabitData, isFalse);
+    });
+
+    test('weekdays frequency counts only scheduled days', () {
+      // Mon/Wed/Fri habit. Logs exist only on  and Wed — Friday missed.
+      final weekdaysHabit = makeHabit(
+        id: 1,
+        name: 'Йога',
+        createdAt: mon.unixSeconds,
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,3,5]}',
+      );
+      final logs = [
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),
+        makeLog(habitId: 1, date: wed.unixSeconds, status: LogStatus.pending),
+      ];
+      final summary = computeWeekSummary(
+        habits: [weekdaysHabit],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+      // Expected: Mon, Wed, Fri = 3. Done: 1.
+      expect(summary.completionPct, closeTo(100 / 3, 0.01));
+      expect(summary.weakest!.$3, 1);
+      expect(summary.weakest!.$4, 3);
+    });
+
+    test('everyXDays frequency counts only scheduled days', () {
+      // every 2 days starting Monday: Mon, Wed, Fri, Sun this week.
+      final every2 = makeHabit(
+        id: 1,
+        name: 'Скакалка',
+        createdAt: mon.unixSeconds,
+        frequencyType: 'everyXDays',
+        frequencyValue: '{"x":2}',
+      );
+      final logs = [
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),
+        makeLog(habitId: 1, date: wed.unixSeconds, status: LogStatus.done),
+      ];
+      final summary = computeWeekSummary(
+        habits: [every2],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+      expect(summary.completionPct, 50.0);
+      expect(summary.weakest!.$4, 4); // Mon Wed Fri Sun
+    });
+
+    test('cycle frequency counts only its cycle days', () {
+      // Cycle length 7, only day 1 active — exactly Monday.
+      final cycleHabit = makeHabit(
+        id: 1,
+        name: 'Медитация',
+        createdAt: mon.unixSeconds,
+        frequencyType: 'cycle',
+        frequencyValue:
+            '{"length":7,"days":[1],"startDate":${mon.unixSeconds}}',
+      );
+      final logs = [
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),
+      ];
+      final summary = computeWeekSummary(
+        habits: [cycleHabit],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+      expect(summary.completionPct, 100.0);
+      expect(summary.weakest!.$4, 1);
+    });
+
+    test('best day ignores days with no scheduled habits', () {
+      // Weekdays habit (Mon/Wed/Fri) + daily habit. Saturday has a daily log
+      // but no weekdays log — Saturday is still a scheduled day for daily,
+      // so it can be best if ratio 1.0.
+      final weekdays = makeHabit(
+        id: 1,
+        name: 'Йога',
+        createdAt: mon.unixSeconds,
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,3,5]}',
+      );
+      final daily = makeHabit(id: 2, name: 'Вода', createdAt: mon.unixSeconds);
+      final sat = DateTime.utc(2026, 10, 31); // Saturday of that week
+      final logs = [
+        // Monday: both done → ratio 1.0
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),
+        makeLog(habitId: 2, date: mon.unixSeconds, status: LogStatus.done),
+        // Wednesday: weekdays pending, daily done → 0.5
+        makeLog(habitId: 1, date: wed.unixSeconds, status: LogStatus.pending),
+        makeLog(habitId: 2, date: wed.unixSeconds, status: LogStatus.done),
+        // Saturday: only daily done → 1.0, but fewer scheduled habits
+        makeLog(habitId: 2, date: sat.unixSeconds, status: LogStatus.done),
+      ];
+      final summary = computeWeekSummary(
+        habits: [weekdays, daily],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+      expect(summary.bestDay, mon);
     });
   });
 }
