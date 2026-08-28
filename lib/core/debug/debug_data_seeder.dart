@@ -6,6 +6,7 @@ import '../database/app_database.dart';
 import '../database/enums.dart';
 import '../utils/date_helpers.dart';
 import '../../features/habits/domain/scheduling.dart';
+import '../../features/week/domain/week_summary.dart';
 
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {
@@ -507,6 +508,75 @@ class DebugDataSeeder {
       deliverAt: shiftMonths(now, 1).unixSeconds,
       body: 'Секретное письмо будущему себе.',
       createdAt: now.unixSeconds,
+    );
+  }
+
+  /// Seeds data for idea D — «Итог недели»: a realistic current week with
+  /// moods, logs and a saved previous-week intention, so the card renders its
+  /// full analysis + reminder state.
+  Future<void> seedWeekSummary() async {
+    final now = DateTime.now().toMidnight;
+    final start = weekStartOf(now);
+    final rng = Random(42);
+
+    // Two habits: one strong, one weak — the weakest pick should be readable.
+    final strong = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: const Value('Чтение книг'),
+        createdAt: Value(start.subtract(const Duration(days: 30)).unixSeconds),
+        icon: const Value('book'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        timeOfDay: const Value('evening'),
+      ),
+    );
+    final weak = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: const Value('Бег'),
+        createdAt: Value(start.subtract(const Duration(days: 30)).unixSeconds),
+        icon: const Value('run'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        timeOfDay: const Value('morning'),
+      ),
+    );
+
+    // Log the elapsed days of the current week (Mon → today).
+    var day = start;
+    while (!day.isAfter(now)) {
+      await db.habitLogsDao.upsertLog(
+        HabitLogsCompanion(
+          habitId: Value(strong),
+          date: Value(day.unixSeconds),
+          status: const Value(LogStatus.done),
+          loggedHour: const Value(21),
+        ),
+      );
+      // Weak habit: done ~1 day out of 3 so it clearly lags.
+      final doneToday = day.difference(start).inDays % 3 == 0;
+      await db.habitLogsDao.upsertLog(
+        HabitLogsCompanion(
+          habitId: Value(weak),
+          date: Value(day.unixSeconds),
+          status: Value(doneToday ? LogStatus.done : LogStatus.pending),
+        ),
+      );
+      // Alternative a mood note, ~2/3 good.
+      if (rng.nextDouble() < 0.85) {
+        await db.dayNotesDao.upsertNote(
+          day.unixSeconds,
+          moment: rng.nextDouble() < 0.5 ? 'День в порядке' : null,
+          mood: rng.nextDouble() < 0.66 ? DayMood.good : DayMood.ok,
+        );
+      }
+      day = day.add(const Duration(days: 1));
+    }
+
+    // One past week's intention — shown as the reminder line.
+    final previousWeekStart = start.subtract(const Duration(days: 7));
+    await db.weeklyIntentionsDao.setIntention(
+      previousWeekStart.unixSeconds,
+      'Бег по вторникам',
     );
   }
 
