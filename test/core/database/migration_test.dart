@@ -84,14 +84,24 @@ void main() {
     expect(after.where((l) => l.habitId == h1).single.status, LogStatus.skip);
   });
 
-  test('v10 schema includes letters reply/reaction columns', () async {
-    expect(db.schemaVersion, 10);
+  test(
+    'v11 schema includes letters reply/reaction and weekly_intentions',
+    () async {
+      expect(db.schemaVersion, 11);
 
-    final cols = await db.customSelect('PRAGMA table_info(letters)').get();
-    final names = cols.map((r) => r.data['name']).toList();
-    expect(names, contains('reply'));
-    expect(names, contains('reaction'));
-  });
+      final cols = await db.customSelect('PRAGMA table_info(letters)').get();
+      final names = cols.map((r) => r.data['name']).toList();
+      expect(names, contains('reply'));
+      expect(names, contains('reaction'));
+
+      final intentionCols = await db
+          .customSelect('PRAGMA table_info(weekly_intentions)')
+          .get();
+      final intentionNames = intentionCols.map((r) => r.data['name']).toList();
+      expect(intentionNames, contains('week_start'));
+      expect(intentionNames, contains('intention'));
+    },
+  );
 
   group('legacy upgrades do not re-add existing columns', () {
     Future<AppDatabase> openUpgraded(

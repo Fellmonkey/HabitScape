@@ -2109,6 +2109,262 @@ class LettersCompanion extends UpdateCompanion<Letter> {
   }
 }
 
+class $WeeklyIntentionsTable extends WeeklyIntentions
+    with TableInfo<$WeeklyIntentionsTable, WeeklyIntention> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WeeklyIntentionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _weekStartMeta = const VerificationMeta(
+    'weekStart',
+  );
+  @override
+  late final GeneratedColumn<int> weekStart = GeneratedColumn<int>(
+    'week_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _intentionMeta = const VerificationMeta(
+    'intention',
+  );
+  @override
+  late final GeneratedColumn<String> intention = GeneratedColumn<String>(
+    'intention',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, weekStart, intention];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'weekly_intentions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WeeklyIntention> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('week_start')) {
+      context.handle(
+        _weekStartMeta,
+        weekStart.isAcceptableOrUnknown(data['week_start']!, _weekStartMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_weekStartMeta);
+    }
+    if (data.containsKey('intention')) {
+      context.handle(
+        _intentionMeta,
+        intention.isAcceptableOrUnknown(data['intention']!, _intentionMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WeeklyIntention map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WeeklyIntention(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      weekStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}week_start'],
+      )!,
+      intention: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}intention'],
+      ),
+    );
+  }
+
+  @override
+  $WeeklyIntentionsTable createAlias(String alias) {
+    return $WeeklyIntentionsTable(attachedDatabase, alias);
+  }
+}
+
+class WeeklyIntention extends DataClass implements Insertable<WeeklyIntention> {
+  final int id;
+  final int weekStart;
+  final String? intention;
+  const WeeklyIntention({
+    required this.id,
+    required this.weekStart,
+    this.intention,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['week_start'] = Variable<int>(weekStart);
+    if (!nullToAbsent || intention != null) {
+      map['intention'] = Variable<String>(intention);
+    }
+    return map;
+  }
+
+  WeeklyIntentionsCompanion toCompanion(bool nullToAbsent) {
+    return WeeklyIntentionsCompanion(
+      id: Value(id),
+      weekStart: Value(weekStart),
+      intention: intention == null && nullToAbsent
+          ? const Value.absent()
+          : Value(intention),
+    );
+  }
+
+  factory WeeklyIntention.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WeeklyIntention(
+      id: serializer.fromJson<int>(json['id']),
+      weekStart: serializer.fromJson<int>(json['weekStart']),
+      intention: serializer.fromJson<String?>(json['intention']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'weekStart': serializer.toJson<int>(weekStart),
+      'intention': serializer.toJson<String?>(intention),
+    };
+  }
+
+  WeeklyIntention copyWith({
+    int? id,
+    int? weekStart,
+    Value<String?> intention = const Value.absent(),
+  }) => WeeklyIntention(
+    id: id ?? this.id,
+    weekStart: weekStart ?? this.weekStart,
+    intention: intention.present ? intention.value : this.intention,
+  );
+  WeeklyIntention copyWithCompanion(WeeklyIntentionsCompanion data) {
+    return WeeklyIntention(
+      id: data.id.present ? data.id.value : this.id,
+      weekStart: data.weekStart.present ? data.weekStart.value : this.weekStart,
+      intention: data.intention.present ? data.intention.value : this.intention,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyIntention(')
+          ..write('id: $id, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('intention: $intention')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, weekStart, intention);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WeeklyIntention &&
+          other.id == this.id &&
+          other.weekStart == this.weekStart &&
+          other.intention == this.intention);
+}
+
+class WeeklyIntentionsCompanion extends UpdateCompanion<WeeklyIntention> {
+  final Value<int> id;
+  final Value<int> weekStart;
+  final Value<String?> intention;
+  const WeeklyIntentionsCompanion({
+    this.id = const Value.absent(),
+    this.weekStart = const Value.absent(),
+    this.intention = const Value.absent(),
+  });
+  WeeklyIntentionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int weekStart,
+    this.intention = const Value.absent(),
+  }) : weekStart = Value(weekStart);
+  static Insertable<WeeklyIntention> custom({
+    Expression<int>? id,
+    Expression<int>? weekStart,
+    Expression<String>? intention,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (weekStart != null) 'week_start': weekStart,
+      if (intention != null) 'intention': intention,
+    });
+  }
+
+  WeeklyIntentionsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? weekStart,
+    Value<String?>? intention,
+  }) {
+    return WeeklyIntentionsCompanion(
+      id: id ?? this.id,
+      weekStart: weekStart ?? this.weekStart,
+      intention: intention ?? this.intention,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (weekStart.present) {
+      map['week_start'] = Variable<int>(weekStart.value);
+    }
+    if (intention.present) {
+      map['intention'] = Variable<String>(intention.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyIntentionsCompanion(')
+          ..write('id: $id, ')
+          ..write('weekStart: $weekStart, ')
+          ..write('intention: $intention')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2117,6 +2373,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DayNotesTable dayNotes = $DayNotesTable(this);
   late final $MonthlyGoalsTable monthlyGoals = $MonthlyGoalsTable(this);
   late final $LettersTable letters = $LettersTable(this);
+  late final $WeeklyIntentionsTable weeklyIntentions = $WeeklyIntentionsTable(
+    this,
+  );
   late final Index idxHabitLogsHabitDate = Index(
     'idx_habit_logs_habit_date',
     'CREATE UNIQUE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
@@ -2128,6 +2387,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final LettersDao lettersDao = LettersDao(this as AppDatabase);
+  late final WeeklyIntentionsDao weeklyIntentionsDao = WeeklyIntentionsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2138,6 +2400,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dayNotes,
     monthlyGoals,
     letters,
+    weeklyIntentions,
     idxHabitLogsHabitDate,
   ];
 }
@@ -3233,6 +3496,168 @@ typedef $$LettersTableProcessedTableManager =
       Letter,
       PrefetchHooks Function()
     >;
+typedef $$WeeklyIntentionsTableCreateCompanionBuilder =
+    WeeklyIntentionsCompanion Function({
+      Value<int> id,
+      required int weekStart,
+      Value<String?> intention,
+    });
+typedef $$WeeklyIntentionsTableUpdateCompanionBuilder =
+    WeeklyIntentionsCompanion Function({
+      Value<int> id,
+      Value<int> weekStart,
+      Value<String?> intention,
+    });
+
+class $$WeeklyIntentionsTableFilterComposer
+    extends Composer<_$AppDatabase, $WeeklyIntentionsTable> {
+  $$WeeklyIntentionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get intention => $composableBuilder(
+    column: $table.intention,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WeeklyIntentionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WeeklyIntentionsTable> {
+  $$WeeklyIntentionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get weekStart => $composableBuilder(
+    column: $table.weekStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get intention => $composableBuilder(
+    column: $table.intention,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WeeklyIntentionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WeeklyIntentionsTable> {
+  $$WeeklyIntentionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get weekStart =>
+      $composableBuilder(column: $table.weekStart, builder: (column) => column);
+
+  GeneratedColumn<String> get intention =>
+      $composableBuilder(column: $table.intention, builder: (column) => column);
+}
+
+class $$WeeklyIntentionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WeeklyIntentionsTable,
+          WeeklyIntention,
+          $$WeeklyIntentionsTableFilterComposer,
+          $$WeeklyIntentionsTableOrderingComposer,
+          $$WeeklyIntentionsTableAnnotationComposer,
+          $$WeeklyIntentionsTableCreateCompanionBuilder,
+          $$WeeklyIntentionsTableUpdateCompanionBuilder,
+          (
+            WeeklyIntention,
+            BaseReferences<
+              _$AppDatabase,
+              $WeeklyIntentionsTable,
+              WeeklyIntention
+            >,
+          ),
+          WeeklyIntention,
+          PrefetchHooks Function()
+        > {
+  $$WeeklyIntentionsTableTableManager(
+    _$AppDatabase db,
+    $WeeklyIntentionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WeeklyIntentionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WeeklyIntentionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WeeklyIntentionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> weekStart = const Value.absent(),
+                Value<String?> intention = const Value.absent(),
+              }) => WeeklyIntentionsCompanion(
+                id: id,
+                weekStart: weekStart,
+                intention: intention,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int weekStart,
+                Value<String?> intention = const Value.absent(),
+              }) => WeeklyIntentionsCompanion.insert(
+                id: id,
+                weekStart: weekStart,
+                intention: intention,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WeeklyIntentionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WeeklyIntentionsTable,
+      WeeklyIntention,
+      $$WeeklyIntentionsTableFilterComposer,
+      $$WeeklyIntentionsTableOrderingComposer,
+      $$WeeklyIntentionsTableAnnotationComposer,
+      $$WeeklyIntentionsTableCreateCompanionBuilder,
+      $$WeeklyIntentionsTableUpdateCompanionBuilder,
+      (
+        WeeklyIntention,
+        BaseReferences<_$AppDatabase, $WeeklyIntentionsTable, WeeklyIntention>,
+      ),
+      WeeklyIntention,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3247,4 +3672,6 @@ class $AppDatabaseManager {
       $$MonthlyGoalsTableTableManager(_db, _db.monthlyGoals);
   $$LettersTableTableManager get letters =>
       $$LettersTableTableManager(_db, _db.letters);
+  $$WeeklyIntentionsTableTableManager get weeklyIntentions =>
+      $$WeeklyIntentionsTableTableManager(_db, _db.weeklyIntentions);
 }

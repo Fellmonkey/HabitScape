@@ -6,6 +6,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/settings/domain/backup_service.dart';
+import 'package:rythm/features/week/domain/week_summary.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
@@ -22,6 +23,7 @@ void main() {
       dayNotesDao: db.dayNotesDao,
       monthlyGoalsDao: db.monthlyGoalsDao,
       lettersDao: db.lettersDao,
+      weeklyIntentionsDao: db.weeklyIntentionsDao,
     );
   });
 
@@ -89,6 +91,12 @@ void main() {
       await db.lettersDao.markOpened(openedId, janTs);
       await db.lettersDao.setReply(openedId, 'Удалось наполовину');
 
+      // Weekly intention
+      await db.weeklyIntentionsDao.setIntention(
+        weekStartOf(DateTime.utc(2026, 1, 1)).unixSeconds,
+        'Бег по вторникам',
+      );
+
       // Export
       final exportedJson = await service.exportToJson();
 
@@ -100,6 +108,7 @@ void main() {
         dayNotesDao: db2.dayNotesDao,
         monthlyGoalsDao: db2.monthlyGoalsDao,
         lettersDao: db2.lettersDao,
+        weeklyIntentionsDao: db2.weeklyIntentionsDao,
       );
 
       final count = await service2.importFromJson(exportedJson);
@@ -150,6 +159,11 @@ void main() {
       expect(opened.isOpened, isTrue);
       expect(opened.openedAt, janTs);
       expect(opened.reply, 'Удалось наполовину');
+
+      // Verify weekly intentions
+      final intentions = await db2.weeklyIntentionsDao.getAllIntentions();
+      expect(intentions, hasLength(1));
+      expect(intentions.single.intention, 'Бег по вторникам');
 
       await db2.close();
     });
@@ -270,6 +284,7 @@ void main() {
         dayNotesDao: db2.dayNotesDao,
         monthlyGoalsDao: db2.monthlyGoalsDao,
         lettersDao: db2.lettersDao,
+        weeklyIntentionsDao: db2.weeklyIntentionsDao,
       );
 
       await service2.importFromJson(json);

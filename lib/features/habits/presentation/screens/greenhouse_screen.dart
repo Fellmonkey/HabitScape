@@ -24,6 +24,7 @@ import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
+import '../../../week/presentation/widgets/week_summary_card.dart';
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
@@ -151,6 +152,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         // ── Echo: one past moment, no input ──
         const SliverToBoxAdapter(child: EchoCard()),
+
+        // ── Week summary: closes the week on Sundays ──
+        const SliverToBoxAdapter(child: WeekSummaryCard()),
 
         // ── Capsule: a letter to the future self ──
         const SliverToBoxAdapter(child: CapsuleCard()),

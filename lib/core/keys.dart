@@ -118,4 +118,10 @@ abstract final class K {
   static const letterReplySave = Key('letter_reply_save');
 
   static const capsulesSettingsEntry = Key('settings_capsules');
+
+  // ── Week summary (Итог недели) ─────────────────────────────
+  static const weekSummaryCard = Key('week_summary_card');
+  static const weekIntentionField = Key('week_intention_field');
+  static const weekIntentionSave = Key('week_intention_save');
+  static const weekIntentionSkip = Key('week_intention_skip');
 }

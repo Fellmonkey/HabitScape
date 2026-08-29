@@ -10,6 +10,7 @@ import '../../habits/data/habit_logs_dao.dart';
 import '../../habits/data/habits_dao.dart';
 import '../../habits/data/monthly_goals_dao.dart';
 import '../../capsule/data/letters_dao.dart';
+import '../../week/data/weekly_intentions_dao.dart';
 
 // Backup format version for forward compatibility.
 // v2 adds the `letters` collection (time capsules).
@@ -22,6 +23,7 @@ class BackupService {
     required this.dayNotesDao,
     required this.monthlyGoalsDao,
     required this.lettersDao,
+    required this.weeklyIntentionsDao,
   });
 
   final HabitsDao habitsDao;
@@ -29,6 +31,7 @@ class BackupService {
   final DayNotesDao dayNotesDao;
   final MonthlyGoalsDao monthlyGoalsDao;
   final LettersDao lettersDao;
+  final WeeklyIntentionsDao weeklyIntentionsDao;
 
   /// Exports the entire database to a JSON string.
   Future<String> exportToJson() async {
@@ -37,6 +40,7 @@ class BackupService {
     final notes = await dayNotesDao.getAllNotes();
     final goals = await monthlyGoalsDao.getAllGoals();
     final letters = await lettersDao.getAllLetters();
+    final intentions = await weeklyIntentionsDao.getAllIntentions();
 
     final data = {
       'version': _backupVersion,
@@ -46,6 +50,7 @@ class BackupService {
       'dayNotes': notes.map(_noteToMap).toList(),
       'monthlyGoals': goals.map(_goalToMap).toList(),
       'letters': letters.map(_letterToMap).toList(),
+      'weeklyIntentions': intentions.map(_intentionToMap).toList(),
     };
 
     return jsonEncode(data);
@@ -67,12 +72,14 @@ class BackupService {
     final notesList = data['dayNotes'] as List<dynamic>? ?? [];
     final goalsList = data['monthlyGoals'] as List<dynamic>? ?? [];
     final lettersList = data['letters'] as List<dynamic>? ?? [];
+    final intentionsList = data['weeklyIntentions'] as List<dynamic>? ?? [];
 
     // Clear existing data (order matters for FK constraints).
     await habitLogsDao.deleteAllLogs();
     await dayNotesDao.deleteAllNotes();
     await monthlyGoalsDao.deleteAllGoals();
     await lettersDao.deleteAllLetters();
+    await weeklyIntentionsDao.deleteAllIntentions();
     await habitsDao.deleteAllHabits();
 
     for (final h in habitsList) {
@@ -158,6 +165,18 @@ class BackupService {
       }
     }
 
+    // Import weekly intentions.
+    for (final i in intentionsList) {
+      final map = i as Map<String, dynamic>;
+      final intention = map['intention'] as String?;
+      if (intention != null && intention.isNotEmpty) {
+        await weeklyIntentionsDao.setIntention(
+          map['weekStart'] as int,
+          intention,
+        );
+      }
+    }
+
     return habitsList.length;
   }
 
@@ -195,6 +214,11 @@ class BackupService {
     'month': g.month,
     'title': g.title,
     'isDone': g.isDone,
+  };
+
+  static Map<String, dynamic> _intentionToMap(WeeklyIntention i) => {
+    'weekStart': i.weekStart,
+    'intention': i.intention,
   };
 
   static Map<String, dynamic> _letterToMap(Letter l) => {

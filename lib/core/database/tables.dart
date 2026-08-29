@@ -52,6 +52,14 @@ class Letters extends Table {
   TextColumn get reply => text().nullable()();
 }
 
+/// One intention per week («Что беру в следующую неделю?»). The summary is
+/// computed on the fly; only the intention itself is stored.
+class WeeklyIntentions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get weekStart => integer().unique()();
+  TextColumn get intention => text().nullable()();
+}
+
 /// Unique (habitId, date) so an upsert needs no read-before-write.
 @TableIndex(
   name: 'idx_habit_logs_habit_date',

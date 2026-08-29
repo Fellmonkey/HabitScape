@@ -7,14 +7,29 @@ import '../../features/habits/data/habit_logs_dao.dart';
 import '../../features/habits/data/habits_dao.dart';
 import '../../features/habits/data/monthly_goals_dao.dart';
 import '../../features/capsule/data/letters_dao.dart';
+import '../../features/week/data/weekly_intentions_dao.dart';
 import 'enums.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Habits, HabitLogs, DayNotes, MonthlyGoals, Letters],
-  daos: [HabitsDao, HabitLogsDao, DayNotesDao, MonthlyGoalsDao, LettersDao],
+  tables: [
+    Habits,
+    HabitLogs,
+    DayNotes,
+    MonthlyGoals,
+    Letters,
+    WeeklyIntentions,
+  ],
+  daos: [
+    HabitsDao,
+    HabitLogsDao,
+    DayNotesDao,
+    MonthlyGoalsDao,
+    LettersDao,
+    WeeklyIntentionsDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Whether this is an in-memory test database.
@@ -39,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -96,6 +111,10 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from >= 8 && from < 10) {
         await m.addColumn(letters, letters.reply);
+      }
+      // v10 → v11: WeeklyIntentions — the week's intention.
+      if (from < 11) {
+        await m.createTable(weeklyIntentions);
       }
     },
   );
