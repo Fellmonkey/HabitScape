@@ -466,6 +466,7 @@ class _EntranceState extends State<_Entrance>
   late final AnimationController _c;
   late final Animation<double> _fade;
   late final Animation<Offset> _rise;
+  late final Animation<double> _cardScale;
   late final Animation<double> _ringScale;
   late final Animation<double> _ringOpacity;
 
@@ -476,9 +477,10 @@ class _EntranceState extends State<_Entrance>
     final curve = CurvedAnimation(parent: _c, curve: AppMotion.easeOutStrong);
     _fade = Tween(begin: 0.0, end: 1.0).animate(curve);
     _rise = Tween(
-      begin: const Offset(0, 0.08),
+      begin: const Offset(0, 0.10),
       end: Offset.zero,
     ).animate(curve);
+    _cardScale = Tween(begin: 0.96, end: 1.0).animate(curve);
     _ringScale = Tween(begin: 0.6, end: 2.4).animate(curve);
     _ringOpacity = Tween(begin: 0.5, end: 0.0).animate(curve);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -504,30 +506,33 @@ class _EntranceState extends State<_Entrance>
       opacity: _fade,
       child: SlideTransition(
         position: _rise,
-        child: Stack(
-          children: [
-            widget.child,
-            Positioned(
-              right: 46,
-              top: 18,
-              child: AnimatedBuilder(
-                animation: _c,
-                builder: (context, _) => Container(
-                  width: 28 * _ringScale.value,
-                  height: 28 * _ringScale.value,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.emeraldGlow.withValues(
-                        alpha: _ringOpacity.value,
+        child: ScaleTransition(
+          scale: _cardScale,
+          child: Stack(
+            children: [
+              widget.child,
+              Positioned(
+                right: 46,
+                top: 18,
+                child: AnimatedBuilder(
+                  animation: _c,
+                  builder: (context, _) => Container(
+                    width: 28 * _ringScale.value,
+                    height: 28 * _ringScale.value,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.emeraldGlow.withValues(
+                          alpha: _ringOpacity.value,
+                        ),
+                        width: 2.5,
                       ),
-                      width: 2.5,
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

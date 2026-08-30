@@ -65,8 +65,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
     );
     _scaleAnim =
         TweenSequence<double>([
-          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.04), weight: 40),
-          TweenSequenceItem(tween: Tween(begin: 1.04, end: 1.0), weight: 60),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 35),
+          TweenSequenceItem(tween: Tween(begin: 1.05, end: 0.98), weight: 25),
+          TweenSequenceItem(tween: Tween(begin: 0.98, end: 1.0), weight: 40),
         ]).animate(
           CurvedAnimation(
             parent: _bounceController,

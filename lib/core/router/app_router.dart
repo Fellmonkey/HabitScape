@@ -91,8 +91,8 @@ CustomTransitionPage _motionPage({
 }) {
   return CustomTransitionPage(
     key: ValueKey(name),
-    transitionDuration: const Duration(milliseconds: 240),
-    reverseTransitionDuration: const Duration(milliseconds: 180),
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 190),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       if (MediaQuery.of(context).disableAnimations) return child;
       final curved = CurvedAnimation(
@@ -103,11 +103,11 @@ CustomTransitionPage _motionPage({
         opacity: curved,
         child: SlideTransition(
           position: Tween(
-            begin: const Offset(0, 0.04),
+            begin: const Offset(0, 0.06),
             end: Offset.zero,
           ).animate(curved),
           child: ScaleTransition(
-            scale: Tween(begin: 0.99, end: 1.0).animate(curved),
+            scale: Tween(begin: 0.985, end: 1.0).animate(curved),
             child: child,
           ),
         ),
