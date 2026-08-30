@@ -62,6 +62,8 @@ class AppDatabase extends _$AppDatabase {
       // v4 → v5: MonthlyGoals table + DayNotes.timeQuality column.
       if (from < 5) {
         await m.createTable(monthlyGoals);
+      }
+      if (from >= 3 && from < 5) {
         await m.addColumn(dayNotes, dayNotes.timeQuality);
       }
       // v5 → v6: unique (habitId, date) index for single upserts.
@@ -82,16 +84,17 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE habits RENAME COLUMN seed_archetype TO icon',
         );
       }
-      // v7 → v8: new Letters table for time capsules.
+      // v7 → v8: new Letters table for time capsules. The table is created
+      // with the *current* schema (incl. reaction/reply), so the column
+      // migrations below must only run when the table already existed without
+      // those columns (v8 / v9 era).
       if (from < 8) {
         await m.createTable(letters);
       }
-      // v8 → v9: Letters.reaction — the reader's verdict on a capsule.
-      if (from < 9) {
+      if (from >= 8 && from < 9) {
         await m.addColumn(letters, letters.reaction);
       }
-      // v9 → v10: Letters.reply — a free-form reply to a capsule.
-      if (from < 10) {
+      if (from >= 8 && from < 10) {
         await m.addColumn(letters, letters.reply);
       }
     },

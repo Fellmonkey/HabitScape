@@ -1,7 +1,9 @@
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';
@@ -89,5 +91,55 @@ void main() {
     final names = cols.map((r) => r.data['name']).toList();
     expect(names, contains('reply'));
     expect(names, contains('reaction'));
+  });
+
+  group('legacy upgrades do not re-add existing columns', () {
+    Future<AppDatabase> openUpgraded(
+      int userVersion,
+      List<String> legacyStatements,
+    ) async {
+      // Build a real sqlite3 database in the legacy state, then let the app's
+      // migration upgrade it — exactly like a device that already has data.
+      final raw = sqlite3.openInMemory();
+      for (final sql in legacyStatements) {
+        raw.execute(sql);
+      }
+      raw.execute('PRAGMA user_version = $userVersion');
+
+      final db = AppDatabase.test(NativeDatabase.opened(raw));
+      // First real database operation triggers the migration.
+      await db.customStatement('SELECT 1');
+      addTearDown(db.close);
+      return db;
+    }
+
+    Future<List<String>> letterColumns(AppDatabase db) async {
+      final cols = await db.customSelect('PRAGMA table_info(letters)').get();
+      return cols.map((r) => r.data['name'] as String).toList();
+    }
+
+    const v8Letters =
+        'CREATE TABLE letters ('
+        'id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'
+        'created_at INTEGER NOT NULL,'
+        'deliver_at INTEGER NOT NULL,'
+        'body TEXT NOT NULL,'
+        'is_opened INTEGER NOT NULL DEFAULT 0,'
+        'opened_at INTEGER NULL)';
+
+    test('v7 (no letters table) creates letters with all columns', () async {
+      final db = await openUpgraded(7, const []);
+
+      // The migration must not throw "duplicate column name: reaction".
+      final names = await letterColumns(db);
+      expect(names, containsAll(['reaction', 'reply']));
+    });
+
+    test('v8 (letters without reaction/reply) gains both columns', () async {
+      final db = await openUpgraded(8, [v8Letters]);
+
+      final names = await letterColumns(db);
+      expect(names, containsAll(['reaction', 'reply']));
+    });
   });
 }
