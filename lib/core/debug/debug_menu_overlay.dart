@@ -269,6 +269,30 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             ),
           ),
 
+        // Reduced-motion status (why animations may be invisible)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                size: 16,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Reduced motion: '
+                  '${MediaQuery.of(context).disableAnimations ? 'вкл — анимации скрыты' : 'выкл — анимации активны'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Clear button
         Padding(
           padding: const EdgeInsets.only(bottom: 12),

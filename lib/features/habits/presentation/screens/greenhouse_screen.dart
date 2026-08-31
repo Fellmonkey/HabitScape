@@ -453,6 +453,10 @@ class _Entrance extends StatefulWidget {
   final Widget child;
   final VoidCallback onComplete;
 
+  /// Wait for the creating sheet to finish closing (150ms exit + margin) so
+  /// the entrance plays on a fully visible screen.
+  static const startDelay = Duration(milliseconds: 180);
+
   @override
   State<_Entrance> createState() => _EntranceState();
 }
@@ -477,7 +481,11 @@ class _EntranceState extends State<_Entrance>
     ).animate(curve);
     _ringScale = Tween(begin: 0.6, end: 2.4).animate(curve);
     _ringOpacity = Tween(begin: 0.5, end: 0.0).animate(curve);
-    _c.forward().whenComplete(widget.onComplete);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(_Entrance.startDelay, () {
+        if (mounted) _c.forward().whenComplete(widget.onComplete);
+      });
+    });
   }
 
   @override
