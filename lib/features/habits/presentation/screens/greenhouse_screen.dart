@@ -350,14 +350,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   String _formatToday() => formatFullDate(DateTime.now());
 
-  void _showCreateHabitSheet(BuildContext context) {
-    AppSheets.show<int>(context, builder: (ctx) => const HabitFormSheet()).then(
-      (createdId) {
-        if (createdId != null && mounted) {
-          setState(() => _enteringIds.add(createdId));
-        }
-      },
+  Future<void> _showCreateHabitSheet(BuildContext context) async {
+    final createdId = await AppSheets.show<int>(
+      context,
+      builder: (ctx) => const HabitFormSheet(),
     );
+    if (createdId != null && mounted) {
+      setState(() => _enteringIds.add(createdId));
+    }
   }
 }
 

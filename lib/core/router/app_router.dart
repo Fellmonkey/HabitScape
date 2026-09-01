@@ -10,6 +10,7 @@ import '../../features/habits/presentation/screens/month_spread_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import '../database/app_database.dart';
+import '../theme/motion_tokens.dart';
 import 'shell_scaffold.dart';
 
 /// Root navigator key, used by the debug overlay.
@@ -41,28 +42,77 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/habit/:id',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
-        return HabitDetailScreen(habitId: id);
+        return _motionPage(
+          name: state.uri.toString(),
+          child: HabitDetailScreen(habitId: id),
+        );
       },
     ),
     GoRoute(
       path: '/archive',
-      builder: (context, state) => const ArchivedHabitsScreen(),
+      pageBuilder: (context, state) => _motionPage(
+        name: state.uri.toString(),
+        child: const ArchivedHabitsScreen(),
+      ),
     ),
     GoRoute(
       path: '/month',
-      builder: (context, state) => const MonthSpreadScreen(),
+      pageBuilder: (context, state) => _motionPage(
+        name: state.uri.toString(),
+        child: const MonthSpreadScreen(),
+      ),
     ),
     GoRoute(
       path: '/capsules',
-      builder: (context, state) =>
-          CapsuleScreen(autofocus: state.extra == true),
+      pageBuilder: (context, state) => _motionPage(
+        name: state.uri.toString(),
+        child: CapsuleScreen(autofocus: state.extra == true),
+      ),
     ),
     GoRoute(
       path: '/letter',
-      builder: (context, state) =>
-          LetterScreen(capsule: state.extra! as Letter),
+      pageBuilder: (context, state) => _motionPage(
+        name: state.uri.toString(),
+        child: LetterScreen(capsule: state.extra! as Letter),
+      ),
     ),
   ],
 );
+
+/// Custom-transition page for pushed screens: fade + slight rise + scale,
+/// strong ease-out, transform/opacity only. Both forward and back use the
+/// same motion so the direction is always legible. Reduced-motion users get
+/// the instant swap.
+CustomTransitionPage _motionPage({
+  required String name,
+  required Widget child,
+}) {
+  return CustomTransitionPage(
+    key: ValueKey(name),
+    transitionDuration: const Duration(milliseconds: 240),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.of(context).disableAnimations) return child;
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppMotion.easeOutStrong,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 0.04),
+            end: Offset.zero,
+          ).animate(curved),
+          child: ScaleTransition(
+            scale: Tween(begin: 0.99, end: 1.0).animate(curved),
+            child: child,
+          ),
+        ),
+      );
+    },
+    child: child,
+  );
+}
