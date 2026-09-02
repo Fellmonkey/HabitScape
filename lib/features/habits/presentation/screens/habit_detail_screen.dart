@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../shared/widgets/app_sheets.dart';
 
 import '../../domain/habit_engine.dart';
 import '../../domain/scheduling.dart';
@@ -175,12 +176,7 @@ class HabitDetailScreen extends ConsumerWidget {
   }
 
   void _showEditSheet(BuildContext context, WidgetRef ref, Habit habit) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => HabitFormSheet(habit: habit),
-    );
+    AppSheets.show(context, builder: (_) => HabitFormSheet(habit: habit));
   }
 
   Future<void> _handleMenu(

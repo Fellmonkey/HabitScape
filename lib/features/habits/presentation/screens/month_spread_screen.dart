@@ -11,9 +11,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
+import '../../../../shared/widgets/app_sheets.dart';
 import '../../domain/completion.dart';
 import '../../providers/habit_providers.dart';
 import '../month_spread_exporter.dart';
@@ -137,9 +139,9 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
+          duration: AppMotion.travel,
+          switchInCurve: AppMotion.easeInOutStrong,
+          switchOutCurve: AppMotion.easeInOutStrong,
           transitionBuilder: (child, animation) => SlideTransition(
             position: Tween(
               begin: Offset(_slideDir * 0.18, 0),
@@ -219,10 +221,8 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   }
 
   void _openDay(DateTime date) async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    await AppSheets.show(
+      context,
       builder: (_) => DayMomentSheet(dateTimestamp: date.unixSeconds),
     );
     // The sheet may have edited the day — refresh the spread data.
@@ -592,7 +592,7 @@ class _DayCell extends StatelessWidget {
         borderRadius: AppRadius.borderS,
         onTap: () => onTap(day.date),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppMotion.base,
           height: 62,
           decoration: BoxDecoration(
             color: bg,

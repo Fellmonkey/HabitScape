@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 
 /// Compact adaptive icon picker: a single line of chips in enum order plus
@@ -20,10 +22,8 @@ class IconPicker extends StatelessWidget {
   static const _gap = 8.0;
 
   void _openGrid(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    AppSheets.show<void>(
+      context,
       builder: (_) =>
           _IconGridSheet(selected: selected, onSelected: onSelected),
     );
@@ -106,7 +106,7 @@ class _IconChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.quick,
         width: IconPicker._chipSize,
         height: IconPicker._chipSize,
         decoration: BoxDecoration(

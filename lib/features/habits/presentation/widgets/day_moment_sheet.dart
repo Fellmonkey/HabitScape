@@ -8,6 +8,9 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/app_sheets.dart';
+import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
 
@@ -54,13 +57,19 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     // "Juicy" save animation: a quick squash-and-stretch of the button.
     _saveController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: AppMotion.slow,
     );
-    _saveScale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.92), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 0.92, end: 1.06), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 1.06, end: 1.0), weight: 40),
-    ]).animate(CurvedAnimation(parent: _saveController, curve: Curves.easeOut));
+    _saveScale =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.92), weight: 30),
+          TweenSequenceItem(tween: Tween(begin: 0.92, end: 1.06), weight: 30),
+          TweenSequenceItem(tween: Tween(begin: 1.06, end: 1.0), weight: 40),
+        ]).animate(
+          CurvedAnimation(
+            parent: _saveController,
+            curve: AppMotion.easeOutStrong,
+          ),
+        );
   }
 
   @override
@@ -112,9 +121,8 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   }
 
   void _showHelp() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppSheets.show<void>(
+      context,
       builder: (ctx) => const _DayMomentHelpSheet(),
     );
   }
@@ -213,16 +221,18 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
             const SizedBox(height: 20),
             ScaleTransition(
               scale: _saveScale,
-              child: FilledButton(
-                key: K.dayMomentSave,
-                onPressed: _save,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.borderM,
+              child: PressableScale(
+                child: FilledButton(
+                  key: K.dayMomentSave,
+                  onPressed: _save,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.borderM,
+                    ),
                   ),
+                  child: const Text('Сохранить'),
                 ),
-                child: const Text('Сохранить'),
               ),
             ),
           ],

@@ -8,6 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
 
@@ -150,10 +152,8 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
   }
 
   Future<void> _openAddGoalSheet(int ts) async {
-    final added = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final added = await AppSheets.show<bool>(
+      context,
       builder: (_) => _AddGoalSheet(monthTs: ts),
     );
     // Show the just-added goal: expand the card once the sheet closes.
@@ -185,8 +185,8 @@ class _GoalRow extends StatelessWidget {
         child: Row(
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
+              duration: AppMotion.base,
+              curve: AppMotion.easeOutStrong,
               width: 22,
               height: 22,
               decoration: BoxDecoration(

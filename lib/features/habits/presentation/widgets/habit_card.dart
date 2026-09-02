@@ -8,6 +8,8 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
@@ -59,15 +61,17 @@ class _HabitCardState extends ConsumerState<HabitCard>
     super.initState();
     _bounceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: AppMotion.slow,
     );
     _scaleAnim =
         TweenSequence<double>([
-          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 30),
-          TweenSequenceItem(tween: Tween(begin: 1.08, end: 0.95), weight: 30),
-          TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 40),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.04), weight: 40),
+          TweenSequenceItem(tween: Tween(begin: 1.04, end: 1.0), weight: 60),
         ]).animate(
-          CurvedAnimation(parent: _bounceController, curve: Curves.easeOut),
+          CurvedAnimation(
+            parent: _bounceController,
+            curve: AppMotion.easeOutStrong,
+          ),
         );
   }
 
@@ -80,7 +84,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
   Future<void> _markDone() async {
     if (_isDone) return;
     Haptics.medium(ref.read(hapticsEnabledProvider));
-    _bounceController.forward(from: 0);
+    if (!AppMotion.mayDisable(context)) _bounceController.forward(from: 0);
     ref.read(habitActionsProvider.notifier).markDone(widget.habit.id);
   }
 
@@ -103,11 +107,13 @@ class _HabitCardState extends ConsumerState<HabitCard>
             child: Row(
               children: [
                 // ── Checkbox ──
-                _CheckCircle(
-                  key: K.habitCheck(widget.habit.id),
-                  isDone: _isDone,
-                  isSkip: status == LogStatus.skip,
-                  onTap: _markDone,
+                PressableScale(
+                  child: _CheckCircle(
+                    key: K.habitCheck(widget.habit.id),
+                    isDone: _isDone,
+                    isSkip: status == LogStatus.skip,
+                    onTap: _markDone,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 // ── Content ──
@@ -209,16 +215,14 @@ class _CheckCircleState extends State<_CheckCircle>
     super.initState();
     _dropController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: AppMotion.slow,
     );
-    _ringScale = Tween(
-      begin: 0.6,
-      end: 2.4,
-    ).animate(CurvedAnimation(parent: _dropController, curve: Curves.easeOut));
-    _ringOpacity = Tween(
-      begin: 0.5,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _dropController, curve: Curves.easeOut));
+    _ringScale = Tween(begin: 0.6, end: 2.4).animate(
+      CurvedAnimation(parent: _dropController, curve: AppMotion.easeOutStrong),
+    );
+    _ringOpacity = Tween(begin: 0.5, end: 0.0).animate(
+      CurvedAnimation(parent: _dropController, curve: AppMotion.easeOutStrong),
+    );
   }
 
   @override
@@ -228,7 +232,11 @@ class _CheckCircleState extends State<_CheckCircle>
   }
 
   void _handleTap() {
-    _dropController.forward(from: 0);
+    // The ring is feedback for a real change — tapping an already-done check
+    // only re-fires nothing. Reduced-motion users skip the expanding ring.
+    if (!widget.isDone && !AppMotion.mayDisable(context)) {
+      _dropController.forward(from: 0);
+    }
     widget.onTap();
   }
 
@@ -284,8 +292,8 @@ class _CheckCircleState extends State<_CheckCircle>
             ),
             AnimatedContainer(
               // the check circle itself
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOut,
+              duration: AppMotion.base,
+              curve: AppMotion.easeOutStrong,
               width: 28,
               height: 28,
               decoration: BoxDecoration(

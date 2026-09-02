@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hintful/hintful.dart';
 
 import 'app_colors.dart';
+import 'motion_tokens.dart';
 
 /// Border radius scale used across the app.
 abstract final class AppRadius {
@@ -90,6 +91,16 @@ abstract final class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _AppPageTransitionsBuilder(),
+          TargetPlatform.iOS: _AppPageTransitionsBuilder(),
+          TargetPlatform.macOS: _AppPageTransitionsBuilder(),
+          TargetPlatform.linux: _AppPageTransitionsBuilder(),
+          TargetPlatform.windows: _AppPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: _AppPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 
@@ -149,6 +160,16 @@ abstract final class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,
         elevation: 0,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _AppPageTransitionsBuilder(),
+          TargetPlatform.iOS: _AppPageTransitionsBuilder(),
+          TargetPlatform.macOS: _AppPageTransitionsBuilder(),
+          TargetPlatform.linux: _AppPageTransitionsBuilder(),
+          TargetPlatform.windows: _AppPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: _AppPageTransitionsBuilder(),
+        },
       ),
     );
   }
@@ -216,4 +237,35 @@ abstract final class AppTheme {
       color: color.withValues(alpha: 0.6),
     ),
   );
+}
+
+/// Route transition: fade + a tiny rise, strong ease-out, transform/opacity
+/// only. Reduced-motion users get the instant swap instead.
+class _AppPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _AppPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (AppMotion.mayDisable(context)) return child;
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: AppMotion.easeOutStrong,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.02),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/widgets/app_sheets.dart';
 import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
 import '../router/app_router.dart';
@@ -56,12 +57,7 @@ class _DebugMenuOverlayState extends State<DebugMenuOverlay> {
     final navContext = rootNavigatorKey.currentContext;
     if (navContext == null) return;
 
-    showModalBottomSheet<void>(
-      context: navContext,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _DebugSheet(),
-    );
+    AppSheets.show<void>(navContext, builder: (_) => const _DebugSheet());
   }
 }
 

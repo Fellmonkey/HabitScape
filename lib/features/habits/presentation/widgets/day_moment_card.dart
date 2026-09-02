@@ -7,6 +7,8 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/onboarding_flags.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
@@ -30,9 +32,29 @@ class DayMomentCard extends ConsumerWidget {
         error: (_, _) => const SizedBox.shrink(),
         data: (note) {
           final hasMoment = (note?.moment?.trim() ?? '').isNotEmpty;
-          return hasMoment
-              ? _SavedMoment(note: note!)
-              : _DayMomentComposer(initial: note);
+          if (AppMotion.mayDisable(context)) {
+            return hasMoment
+                ? _SavedMoment(note: note!)
+                : _DayMomentComposer(initial: note);
+          }
+          return AnimatedSwitcher(
+            duration: AppMotion.base,
+            switchInCurve: AppMotion.easeOutStrong,
+            switchOutCurve: AppMotion.easeOutStrong,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween(begin: 0.97, end: 1.0).animate(animation),
+                child: child,
+              ),
+            ),
+            child: hasMoment
+                ? _SavedMoment(key: const ValueKey('saved'), note: note!)
+                : _DayMomentComposer(
+                    key: const ValueKey('composer'),
+                    initial: note,
+                  ),
+          );
         },
       ),
     );
@@ -41,7 +63,7 @@ class DayMomentCard extends ConsumerWidget {
 
 /// Inline composer: type a line, tap a mood, save. Three actions, ~15 sec.
 class _DayMomentComposer extends ConsumerStatefulWidget {
-  const _DayMomentComposer({required this.initial});
+  const _DayMomentComposer({super.key, required this.initial});
 
   final DayNote? initial;
 
@@ -244,7 +266,7 @@ class _MoodChoice extends StatelessWidget {
       borderRadius: AppRadius.borderS,
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: AppMotion.quick,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
           color: mood.color.withValues(alpha: selected ? 0.22 : 0.08),
@@ -285,7 +307,7 @@ class _MoodChoice extends StatelessWidget {
 
 /// Saved state: the moment + mood. Tap to edit in the fuller sheet.
 class _SavedMoment extends StatelessWidget {
-  const _SavedMoment({required this.note});
+  const _SavedMoment({super.key, required this.note});
 
   final DayNote note;
 
@@ -381,11 +403,6 @@ class _SavedMoment extends StatelessWidget {
   }
 
   void _openSheet(BuildContext context, DayNote note) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => DayMomentSheet(initial: note),
-    );
+    AppSheets.show(context, builder: (_) => DayMomentSheet(initial: note));
   }
 }

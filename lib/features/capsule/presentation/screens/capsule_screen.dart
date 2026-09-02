@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';
 
@@ -214,11 +215,13 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
               ],
             ),
             const SizedBox(height: 14),
-            FilledButton.icon(
-              key: K.capsuleSave,
-              onPressed: _canSave ? _save : null,
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Отправить'),
+            PressableScale(
+              child: FilledButton.icon(
+                key: K.capsuleSave,
+                onPressed: _canSave ? _save : null,
+                icon: const Icon(Icons.send_rounded, size: 18),
+                label: const Text('Отправить'),
+              ),
             ),
           ],
         ),

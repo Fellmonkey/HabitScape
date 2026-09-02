@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';
 
@@ -144,12 +145,14 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
                 onSave: _saveReply,
               ),
               const SizedBox(height: 28),
-              FilledButton.icon(
-                key: K.letterNewCapsule,
-                onPressed: () =>
-                    context.pushReplacement('/capsules', extra: true),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Создать новую капсулу'),
+              PressableScale(
+                child: FilledButton.icon(
+                  key: K.letterNewCapsule,
+                  onPressed: () =>
+                      context.pushReplacement('/capsules', extra: true),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Создать новую капсулу'),
+                ),
               ),
               const SizedBox(height: 8),
               TextButton(

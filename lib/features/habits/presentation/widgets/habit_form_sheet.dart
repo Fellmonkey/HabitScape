@@ -125,8 +125,9 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         frequencyValue: freqValue,
         timeOfDay: _timeOfDay,
       );
+      if (mounted) Navigator.pop(context);
     } else {
-      actions.createHabit(
+      final id = await actions.createHabit(
         name: name,
         category: 'general',
         icon: _icon,
@@ -134,9 +135,8 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         frequencyValue: freqValue,
         timeOfDay: _timeOfDay,
       );
+      if (mounted) Navigator.pop(context, id);
     }
-
-    if (mounted) Navigator.pop(context);
   }
 
   @override
