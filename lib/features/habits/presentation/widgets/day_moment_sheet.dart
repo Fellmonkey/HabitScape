@@ -33,9 +33,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   late final Animation<double> _saveScale;
   DayMood? _mood;
 
-  /// Unix seconds when the day was sealed, or null when open.
-  int? _sealedAt;
-
   /// Legacy 1–5 "time quality" value. No longer asked (it added friction
   /// without ever being shown), but preserved on edit so old notes don't
   /// silently lose data.
@@ -48,7 +45,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     _momentController = TextEditingController(text: note?.moment ?? '');
     _mood = note?.mood;
     _timeQuality = note?.timeQuality;
-    _sealedAt = note?.sealedAt;
 
     // Opened for a specific date — load the existing note for editing.
     if (note == null && widget.dateTimestamp != null) {
@@ -82,7 +78,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     setState(() {
       _mood = note?.mood;
       _timeQuality = note?.timeQuality;
-      _sealedAt = note?.sealedAt;
       final moment = note?.moment;
       if (moment != null && moment.isNotEmpty) {
         _momentController.text = moment;
@@ -104,7 +99,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
         mood: _mood,
         timeQuality: _timeQuality,
       );
-      await actions.setDaySealed(ts, _sealedAt);
     }
 
     if (mounted) {
@@ -217,27 +211,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
               }).toList(),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                OutlinedButton.icon(
-                  key: K.daySealToggle,
-                  onPressed: () => setState(() {
-                    _sealedAt = _sealedAt == null ? todayTimestamp() : null;
-                  }),
-                  icon: Icon(
-                    _sealedAt == null
-                        ? Icons.verified_rounded
-                        : Icons.verified_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _sealedAt == null ? 'Запечатать день' : 'Снять печать',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             ScaleTransition(
               scale: _saveScale,
               child: FilledButton(

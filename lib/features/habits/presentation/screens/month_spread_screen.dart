@@ -623,14 +623,6 @@ class _DayCell extends StatelessWidget {
                           size: 13,
                           color: mood?.color ?? theme.colorScheme.primary,
                         ),
-                      if (day.hasMoment && day.isSealed)
-                        const SizedBox(width: 2),
-                      if (day.isSealed)
-                        Icon(
-                          Icons.verified_rounded,
-                          size: 12,
-                          color: AppColors.sageGreen,
-                        ),
                     ],
                   ),
                 ],

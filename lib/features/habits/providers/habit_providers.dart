@@ -285,11 +285,6 @@ class HabitActions extends Notifier<void> {
     return _dayNotesDao.clearNote(dateTimestamp ?? todayTimestamp());
   }
 
-  /// Seals or unseals a day («Запечатать день»).
-  Future<void> setDaySealed(int dateTimestamp, int? sealedAt) {
-    return _dayNotesDao.setSealed(dateTimestamp, sealedAt);
-  }
-
   /// Archive a habit.
   Future<void> archiveHabit(int habitId) async {
     await _habitsDao.archiveHabit(habitId);

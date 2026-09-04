@@ -84,17 +84,6 @@ void main() {
       expect(await db.dayNotesDao.getNoteForDate(jan2), isNotNull);
     });
 
-    test('setSealed seals and unseals a day', () async {
-      await db.dayNotesDao.upsertNote(jan1, moment: 'День 1');
-      expect((await db.dayNotesDao.getNoteForDate(jan1))!.sealedAt, isNull);
-
-      await db.dayNotesDao.setSealed(jan1, jan1);
-      expect((await db.dayNotesDao.getNoteForDate(jan1))!.sealedAt, jan1);
-
-      await db.dayNotesDao.setSealed(jan1, null);
-      expect((await db.dayNotesDao.getNoteForDate(jan1))!.sealedAt, isNull);
-    });
-
     test('watchNoteForDate emits the note and null when cleared', () async {
       await db.dayNotesDao.upsertNote(jan1, moment: 'День 1');
 

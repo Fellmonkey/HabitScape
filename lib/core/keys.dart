@@ -33,7 +33,6 @@ abstract final class K {
   static const dayMomentField = Key('day_moment_field');
   static const dayMomentSave = Key('day_moment_save');
   static const dayMomentHelp = Key('day_moment_help');
-  static const daySealToggle = Key('day_seal_toggle');
 
   /// Inline mood button: `day_moment_mood_$mood`
   static Key dayMomentMood(String mood) => Key('day_moment_mood_$mood');

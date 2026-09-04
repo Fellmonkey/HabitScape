@@ -22,9 +22,6 @@ class DayNotes extends Table {
   TextColumn get moment => text().nullable()();
   TextColumn get mood => text().nullable().map(const DayMoodConverter())();
   IntColumn get timeQuality => integer().nullable()();
-
-  /// Unix seconds when the day was sealed («Запечатать день»); null = open.
-  IntColumn get sealedAt => integer().nullable()();
 }
 
 /// Things to achieve this month.

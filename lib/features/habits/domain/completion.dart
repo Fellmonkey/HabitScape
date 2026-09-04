@@ -71,7 +71,6 @@ class MonthSpreadDay {
     required this.mood,
     required this.timeQuality,
     required this.moment,
-    this.sealedAt,
   });
 
   final DateTime date;
@@ -87,12 +86,7 @@ class MonthSpreadDay {
   /// The memorable day-moment line (null when not written).
   final String? moment;
 
-  /// Unix seconds when the day was sealed; null = open.
-  final int? sealedAt;
-
   bool get hasMoment => moment != null && moment!.trim().isNotEmpty;
-
-  bool get isSealed => sealedAt != null;
 
   /// 0.0 … 1.0 completion; 0 when nothing expected.
   double get ratio => expected == 0 ? 0.0 : (done / expected).clamp(0.0, 1.0);
@@ -148,7 +142,6 @@ List<MonthSpreadDay> computeMonthSpreadDays({
         mood: noteByDay[d.date.unixSeconds]?.mood,
         timeQuality: noteByDay[d.date.unixSeconds]?.timeQuality,
         moment: noteByDay[d.date.unixSeconds]?.moment,
-        sealedAt: noteByDay[d.date.unixSeconds]?.sealedAt,
       ),
   ];
 }

@@ -82,23 +82,12 @@ void main() {
     expect(after.where((l) => l.habitId == h1).single.status, LogStatus.skip);
   });
 
-  test(
-    'v11 schema includes letters reply/reaction and day_notes sealedAt',
-    () async {
-      expect(db.schemaVersion, 11);
+  test('v10 schema includes letters reply/reaction columns', () async {
+    expect(db.schemaVersion, 10);
 
-      final letterCols = await db
-          .customSelect('PRAGMA table_info(letters)')
-          .get();
-      final letterNames = letterCols.map((r) => r.data['name']).toList();
-      expect(letterNames, contains('reply'));
-      expect(letterNames, contains('reaction'));
-
-      final dayCols = await db
-          .customSelect('PRAGMA table_info(day_notes)')
-          .get();
-      final dayNames = dayCols.map((r) => r.data['name']).toList();
-      expect(dayNames, contains('sealed_at'));
-    },
-  );
+    final cols = await db.customSelect('PRAGMA table_info(letters)').get();
+    final names = cols.map((r) => r.data['name']).toList();
+    expect(names, contains('reply'));
+    expect(names, contains('reaction'));
+  });
 }

@@ -56,14 +56,6 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     return (delete(dayNotes)..where((n) => n.date.equals(dateTimestamp))).go();
   }
 
-  /// Seals or unseals a day («Запечатать день»). Sealing doesn't lock the
-  /// note — it just marks it as closed.
-  Future<void> setSealed(int dateTimestamp, int? sealedAt) {
-    return (update(dayNotes)..where((n) => n.date.equals(dateTimestamp))).write(
-      DayNotesCompanion(sealedAt: Value(sealedAt)),
-    );
-  }
-
   /// Gets all day notes in a date range.
   Future<List<DayNote>> getNotesInRange(int startTimestamp, int endTimestamp) {
     return (select(dayNotes)

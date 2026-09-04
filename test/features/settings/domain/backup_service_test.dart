@@ -68,7 +68,6 @@ void main() {
         mood: DayMood.good,
         timeQuality: 5,
       );
-      await db.dayNotesDao.setSealed(logDate, logDate);
 
       // Monthly goal
       final janTs = DateTime.utc(2026, 1, 1).unixSeconds;
@@ -129,7 +128,6 @@ void main() {
       expect(notes.first.moment, 'Собеседование прошло хорошо');
       expect(notes.first.mood, DayMood.good);
       expect(notes.first.timeQuality, 5);
-      expect(notes.first.sealedAt, logDate);
 
       // Verify monthly goals (including done state)
       final goals = await db2.monthlyGoalsDao.getAllGoals();
