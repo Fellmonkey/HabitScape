@@ -107,31 +107,35 @@ void main() {
     final capsule = await addLetter();
     await pumpLetter(tester, capsule);
 
+    await tester.ensureVisible(find.byKey(K.letterNewCapsule));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(K.letterNewCapsule));
     await tester.pumpAndSettle();
 
     expect(find.text('CapsulesScreen'), findsOneWidget);
   });
 
-  testWidgets('leaves a verdict that persists on the letter', (tester) async {
+  testWidgets('writes a textual reply that persists on the letter', (
+    tester,
+  ) async {
     final capsule = await addLetter();
     await pumpLetter(tester, capsule);
 
-    expect(find.text('Как получилось?'), findsOneWidget);
-    expect(find.byKey(K.letterReaction('success')), findsOneWidget);
-    expect(find.byKey(K.letterReaction('partial')), findsOneWidget);
-    expect(find.byKey(K.letterReaction('missed')), findsOneWidget);
-
-    await tester.tap(find.byKey(K.letterReaction('success')));
+    expect(find.text('Ответ'), findsOneWidget);
+    await tester.enterText(find.byKey(K.letterReplyField), 'Я справился!');
+    await tester.tap(find.byKey(K.letterReplySave));
     await tester.pumpAndSettle();
 
-    // The live provider emits the updated row, so the UI flips to the result.
-    letterController.add(capsule.copyWith(reaction: const Value('success')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Ты отметил: Получилось'), findsOneWidget);
     final letters = await db.lettersDao.getAllLetters();
-    expect(letters.single.reaction, 'success');
+    expect(letters.single.reply, 'Я справился!');
+
+    // The live provider emits the updated row; the field keeps the saved text.
+    letterController.add(capsule.copyWith(reply: const Value('Я справился!')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byKey(K.letterReplyField)).controller!.text,
+      'Я справился!',
+    );
   });
 
   testWidgets('«Закрыть» returns to the previous screen', (tester) async {

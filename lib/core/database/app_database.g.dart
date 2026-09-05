@@ -1012,8 +1012,26 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sealedAtMeta = const VerificationMeta(
+    'sealedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, date, moment, mood, timeQuality];
+  late final GeneratedColumn<int> sealedAt = GeneratedColumn<int>(
+    'sealed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    date,
+    moment,
+    mood,
+    timeQuality,
+    sealedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1052,6 +1070,12 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
         ),
       );
     }
+    if (data.containsKey('sealed_at')) {
+      context.handle(
+        _sealedAtMeta,
+        sealedAt.isAcceptableOrUnknown(data['sealed_at']!, _sealedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1083,6 +1107,10 @@ class $DayNotesTable extends DayNotes with TableInfo<$DayNotesTable, DayNote> {
         DriftSqlType.int,
         data['${effectivePrefix}time_quality'],
       ),
+      sealedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sealed_at'],
+      ),
     );
   }
 
@@ -1103,12 +1131,16 @@ class DayNote extends DataClass implements Insertable<DayNote> {
   final String? moment;
   final DayMood? mood;
   final int? timeQuality;
+
+  /// Unix seconds when the day was sealed («Запечатать день»); null = open.
+  final int? sealedAt;
   const DayNote({
     required this.id,
     required this.date,
     this.moment,
     this.mood,
     this.timeQuality,
+    this.sealedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1126,6 +1158,9 @@ class DayNote extends DataClass implements Insertable<DayNote> {
     if (!nullToAbsent || timeQuality != null) {
       map['time_quality'] = Variable<int>(timeQuality);
     }
+    if (!nullToAbsent || sealedAt != null) {
+      map['sealed_at'] = Variable<int>(sealedAt);
+    }
     return map;
   }
 
@@ -1140,6 +1175,9 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       timeQuality: timeQuality == null && nullToAbsent
           ? const Value.absent()
           : Value(timeQuality),
+      sealedAt: sealedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sealedAt),
     );
   }
 
@@ -1154,6 +1192,7 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       moment: serializer.fromJson<String?>(json['moment']),
       mood: serializer.fromJson<DayMood?>(json['mood']),
       timeQuality: serializer.fromJson<int?>(json['timeQuality']),
+      sealedAt: serializer.fromJson<int?>(json['sealedAt']),
     );
   }
   @override
@@ -1165,6 +1204,7 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       'moment': serializer.toJson<String?>(moment),
       'mood': serializer.toJson<DayMood?>(mood),
       'timeQuality': serializer.toJson<int?>(timeQuality),
+      'sealedAt': serializer.toJson<int?>(sealedAt),
     };
   }
 
@@ -1174,12 +1214,14 @@ class DayNote extends DataClass implements Insertable<DayNote> {
     Value<String?> moment = const Value.absent(),
     Value<DayMood?> mood = const Value.absent(),
     Value<int?> timeQuality = const Value.absent(),
+    Value<int?> sealedAt = const Value.absent(),
   }) => DayNote(
     id: id ?? this.id,
     date: date ?? this.date,
     moment: moment.present ? moment.value : this.moment,
     mood: mood.present ? mood.value : this.mood,
     timeQuality: timeQuality.present ? timeQuality.value : this.timeQuality,
+    sealedAt: sealedAt.present ? sealedAt.value : this.sealedAt,
   );
   DayNote copyWithCompanion(DayNotesCompanion data) {
     return DayNote(
@@ -1190,6 +1232,7 @@ class DayNote extends DataClass implements Insertable<DayNote> {
       timeQuality: data.timeQuality.present
           ? data.timeQuality.value
           : this.timeQuality,
+      sealedAt: data.sealedAt.present ? data.sealedAt.value : this.sealedAt,
     );
   }
 
@@ -1200,13 +1243,15 @@ class DayNote extends DataClass implements Insertable<DayNote> {
           ..write('date: $date, ')
           ..write('moment: $moment, ')
           ..write('mood: $mood, ')
-          ..write('timeQuality: $timeQuality')
+          ..write('timeQuality: $timeQuality, ')
+          ..write('sealedAt: $sealedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, date, moment, mood, timeQuality);
+  int get hashCode =>
+      Object.hash(id, date, moment, mood, timeQuality, sealedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1215,7 +1260,8 @@ class DayNote extends DataClass implements Insertable<DayNote> {
           other.date == this.date &&
           other.moment == this.moment &&
           other.mood == this.mood &&
-          other.timeQuality == this.timeQuality);
+          other.timeQuality == this.timeQuality &&
+          other.sealedAt == this.sealedAt);
 }
 
 class DayNotesCompanion extends UpdateCompanion<DayNote> {
@@ -1224,12 +1270,14 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
   final Value<String?> moment;
   final Value<DayMood?> mood;
   final Value<int?> timeQuality;
+  final Value<int?> sealedAt;
   const DayNotesCompanion({
     this.id = const Value.absent(),
     this.date = const Value.absent(),
     this.moment = const Value.absent(),
     this.mood = const Value.absent(),
     this.timeQuality = const Value.absent(),
+    this.sealedAt = const Value.absent(),
   });
   DayNotesCompanion.insert({
     this.id = const Value.absent(),
@@ -1237,6 +1285,7 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
     this.moment = const Value.absent(),
     this.mood = const Value.absent(),
     this.timeQuality = const Value.absent(),
+    this.sealedAt = const Value.absent(),
   }) : date = Value(date);
   static Insertable<DayNote> custom({
     Expression<int>? id,
@@ -1244,6 +1293,7 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
     Expression<String>? moment,
     Expression<String>? mood,
     Expression<int>? timeQuality,
+    Expression<int>? sealedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1251,6 +1301,7 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
       if (moment != null) 'moment': moment,
       if (mood != null) 'mood': mood,
       if (timeQuality != null) 'time_quality': timeQuality,
+      if (sealedAt != null) 'sealed_at': sealedAt,
     });
   }
 
@@ -1260,6 +1311,7 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
     Value<String?>? moment,
     Value<DayMood?>? mood,
     Value<int?>? timeQuality,
+    Value<int?>? sealedAt,
   }) {
     return DayNotesCompanion(
       id: id ?? this.id,
@@ -1267,6 +1319,7 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
       moment: moment ?? this.moment,
       mood: mood ?? this.mood,
       timeQuality: timeQuality ?? this.timeQuality,
+      sealedAt: sealedAt ?? this.sealedAt,
     );
   }
 
@@ -1290,6 +1343,9 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
     if (timeQuality.present) {
       map['time_quality'] = Variable<int>(timeQuality.value);
     }
+    if (sealedAt.present) {
+      map['sealed_at'] = Variable<int>(sealedAt.value);
+    }
     return map;
   }
 
@@ -1300,7 +1356,8 @@ class DayNotesCompanion extends UpdateCompanion<DayNote> {
           ..write('date: $date, ')
           ..write('moment: $moment, ')
           ..write('mood: $mood, ')
-          ..write('timeQuality: $timeQuality')
+          ..write('timeQuality: $timeQuality, ')
+          ..write('sealedAt: $sealedAt')
           ..write(')'))
         .toString();
   }
@@ -1689,6 +1746,15 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _replyMeta = const VerificationMeta('reply');
+  @override
+  late final GeneratedColumn<String> reply = GeneratedColumn<String>(
+    'reply',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1698,6 +1764,7 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
     isOpened,
     openedAt,
     reaction,
+    reply,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1756,6 +1823,12 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
         reaction.isAcceptableOrUnknown(data['reaction']!, _reactionMeta),
       );
     }
+    if (data.containsKey('reply')) {
+      context.handle(
+        _replyMeta,
+        reply.isAcceptableOrUnknown(data['reply']!, _replyMeta),
+      );
+    }
     return context;
   }
 
@@ -1793,6 +1866,10 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
         DriftSqlType.string,
         data['${effectivePrefix}reaction'],
       ),
+      reply: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reply'],
+      ),
     );
   }
 
@@ -1810,8 +1887,12 @@ class Letter extends DataClass implements Insertable<Letter> {
   final bool isOpened;
   final int? openedAt;
 
-  /// The reader's verdict after opening: success / partial / missed.
+  /// The reader's verdict on an opened capsule — written confirmation of what
+  /// came of the message, not a streak or a score.
   final String? reaction;
+
+  /// A free-form reply to the capsule, written after opening it.
+  final String? reply;
   const Letter({
     required this.id,
     required this.createdAt,
@@ -1820,6 +1901,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     required this.isOpened,
     this.openedAt,
     this.reaction,
+    this.reply,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1834,6 +1916,9 @@ class Letter extends DataClass implements Insertable<Letter> {
     }
     if (!nullToAbsent || reaction != null) {
       map['reaction'] = Variable<String>(reaction);
+    }
+    if (!nullToAbsent || reply != null) {
+      map['reply'] = Variable<String>(reply);
     }
     return map;
   }
@@ -1851,6 +1936,9 @@ class Letter extends DataClass implements Insertable<Letter> {
       reaction: reaction == null && nullToAbsent
           ? const Value.absent()
           : Value(reaction),
+      reply: reply == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reply),
     );
   }
 
@@ -1867,6 +1955,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       isOpened: serializer.fromJson<bool>(json['isOpened']),
       openedAt: serializer.fromJson<int?>(json['openedAt']),
       reaction: serializer.fromJson<String?>(json['reaction']),
+      reply: serializer.fromJson<String?>(json['reply']),
     );
   }
   @override
@@ -1880,6 +1969,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       'isOpened': serializer.toJson<bool>(isOpened),
       'openedAt': serializer.toJson<int?>(openedAt),
       'reaction': serializer.toJson<String?>(reaction),
+      'reply': serializer.toJson<String?>(reply),
     };
   }
 
@@ -1891,6 +1981,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     bool? isOpened,
     Value<int?> openedAt = const Value.absent(),
     Value<String?> reaction = const Value.absent(),
+    Value<String?> reply = const Value.absent(),
   }) => Letter(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -1899,6 +1990,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     isOpened: isOpened ?? this.isOpened,
     openedAt: openedAt.present ? openedAt.value : this.openedAt,
     reaction: reaction.present ? reaction.value : this.reaction,
+    reply: reply.present ? reply.value : this.reply,
   );
   Letter copyWithCompanion(LettersCompanion data) {
     return Letter(
@@ -1909,6 +2001,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       isOpened: data.isOpened.present ? data.isOpened.value : this.isOpened,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
       reaction: data.reaction.present ? data.reaction.value : this.reaction,
+      reply: data.reply.present ? data.reply.value : this.reply,
     );
   }
 
@@ -1921,14 +2014,23 @@ class Letter extends DataClass implements Insertable<Letter> {
           ..write('body: $body, ')
           ..write('isOpened: $isOpened, ')
           ..write('openedAt: $openedAt, ')
-          ..write('reaction: $reaction')
+          ..write('reaction: $reaction, ')
+          ..write('reply: $reply')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, createdAt, deliverAt, body, isOpened, openedAt, reaction);
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    deliverAt,
+    body,
+    isOpened,
+    openedAt,
+    reaction,
+    reply,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1939,7 +2041,8 @@ class Letter extends DataClass implements Insertable<Letter> {
           other.body == this.body &&
           other.isOpened == this.isOpened &&
           other.openedAt == this.openedAt &&
-          other.reaction == this.reaction);
+          other.reaction == this.reaction &&
+          other.reply == this.reply);
 }
 
 class LettersCompanion extends UpdateCompanion<Letter> {
@@ -1950,6 +2053,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
   final Value<bool> isOpened;
   final Value<int?> openedAt;
   final Value<String?> reaction;
+  final Value<String?> reply;
   const LettersCompanion({
     this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1958,6 +2062,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     this.isOpened = const Value.absent(),
     this.openedAt = const Value.absent(),
     this.reaction = const Value.absent(),
+    this.reply = const Value.absent(),
   });
   LettersCompanion.insert({
     this.id = const Value.absent(),
@@ -1967,6 +2072,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     this.isOpened = const Value.absent(),
     this.openedAt = const Value.absent(),
     this.reaction = const Value.absent(),
+    this.reply = const Value.absent(),
   }) : createdAt = Value(createdAt),
        deliverAt = Value(deliverAt),
        body = Value(body);
@@ -1978,6 +2084,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     Expression<bool>? isOpened,
     Expression<int>? openedAt,
     Expression<String>? reaction,
+    Expression<String>? reply,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1987,6 +2094,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
       if (isOpened != null) 'is_opened': isOpened,
       if (openedAt != null) 'opened_at': openedAt,
       if (reaction != null) 'reaction': reaction,
+      if (reply != null) 'reply': reply,
     });
   }
 
@@ -1998,6 +2106,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     Value<bool>? isOpened,
     Value<int?>? openedAt,
     Value<String?>? reaction,
+    Value<String?>? reply,
   }) {
     return LettersCompanion(
       id: id ?? this.id,
@@ -2007,6 +2116,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
       isOpened: isOpened ?? this.isOpened,
       openedAt: openedAt ?? this.openedAt,
       reaction: reaction ?? this.reaction,
+      reply: reply ?? this.reply,
     );
   }
 
@@ -2034,6 +2144,9 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     if (reaction.present) {
       map['reaction'] = Variable<String>(reaction.value);
     }
+    if (reply.present) {
+      map['reply'] = Variable<String>(reply.value);
+    }
     return map;
   }
 
@@ -2046,7 +2159,8 @@ class LettersCompanion extends UpdateCompanion<Letter> {
           ..write('body: $body, ')
           ..write('isOpened: $isOpened, ')
           ..write('openedAt: $openedAt, ')
-          ..write('reaction: $reaction')
+          ..write('reaction: $reaction, ')
+          ..write('reply: $reply')
           ..write(')'))
         .toString();
   }
@@ -2572,6 +2686,7 @@ typedef $$DayNotesTableCreateCompanionBuilder =
       Value<String?> moment,
       Value<DayMood?> mood,
       Value<int?> timeQuality,
+      Value<int?> sealedAt,
     });
 typedef $$DayNotesTableUpdateCompanionBuilder =
     DayNotesCompanion Function({
@@ -2580,6 +2695,7 @@ typedef $$DayNotesTableUpdateCompanionBuilder =
       Value<String?> moment,
       Value<DayMood?> mood,
       Value<int?> timeQuality,
+      Value<int?> sealedAt,
     });
 
 class $$DayNotesTableFilterComposer
@@ -2614,6 +2730,11 @@ class $$DayNotesTableFilterComposer
 
   ColumnFilters<int> get timeQuality => $composableBuilder(
     column: $table.timeQuality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sealedAt => $composableBuilder(
+    column: $table.sealedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2651,6 +2772,11 @@ class $$DayNotesTableOrderingComposer
     column: $table.timeQuality,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get sealedAt => $composableBuilder(
+    column: $table.sealedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DayNotesTableAnnotationComposer
@@ -2678,6 +2804,9 @@ class $$DayNotesTableAnnotationComposer
     column: $table.timeQuality,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get sealedAt =>
+      $composableBuilder(column: $table.sealedAt, builder: (column) => column);
 }
 
 class $$DayNotesTableTableManager
@@ -2713,12 +2842,14 @@ class $$DayNotesTableTableManager
                 Value<String?> moment = const Value.absent(),
                 Value<DayMood?> mood = const Value.absent(),
                 Value<int?> timeQuality = const Value.absent(),
+                Value<int?> sealedAt = const Value.absent(),
               }) => DayNotesCompanion(
                 id: id,
                 date: date,
                 moment: moment,
                 mood: mood,
                 timeQuality: timeQuality,
+                sealedAt: sealedAt,
               ),
           createCompanionCallback:
               ({
@@ -2727,12 +2858,14 @@ class $$DayNotesTableTableManager
                 Value<String?> moment = const Value.absent(),
                 Value<DayMood?> mood = const Value.absent(),
                 Value<int?> timeQuality = const Value.absent(),
+                Value<int?> sealedAt = const Value.absent(),
               }) => DayNotesCompanion.insert(
                 id: id,
                 date: date,
                 moment: moment,
                 mood: mood,
                 timeQuality: timeQuality,
+                sealedAt: sealedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -2940,6 +3073,7 @@ typedef $$LettersTableCreateCompanionBuilder =
       Value<bool> isOpened,
       Value<int?> openedAt,
       Value<String?> reaction,
+      Value<String?> reply,
     });
 typedef $$LettersTableUpdateCompanionBuilder =
     LettersCompanion Function({
@@ -2950,6 +3084,7 @@ typedef $$LettersTableUpdateCompanionBuilder =
       Value<bool> isOpened,
       Value<int?> openedAt,
       Value<String?> reaction,
+      Value<String?> reply,
     });
 
 class $$LettersTableFilterComposer
@@ -2993,6 +3128,11 @@ class $$LettersTableFilterComposer
 
   ColumnFilters<String> get reaction => $composableBuilder(
     column: $table.reaction,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reply => $composableBuilder(
+    column: $table.reply,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3040,6 +3180,11 @@ class $$LettersTableOrderingComposer
     column: $table.reaction,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get reply => $composableBuilder(
+    column: $table.reply,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LettersTableAnnotationComposer
@@ -3071,6 +3216,9 @@ class $$LettersTableAnnotationComposer
 
   GeneratedColumn<String> get reaction =>
       $composableBuilder(column: $table.reaction, builder: (column) => column);
+
+  GeneratedColumn<String> get reply =>
+      $composableBuilder(column: $table.reply, builder: (column) => column);
 }
 
 class $$LettersTableTableManager
@@ -3108,6 +3256,7 @@ class $$LettersTableTableManager
                 Value<bool> isOpened = const Value.absent(),
                 Value<int?> openedAt = const Value.absent(),
                 Value<String?> reaction = const Value.absent(),
+                Value<String?> reply = const Value.absent(),
               }) => LettersCompanion(
                 id: id,
                 createdAt: createdAt,
@@ -3116,6 +3265,7 @@ class $$LettersTableTableManager
                 isOpened: isOpened,
                 openedAt: openedAt,
                 reaction: reaction,
+                reply: reply,
               ),
           createCompanionCallback:
               ({
@@ -3126,6 +3276,7 @@ class $$LettersTableTableManager
                 Value<bool> isOpened = const Value.absent(),
                 Value<int?> openedAt = const Value.absent(),
                 Value<String?> reaction = const Value.absent(),
+                Value<String?> reply = const Value.absent(),
               }) => LettersCompanion.insert(
                 id: id,
                 createdAt: createdAt,
@@ -3134,6 +3285,7 @@ class $$LettersTableTableManager
                 isOpened: isOpened,
                 openedAt: openedAt,
                 reaction: reaction,
+                reply: reply,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

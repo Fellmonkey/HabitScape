@@ -33,6 +33,7 @@ abstract final class K {
   static const dayMomentField = Key('day_moment_field');
   static const dayMomentSave = Key('day_moment_save');
   static const dayMomentHelp = Key('day_moment_help');
+  static const daySealToggle = Key('day_seal_toggle');
 
   /// Inline mood button: `day_moment_mood_$mood`
   static Key dayMomentMood(String mood) => Key('day_moment_mood_$mood');
@@ -114,9 +115,8 @@ abstract final class K {
   static const letterClose = Key('letter_close');
   static const letterCloseText = Key('letter_close_text');
   static const letterNewCapsule = Key('letter_new_capsule');
-
-  /// Per-reaction chip on the letter: `letter_reaction_$name`
-  static Key letterReaction(String name) => Key('letter_reaction_$name');
+  static const letterReplyField = Key('letter_reply_field');
+  static const letterReplySave = Key('letter_reply_save');
 
   static const capsulesSettingsEntry = Key('settings_capsules');
 }

@@ -120,6 +120,10 @@ class BackupService {
             : DayMood.fromString(map['mood'] as String),
         timeQuality: map['timeQuality'] as int?,
       );
+      final sealedAt = map['sealedAt'] as int?;
+      if (sealedAt != null) {
+        await dayNotesDao.setSealed(map['date'] as int, sealedAt);
+      }
     }
 
     // Import monthly goals; the fresh id lets us set done on the same row.
@@ -151,6 +155,10 @@ class BackupService {
       final reaction = map['reaction'] as String?;
       if (reaction != null) {
         await lettersDao.setReaction(id, reaction);
+      }
+      final reply = map['reply'] as String?;
+      if (reply != null) {
+        await lettersDao.setReply(id, reply);
       }
     }
 
@@ -185,6 +193,7 @@ class BackupService {
     'moment': n.moment,
     'mood': n.mood?.name,
     'timeQuality': n.timeQuality,
+    'sealedAt': n.sealedAt,
   };
 
   static Map<String, dynamic> _goalToMap(MonthlyGoal g) => {
@@ -201,5 +210,6 @@ class BackupService {
     'isOpened': l.isOpened,
     'openedAt': l.openedAt,
     'reaction': l.reaction,
+    'reply': l.reply,
   };
 }

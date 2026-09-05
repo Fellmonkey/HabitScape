@@ -103,6 +103,7 @@ DayNote makeDayNote({
   String? moment,
   DayMood? mood,
   int? timeQuality,
+  int? sealedAt,
 }) {
   return DayNote(
     id: id,
@@ -110,6 +111,7 @@ DayNote makeDayNote({
     moment: moment,
     mood: mood,
     timeQuality: timeQuality,
+    sealedAt: sealedAt,
   );
 }
 

@@ -22,6 +22,9 @@ class DayNotes extends Table {
   TextColumn get moment => text().nullable()();
   TextColumn get mood => text().nullable().map(const DayMoodConverter())();
   IntColumn get timeQuality => integer().nullable()();
+
+  /// Unix seconds when the day was sealed («Запечатать день»); null = open.
+  IntColumn get sealedAt => integer().nullable()();
 }
 
 /// Things to achieve this month.
@@ -44,8 +47,12 @@ class Letters extends Table {
   BoolColumn get isOpened => boolean().withDefault(const Constant(false))();
   IntColumn get openedAt => integer().nullable()();
 
-  /// The reader's verdict after opening: success / partial / missed.
+  /// The reader's verdict on an opened capsule — written confirmation of what
+  /// came of the message, not a streak or a score.
   TextColumn get reaction => text().nullable()();
+
+  /// A free-form reply to the capsule, written after opening it.
+  TextColumn get reply => text().nullable()();
 }
 
 /// Unique (habitId, date) so an upsert needs no read-before-write.

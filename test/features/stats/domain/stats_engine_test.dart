@@ -158,6 +158,7 @@ void main() {
           mood: DayMood.bad,
           timeQuality: 1,
           moment: 'Голова болела',
+          sealedAt: DateTime.utc(2026, 1, 2).unixSeconds,
         ),
       ];
 
@@ -173,6 +174,7 @@ void main() {
       expect(d1.mood, isNull);
       expect(d1.ratio, 0.0);
       expect(d1.hasMoment, isFalse);
+      expect(d1.isSealed, isFalse);
 
       final d2 = days[1];
       expect(d2.mood, DayMood.bad);
@@ -180,6 +182,7 @@ void main() {
       expect(d2.timeQuality, 1); // wasted
       expect(d2.hasMoment, isTrue);
       expect(d2.moment, 'Голова болела');
+      expect(d2.isSealed, isTrue);
     });
 
     test('keeps days after habit creation but not before it', () {

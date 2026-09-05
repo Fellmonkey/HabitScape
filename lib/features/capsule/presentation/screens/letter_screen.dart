@@ -13,9 +13,9 @@ import '../../providers/letter_providers.dart';
 
 /// Fullscreen letter: what you wrote to yourself, shown on the day it opened.
 ///
-/// Opening a letter marks it as read and lets you leave a written verdict
-/// (Получилось / Частично / Нет). «Создать новую капсулу» closes the letter
-/// and opens a fresh composer — a new message, not a quoted reply.
+/// Opening a letter marks it as read. You can leave a short written reply
+/// right here — it is stored on the letter, not framed as a goal or a task.
+/// «Создать новую капсулу» closes the letter and opens a fresh composer.
 class LetterScreen extends ConsumerStatefulWidget {
   const LetterScreen({super.key, required this.capsule});
 
@@ -26,10 +26,18 @@ class LetterScreen extends ConsumerStatefulWidget {
 }
 
 class _LetterScreenState extends ConsumerState<LetterScreen> {
+  final TextEditingController _replyController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _markOpened());
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
   }
 
   Future<void> _markOpened() async {
@@ -39,22 +47,32 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
         .markOpened(widget.capsule.id);
   }
 
-  Future<void> _setReaction(CapsuleReaction reaction) async {
+  Future<void> _saveReply() async {
+    final text = _replyController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Напиши пару слов сначала')));
+      return;
+    }
     await ref
         .read(letterActionsProvider.notifier)
-        .setReaction(widget.capsule.id, reaction);
-    if (mounted) setState(() {});
+        .setReply(widget.capsule.id, text);
+    if (!mounted) return;
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Ответ сохранён')));
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Watch the live row so verdicts and open state render immediately.
+    // Watch the live row so replies render immediately after saving.
     final capsule =
         ref.watch(letterProvider(widget.capsule.id)).value ?? widget.capsule;
     final created = dateFromUnix(capsule.createdAt);
     final accent = AppColors.warmAmber;
-    final reaction = CapsuleReaction.fromString(capsule.reaction);
 
     return Scaffold(
       key: K.letterScreen,
@@ -120,10 +138,11 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
                 ),
               ),
               const SizedBox(height: 28),
-              if (reaction == null)
-                _ReactionPicker(onSelected: _setReaction)
-              else
-                _ReactionResult(reaction: reaction),
+              _ReplyComposer(
+                controller: _replyController,
+                initial: capsule.reply,
+                onSave: _saveReply,
+              ),
               const SizedBox(height: 28),
               FilledButton.icon(
                 key: K.letterNewCapsule,
@@ -146,63 +165,105 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
   }
 }
 
-/// Three quick verdicts: success / partial / missed — written confirmation of
-/// what came of the message.
-class _ReactionPicker extends StatelessWidget {
-  const _ReactionPicker({required this.onSelected});
+/// A short written reply to the opened letter. Free-form — not a goal, not a
+/// score, just words back to yourself.
+class _ReplyComposer extends StatefulWidget {
+  const _ReplyComposer({
+    required this.controller,
+    required this.initial,
+    required this.onSave,
+  });
 
-  final ValueChanged<CapsuleReaction> onSelected;
+  final TextEditingController controller;
+  final String? initial;
+  final VoidCallback onSave;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Как получилось?',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final reaction in CapsuleReaction.values)
-              ActionChip(
-                key: K.letterReaction(reaction.name),
-                label: Text(reaction.label),
-                onPressed: () => onSelected(reaction),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
+  State<_ReplyComposer> createState() => _ReplyComposerState();
 }
 
-class _ReactionResult extends StatelessWidget {
-  const _ReactionResult({required this.reaction});
-
-  final CapsuleReaction reaction;
+class _ReplyComposerState extends State<_ReplyComposer> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.text = widget.initial ?? '';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.check_circle_outline, size: 18, color: reaction.color),
-        const SizedBox(width: 6),
-        Text(
-          'Ты отметил: ${reaction.label}',
-          style: theme.textTheme.bodyMedium?.copyWith(color: reaction.color),
+    final border = OutlineInputBorder(
+      borderRadius: AppRadius.borderS,
+      borderSide: BorderSide(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.16),
+      ),
+    );
+
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: AppRadius.borderL,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Ответ',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Пара слов себе сейчас — не цель и не задача, просто отклик.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: K.letterReplyField,
+              controller: widget.controller,
+              minLines: 2,
+              maxLines: 4,
+              maxLength: 1000,
+              textCapitalization: TextCapitalization.sentences,
+              style: theme.textTheme.bodyMedium,
+              decoration: InputDecoration(
+                hintText: 'Что ответишь этому себе?',
+                hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                counterText: '',
+                filled: true,
+                fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: border,
+                enabledBorder: border,
+                focusedBorder: border.copyWith(
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 1.6,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                key: K.letterReplySave,
+                onPressed: widget.onSave,
+                icon: const Icon(Icons.reply_rounded, size: 18),
+                label: const Text('Сохранить ответ'),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

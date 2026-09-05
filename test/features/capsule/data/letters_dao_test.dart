@@ -87,18 +87,18 @@ void main() {
       expect(all.single.openedAt, openedAt);
     });
 
-    test('setReaction records and clears the verdict', () async {
+    test('setReply records and clears the reply', () async {
       final id = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Что-то',
       );
 
-      await db.lettersDao.setReaction(id, 'success');
+      await db.lettersDao.setReply(id, 'Я справился!');
       final all = await db.lettersDao.getAllLetters();
-      expect(all.single.reaction, 'success');
+      expect(all.single.reply, 'Я справился!');
 
-      await db.lettersDao.setReaction(id, null);
-      expect((await db.lettersDao.getAllLetters()).single.reaction, isNull);
+      await db.lettersDao.setReply(id, null);
+      expect((await db.lettersDao.getAllLetters()).single.reply, isNull);
     });
 
     test('deleteLetter removes one row; deleteAll clears everything', () async {

@@ -5,7 +5,6 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../data/letters_dao.dart';
-import '../domain/capsule.dart';
 
 // ── DAO provider ─────────────────────────────────────────────
 
@@ -73,9 +72,12 @@ class LetterActions extends Notifier<void> {
     return ref.read(lettersDaoProvider).markOpened(id, todayTimestamp());
   }
 
-  /// Records the reader's verdict on an opened capsule.
-  Future<void> setReaction(int id, CapsuleReaction? reaction) {
-    return ref.read(lettersDaoProvider).setReaction(id, reaction?.name);
+  /// Stores a free-form reply to an opened capsule.
+  Future<void> setReply(int id, String reply) {
+    final trimmed = reply.trim();
+    return ref
+        .read(lettersDaoProvider)
+        .setReply(id, trimmed.isEmpty ? null : trimmed);
   }
 
   /// Deletes a capsule.
