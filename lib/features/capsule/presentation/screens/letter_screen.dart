@@ -13,8 +13,9 @@ import '../../providers/letter_providers.dart';
 
 /// Fullscreen letter: what you wrote to yourself, shown on the day it opened.
 ///
-/// Opening a letter marks it as read. «Ответить себе» closes it and goes to
-/// the composer so the reply becomes a new capsule.
+/// Opening a letter marks it as read and lets you leave a written verdict
+/// (Получилось / Частично / Нет). «Создать новую капсулу» closes the letter
+/// and opens a fresh composer — a new message, not a quoted reply.
 class LetterScreen extends ConsumerStatefulWidget {
   const LetterScreen({super.key, required this.capsule});
 
@@ -38,12 +39,22 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
         .markOpened(widget.capsule.id);
   }
 
+  Future<void> _setReaction(CapsuleReaction reaction) async {
+    await ref
+        .read(letterActionsProvider.notifier)
+        .setReaction(widget.capsule.id, reaction);
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final capsule = widget.capsule;
+    // Watch the live row so verdicts and open state render immediately.
+    final capsule =
+        ref.watch(letterProvider(widget.capsule.id)).value ?? widget.capsule;
     final created = dateFromUnix(capsule.createdAt);
     final accent = AppColors.warmAmber;
+    final reaction = CapsuleReaction.fromString(capsule.reaction);
 
     return Scaffold(
       key: K.letterScreen,
@@ -108,13 +119,18 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 28),
+              if (reaction == null)
+                _ReactionPicker(onSelected: _setReaction)
+              else
+                _ReactionResult(reaction: reaction),
+              const SizedBox(height: 28),
               FilledButton.icon(
-                key: K.letterReply,
+                key: K.letterNewCapsule,
                 onPressed: () =>
                     context.pushReplacement('/capsules', extra: true),
-                icon: const Icon(Icons.send_rounded, size: 18),
-                label: const Text('Ответить себе'),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Создать новую капсулу'),
               ),
               const SizedBox(height: 8),
               TextButton(
@@ -126,6 +142,67 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Three quick verdicts: success / partial / missed — written confirmation of
+/// what came of the message.
+class _ReactionPicker extends StatelessWidget {
+  const _ReactionPicker({required this.onSelected});
+
+  final ValueChanged<CapsuleReaction> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Как получилось?',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final reaction in CapsuleReaction.values)
+              ActionChip(
+                key: K.letterReaction(reaction.name),
+                label: Text(reaction.label),
+                onPressed: () => onSelected(reaction),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ReactionResult extends StatelessWidget {
+  const _ReactionResult({required this.reaction});
+
+  final CapsuleReaction reaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.check_circle_outline, size: 18, color: reaction.color),
+        const SizedBox(width: 6),
+        Text(
+          'Ты отметил: ${reaction.label}',
+          style: theme.textTheme.bodyMedium?.copyWith(color: reaction.color),
+        ),
+      ],
     );
   }
 }

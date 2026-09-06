@@ -67,12 +67,8 @@ GoRouter _createTestRouter() => GoRouter(
     ),
     GoRoute(
       path: '/capsules',
-      builder: (context, state) {
-        final extra = state.extra;
-        return extra is Letter
-            ? CapsuleScreen(replyTo: extra)
-            : const CapsuleScreen();
-      },
+      builder: (context, state) =>
+          CapsuleScreen(autofocus: state.extra == true),
     ),
     GoRoute(
       path: '/letter',

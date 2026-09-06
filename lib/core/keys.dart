@@ -113,6 +113,10 @@ abstract final class K {
   static const letterScreen = Key('letter_screen');
   static const letterClose = Key('letter_close');
   static const letterCloseText = Key('letter_close_text');
-  static const letterReply = Key('letter_reply');
+  static const letterNewCapsule = Key('letter_new_capsule');
+
+  /// Per-reaction chip on the letter: `letter_reaction_$name`
+  static Key letterReaction(String name) => Key('letter_reaction_$name');
+
   static const capsulesSettingsEntry = Key('settings_capsules');
 }

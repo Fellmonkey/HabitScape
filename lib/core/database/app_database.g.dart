@@ -1678,6 +1678,17 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _reactionMeta = const VerificationMeta(
+    'reaction',
+  );
+  @override
+  late final GeneratedColumn<String> reaction = GeneratedColumn<String>(
+    'reaction',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1686,6 +1697,7 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
     body,
     isOpened,
     openedAt,
+    reaction,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1738,6 +1750,12 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
         openedAt.isAcceptableOrUnknown(data['opened_at']!, _openedAtMeta),
       );
     }
+    if (data.containsKey('reaction')) {
+      context.handle(
+        _reactionMeta,
+        reaction.isAcceptableOrUnknown(data['reaction']!, _reactionMeta),
+      );
+    }
     return context;
   }
 
@@ -1771,6 +1789,10 @@ class $LettersTable extends Letters with TableInfo<$LettersTable, Letter> {
         DriftSqlType.int,
         data['${effectivePrefix}opened_at'],
       ),
+      reaction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reaction'],
+      ),
     );
   }
 
@@ -1787,6 +1809,9 @@ class Letter extends DataClass implements Insertable<Letter> {
   final String body;
   final bool isOpened;
   final int? openedAt;
+
+  /// The reader's verdict after opening: success / partial / missed.
+  final String? reaction;
   const Letter({
     required this.id,
     required this.createdAt,
@@ -1794,6 +1819,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     required this.body,
     required this.isOpened,
     this.openedAt,
+    this.reaction,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1805,6 +1831,9 @@ class Letter extends DataClass implements Insertable<Letter> {
     map['is_opened'] = Variable<bool>(isOpened);
     if (!nullToAbsent || openedAt != null) {
       map['opened_at'] = Variable<int>(openedAt);
+    }
+    if (!nullToAbsent || reaction != null) {
+      map['reaction'] = Variable<String>(reaction);
     }
     return map;
   }
@@ -1819,6 +1848,9 @@ class Letter extends DataClass implements Insertable<Letter> {
       openedAt: openedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(openedAt),
+      reaction: reaction == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reaction),
     );
   }
 
@@ -1834,6 +1866,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       body: serializer.fromJson<String>(json['body']),
       isOpened: serializer.fromJson<bool>(json['isOpened']),
       openedAt: serializer.fromJson<int?>(json['openedAt']),
+      reaction: serializer.fromJson<String?>(json['reaction']),
     );
   }
   @override
@@ -1846,6 +1879,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       'body': serializer.toJson<String>(body),
       'isOpened': serializer.toJson<bool>(isOpened),
       'openedAt': serializer.toJson<int?>(openedAt),
+      'reaction': serializer.toJson<String?>(reaction),
     };
   }
 
@@ -1856,6 +1890,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     String? body,
     bool? isOpened,
     Value<int?> openedAt = const Value.absent(),
+    Value<String?> reaction = const Value.absent(),
   }) => Letter(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -1863,6 +1898,7 @@ class Letter extends DataClass implements Insertable<Letter> {
     body: body ?? this.body,
     isOpened: isOpened ?? this.isOpened,
     openedAt: openedAt.present ? openedAt.value : this.openedAt,
+    reaction: reaction.present ? reaction.value : this.reaction,
   );
   Letter copyWithCompanion(LettersCompanion data) {
     return Letter(
@@ -1872,6 +1908,7 @@ class Letter extends DataClass implements Insertable<Letter> {
       body: data.body.present ? data.body.value : this.body,
       isOpened: data.isOpened.present ? data.isOpened.value : this.isOpened,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
+      reaction: data.reaction.present ? data.reaction.value : this.reaction,
     );
   }
 
@@ -1883,14 +1920,15 @@ class Letter extends DataClass implements Insertable<Letter> {
           ..write('deliverAt: $deliverAt, ')
           ..write('body: $body, ')
           ..write('isOpened: $isOpened, ')
-          ..write('openedAt: $openedAt')
+          ..write('openedAt: $openedAt, ')
+          ..write('reaction: $reaction')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, createdAt, deliverAt, body, isOpened, openedAt);
+      Object.hash(id, createdAt, deliverAt, body, isOpened, openedAt, reaction);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1900,7 +1938,8 @@ class Letter extends DataClass implements Insertable<Letter> {
           other.deliverAt == this.deliverAt &&
           other.body == this.body &&
           other.isOpened == this.isOpened &&
-          other.openedAt == this.openedAt);
+          other.openedAt == this.openedAt &&
+          other.reaction == this.reaction);
 }
 
 class LettersCompanion extends UpdateCompanion<Letter> {
@@ -1910,6 +1949,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
   final Value<String> body;
   final Value<bool> isOpened;
   final Value<int?> openedAt;
+  final Value<String?> reaction;
   const LettersCompanion({
     this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1917,6 +1957,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     this.body = const Value.absent(),
     this.isOpened = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.reaction = const Value.absent(),
   });
   LettersCompanion.insert({
     this.id = const Value.absent(),
@@ -1925,6 +1966,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     required String body,
     this.isOpened = const Value.absent(),
     this.openedAt = const Value.absent(),
+    this.reaction = const Value.absent(),
   }) : createdAt = Value(createdAt),
        deliverAt = Value(deliverAt),
        body = Value(body);
@@ -1935,6 +1977,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     Expression<String>? body,
     Expression<bool>? isOpened,
     Expression<int>? openedAt,
+    Expression<String>? reaction,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1943,6 +1986,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
       if (body != null) 'body': body,
       if (isOpened != null) 'is_opened': isOpened,
       if (openedAt != null) 'opened_at': openedAt,
+      if (reaction != null) 'reaction': reaction,
     });
   }
 
@@ -1953,6 +1997,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     Value<String>? body,
     Value<bool>? isOpened,
     Value<int?>? openedAt,
+    Value<String?>? reaction,
   }) {
     return LettersCompanion(
       id: id ?? this.id,
@@ -1961,6 +2006,7 @@ class LettersCompanion extends UpdateCompanion<Letter> {
       body: body ?? this.body,
       isOpened: isOpened ?? this.isOpened,
       openedAt: openedAt ?? this.openedAt,
+      reaction: reaction ?? this.reaction,
     );
   }
 
@@ -1985,6 +2031,9 @@ class LettersCompanion extends UpdateCompanion<Letter> {
     if (openedAt.present) {
       map['opened_at'] = Variable<int>(openedAt.value);
     }
+    if (reaction.present) {
+      map['reaction'] = Variable<String>(reaction.value);
+    }
     return map;
   }
 
@@ -1996,7 +2045,8 @@ class LettersCompanion extends UpdateCompanion<Letter> {
           ..write('deliverAt: $deliverAt, ')
           ..write('body: $body, ')
           ..write('isOpened: $isOpened, ')
-          ..write('openedAt: $openedAt')
+          ..write('openedAt: $openedAt, ')
+          ..write('reaction: $reaction')
           ..write(')'))
         .toString();
   }
@@ -2889,6 +2939,7 @@ typedef $$LettersTableCreateCompanionBuilder =
       required String body,
       Value<bool> isOpened,
       Value<int?> openedAt,
+      Value<String?> reaction,
     });
 typedef $$LettersTableUpdateCompanionBuilder =
     LettersCompanion Function({
@@ -2898,6 +2949,7 @@ typedef $$LettersTableUpdateCompanionBuilder =
       Value<String> body,
       Value<bool> isOpened,
       Value<int?> openedAt,
+      Value<String?> reaction,
     });
 
 class $$LettersTableFilterComposer
@@ -2936,6 +2988,11 @@ class $$LettersTableFilterComposer
 
   ColumnFilters<int> get openedAt => $composableBuilder(
     column: $table.openedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reaction => $composableBuilder(
+    column: $table.reaction,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2978,6 +3035,11 @@ class $$LettersTableOrderingComposer
     column: $table.openedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get reaction => $composableBuilder(
+    column: $table.reaction,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LettersTableAnnotationComposer
@@ -3006,6 +3068,9 @@ class $$LettersTableAnnotationComposer
 
   GeneratedColumn<int> get openedAt =>
       $composableBuilder(column: $table.openedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get reaction =>
+      $composableBuilder(column: $table.reaction, builder: (column) => column);
 }
 
 class $$LettersTableTableManager
@@ -3042,6 +3107,7 @@ class $$LettersTableTableManager
                 Value<String> body = const Value.absent(),
                 Value<bool> isOpened = const Value.absent(),
                 Value<int?> openedAt = const Value.absent(),
+                Value<String?> reaction = const Value.absent(),
               }) => LettersCompanion(
                 id: id,
                 createdAt: createdAt,
@@ -3049,6 +3115,7 @@ class $$LettersTableTableManager
                 body: body,
                 isOpened: isOpened,
                 openedAt: openedAt,
+                reaction: reaction,
               ),
           createCompanionCallback:
               ({
@@ -3058,6 +3125,7 @@ class $$LettersTableTableManager
                 required String body,
                 Value<bool> isOpened = const Value.absent(),
                 Value<int?> openedAt = const Value.absent(),
+                Value<String?> reaction = const Value.absent(),
               }) => LettersCompanion.insert(
                 id: id,
                 createdAt: createdAt,
@@ -3065,6 +3133,7 @@ class $$LettersTableTableManager
                 body: body,
                 isOpened: isOpened,
                 openedAt: openedAt,
+                reaction: reaction,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

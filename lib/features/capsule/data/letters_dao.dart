@@ -63,6 +63,13 @@ class LettersDao extends DatabaseAccessor<AppDatabase> with _$LettersDaoMixin {
     );
   }
 
+  /// Records the reader's verdict on an opened capsule.
+  Future<void> setReaction(int id, String? reaction) {
+    return (update(letters)..where((l) => l.id.equals(id))).write(
+      LettersCompanion(reaction: Value(reaction)),
+    );
+  }
+
   /// Gets every capsule for backup export, oldest first.
   Future<List<Letter>> getAllLetters() {
     return (select(letters)..orderBy([(l) => OrderingTerm.asc(l.id)])).get();

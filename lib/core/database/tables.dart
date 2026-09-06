@@ -43,6 +43,9 @@ class Letters extends Table {
   TextColumn get body => text()();
   BoolColumn get isOpened => boolean().withDefault(const Constant(false))();
   IntColumn get openedAt => integer().nullable()();
+
+  /// The reader's verdict after opening: success / partial / missed.
+  TextColumn get reaction => text().nullable()();
 }
 
 /// Unique (habitId, date) so an upsert needs no read-before-write.

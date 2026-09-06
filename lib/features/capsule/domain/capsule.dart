@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
+
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Preset delays for a new capsule. The first is the default — one month,
 /// matching the promise "a sentence to yourself in a month".
@@ -22,6 +25,27 @@ enum CapsulePreset {
 
 /// Lifecycle of a capsule relative to today.
 enum CapsuleStatus { upcoming, due, opened }
+
+/// The reader's verdict on an opened capsule — written confirmation of what
+/// came of the message, not a streak or a score.
+enum CapsuleReaction {
+  success('Получилось', AppColors.sageGreen),
+  partial('Частично', AppColors.warmAmber),
+  missed('Нет', AppColors.dustyRose);
+
+  const CapsuleReaction(this.label, this.color);
+
+  final String label;
+  final Color color;
+
+  static CapsuleReaction? fromString(String? value) {
+    if (value == null) return null;
+    for (final r in values) {
+      if (r.name == value) return r;
+    }
+    return null;
+  }
+}
 
 /// Where a capsule sits today.
 CapsuleStatus capsuleStatus(Letter letter, DateTime today) {

@@ -39,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -85,6 +85,10 @@ class AppDatabase extends _$AppDatabase {
       // v7 → v8: new Letters table for time capsules.
       if (from < 8) {
         await m.createTable(letters);
+      }
+      // v8 → v9: Letters.reaction — the reader's verdict on a capsule.
+      if (from < 9) {
+        await m.addColumn(letters, letters.reaction);
       }
     },
   );

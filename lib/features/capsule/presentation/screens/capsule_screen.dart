@@ -15,14 +15,10 @@ import '../../providers/letter_providers.dart';
 /// «Капсулы времени»: write a letter to your future self, see locked ones,
 /// and open the ones whose day has come.
 class CapsuleScreen extends ConsumerStatefulWidget {
-  const CapsuleScreen({super.key, this.autofocus = false, this.replyTo});
+  const CapsuleScreen({super.key, this.autofocus = false});
 
-  /// Focus the composer field on open (used by «Ответить себе»).
+  /// Focus the composer field on open (used from the letter screen).
   final bool autofocus;
-
-  /// When opened as a reply, the original letter is quoted in the field so
-  /// the new capsule visibly continues that conversation.
-  final Letter? replyTo;
 
   @override
   ConsumerState<CapsuleScreen> createState() => _CapsuleScreenState();
@@ -38,15 +34,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
   @override
   void initState() {
     super.initState();
-    final replyTo = widget.replyTo;
-    if (replyTo != null) {
-      final quote = replyTo.body.trim();
-      _controller.text = '«$quote» → ';
-      _controller.selection = TextSelection.collapsed(
-        offset: _controller.text.length,
-      );
-    }
-    if (widget.autofocus || replyTo != null) {
+    if (widget.autofocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _fieldFocusNode.requestFocus();
       });
@@ -141,7 +129,6 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
 
   Widget _buildComposer(BuildContext context) {
     final theme = Theme.of(context);
-    final replyTo = widget.replyTo;
     final border = OutlineInputBorder(
       borderRadius: AppRadius.borderS,
       borderSide: BorderSide(
@@ -165,9 +152,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
             ),
             const SizedBox(height: 2),
             Text(
-              replyTo != null
-                  ? 'Ответ на письмо от ${_shortDate(replyTo)}'
-                  : 'Одна фраза — 15–20 секунд. Откроется потом.',
+              'Одна фраза — 15–20 секунд. Откроется потом.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               ),
@@ -179,7 +164,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
               focusNode: _fieldFocusNode,
               minLines: _expanded ? 4 : 1,
               maxLines: _expanded ? 8 : 1,
-              maxLength: 4000,
+              maxLength: 2000,
               textCapitalization: TextCapitalization.sentences,
               onChanged: (_) => setState(() {}),
               style: theme.textTheme.bodyMedium,

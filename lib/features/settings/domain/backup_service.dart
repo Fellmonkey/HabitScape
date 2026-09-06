@@ -148,6 +148,10 @@ class BackupService {
           map['openedAt'] as int? ?? DateTime.now().toMidnight.unixSeconds,
         );
       }
+      final reaction = map['reaction'] as String?;
+      if (reaction != null) {
+        await lettersDao.setReaction(id, reaction);
+      }
     }
 
     return habitsList.length;
@@ -196,5 +200,6 @@ class BackupService {
     'body': l.body,
     'isOpened': l.isOpened,
     'openedAt': l.openedAt,
+    'reaction': l.reaction,
   };
 }

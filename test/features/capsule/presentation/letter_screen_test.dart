@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +12,7 @@ import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/capsule/presentation/screens/letter_screen.dart';
+import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';
@@ -19,11 +23,13 @@ void main() {
   late AppDatabase db;
   late SharedPreferences prefs;
   late GoRouter router;
+  late StreamController<Letter> letterController;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     prefs = await SharedPreferences.getInstance();
     db = createTestDatabase();
+    letterController = StreamController<Letter>.broadcast();
 
     router = GoRouter(
       initialLocation: '/home',
@@ -48,6 +54,7 @@ void main() {
   });
 
   tearDown(() async {
+    await letterController.close();
     await db.close();
   });
 
@@ -68,11 +75,13 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           sharedPrefsProvider.overrideWith((_) async => prefs),
+          letterProvider.overrideWith((ref, id) => letterController.stream),
         ],
         child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
       ),
     );
     router.push('/letter', extra: capsule);
+    letterController.add(capsule);
     await tester.pumpAndSettle();
   }
 
@@ -85,21 +94,44 @@ void main() {
     expect(find.byKey(K.letterScreen), findsOneWidget);
     expect(find.text('Это написал ты месяц назад'), findsOneWidget);
     expect(find.text('Помни: ты сильнее, чем кажется'), findsOneWidget);
-    expect(find.byKey(K.letterReply), findsOneWidget);
+    expect(find.byKey(K.letterNewCapsule), findsOneWidget);
 
     final letters = await db.lettersDao.getAllLetters();
     expect(letters.single.isOpened, isTrue);
     expect(letters.single.openedAt, isNotNull);
   });
 
-  testWidgets('«Ответить себе» opens the composer screen', (tester) async {
+  testWidgets('«Создать новую капсулу» opens the composer screen', (
+    tester,
+  ) async {
     final capsule = await addLetter();
     await pumpLetter(tester, capsule);
 
-    await tester.tap(find.byKey(K.letterReply));
+    await tester.tap(find.byKey(K.letterNewCapsule));
     await tester.pumpAndSettle();
 
     expect(find.text('CapsulesScreen'), findsOneWidget);
+  });
+
+  testWidgets('leaves a verdict that persists on the letter', (tester) async {
+    final capsule = await addLetter();
+    await pumpLetter(tester, capsule);
+
+    expect(find.text('Как получилось?'), findsOneWidget);
+    expect(find.byKey(K.letterReaction('success')), findsOneWidget);
+    expect(find.byKey(K.letterReaction('partial')), findsOneWidget);
+    expect(find.byKey(K.letterReaction('missed')), findsOneWidget);
+
+    await tester.tap(find.byKey(K.letterReaction('success')));
+    await tester.pumpAndSettle();
+
+    // The live provider emits the updated row, so the UI flips to the result.
+    letterController.add(capsule.copyWith(reaction: const Value('success')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ты отметил: Получилось'), findsOneWidget);
+    final letters = await db.lettersDao.getAllLetters();
+    expect(letters.single.reaction, 'success');
   });
 
   testWidgets('«Закрыть» returns to the previous screen', (tester) async {

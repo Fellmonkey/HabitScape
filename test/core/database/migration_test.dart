@@ -82,10 +82,12 @@ void main() {
     expect(after.where((l) => l.habitId == h1).single.status, LogStatus.skip);
   });
 
-  test('v8 schema includes the letters (capsule) table', () async {
-    expect(db.schemaVersion, 8);
+  test('v9 schema includes letters with the reaction column', () async {
+    expect(db.schemaVersion, 9);
 
-    // The table exists and is queryable; the DAO layer covers the rest.
-    await db.customStatement('SELECT COUNT(*) FROM letters');
+    // The table exists and carries the verdict column; the DAO layer covers
+    // the rest of the behavior.
+    final cols = await db.customSelect('PRAGMA table_info(letters)').get();
+    expect(cols.map((r) => r.data['name']), contains('reaction'));
   });
 }

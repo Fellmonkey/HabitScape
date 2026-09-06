@@ -87,6 +87,7 @@ void main() {
         createdAt: DateTime.utc(2025, 12, 1).unixSeconds,
       );
       await db.lettersDao.markOpened(openedId, janTs);
+      await db.lettersDao.setReaction(openedId, 'partial');
 
       // Export
       final exportedJson = await service.exportToJson();
@@ -148,6 +149,7 @@ void main() {
       final opened = letters.firstWhere((l) => l.body == 'Старое письмо');
       expect(opened.isOpened, isTrue);
       expect(opened.openedAt, janTs);
+      expect(opened.reaction, 'partial');
 
       await db2.close();
     });

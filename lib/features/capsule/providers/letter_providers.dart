@@ -5,6 +5,7 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../data/letters_dao.dart';
+import '../domain/capsule.dart';
 
 // ── DAO provider ─────────────────────────────────────────────
 
@@ -27,6 +28,19 @@ final dueCapsulesProvider = StreamProvider<List<Letter>>((ref) {
 /// Every capsule, newest first — the capsule screen's list.
 final allCapsulesProvider = StreamProvider<List<Letter>>((ref) {
   return ref.watch(lettersDaoProvider).watchAllLetters();
+});
+
+/// A single capsule, kept in sync with the database (for the letter screen).
+final letterProvider = StreamProvider.autoDispose.family<Letter?, int>((
+  ref,
+  id,
+) {
+  return ref.watch(lettersDaoProvider).watchAllLetters().map((letters) {
+    for (final letter in letters) {
+      if (letter.id == id) return letter;
+    }
+    return null;
+  });
 });
 
 /// True once a note older than 30 days exists — the signal that the user has
@@ -57,6 +71,11 @@ class LetterActions extends Notifier<void> {
   /// Marks a capsule as opened right now.
   Future<void> markOpened(int id) {
     return ref.read(lettersDaoProvider).markOpened(id, todayTimestamp());
+  }
+
+  /// Records the reader's verdict on an opened capsule.
+  Future<void> setReaction(int id, CapsuleReaction? reaction) {
+    return ref.read(lettersDaoProvider).setReaction(id, reaction?.name);
   }
 
   /// Deletes a capsule.

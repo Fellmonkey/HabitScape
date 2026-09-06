@@ -87,6 +87,20 @@ void main() {
       expect(all.single.openedAt, openedAt);
     });
 
+    test('setReaction records and clears the verdict', () async {
+      final id = await db.lettersDao.addLetter(
+        deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+        body: 'Что-то',
+      );
+
+      await db.lettersDao.setReaction(id, 'success');
+      final all = await db.lettersDao.getAllLetters();
+      expect(all.single.reaction, 'success');
+
+      await db.lettersDao.setReaction(id, null);
+      expect((await db.lettersDao.getAllLetters()).single.reaction, isNull);
+    });
+
     test('deleteLetter removes one row; deleteAll clears everything', () async {
       final a = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
