@@ -56,8 +56,12 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/capsules',
-      builder: (context, state) =>
-          CapsuleScreen(autofocus: state.extra == true),
+      builder: (context, state) {
+        final extra = state.extra;
+        return extra is Letter
+            ? CapsuleScreen(replyTo: extra)
+            : const CapsuleScreen();
+      },
     ),
     GoRoute(
       path: '/letter',

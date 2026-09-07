@@ -48,7 +48,11 @@ void main() {
     await lettersController.close();
   });
 
-  Future<void> pumpScreen(WidgetTester tester, {bool autofocus = false}) async {
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    bool autofocus = false,
+    Letter? replyTo,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -58,7 +62,7 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.light,
-          home: CapsuleScreen(autofocus: autofocus),
+          home: CapsuleScreen(autofocus: autofocus, replyTo: replyTo),
         ),
       ),
     );
@@ -104,6 +108,27 @@ void main() {
 
     final field = tester.widget<TextField>(find.byKey(K.capsuleField));
     expect(field.focusNode?.hasFocus, isTrue);
+  });
+
+  testWidgets('reply mode prefills the quoted original and focuses', (
+    tester,
+  ) async {
+    final today = DateTime.now().toMidnight;
+    final past = Letter(
+      id: 1,
+      createdAt: today.subtract(const Duration(days: 31)).unixSeconds,
+      deliverAt: today.unixSeconds,
+      body: 'Помни: ты сильнее',
+      isOpened: true,
+      openedAt: today.unixSeconds,
+    );
+
+    await pumpScreen(tester, replyTo: past);
+
+    final field = tester.widget<TextField>(find.byKey(K.capsuleField));
+    expect(field.controller!.text, contains('«Помни: ты сильнее» →'));
+    expect(field.focusNode?.hasFocus, isTrue);
+    expect(find.textContaining('Ответ на письмо'), findsOneWidget);
   });
 
   testWidgets('«Развернуть» expands the field to multiline', (tester) async {
