@@ -6,14 +6,15 @@ import '../../features/habits/data/day_notes_dao.dart';
 import '../../features/habits/data/habit_logs_dao.dart';
 import '../../features/habits/data/habits_dao.dart';
 import '../../features/habits/data/monthly_goals_dao.dart';
+import '../../features/capsule/data/letters_dao.dart';
 import 'enums.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Habits, HabitLogs, DayNotes, MonthlyGoals],
-  daos: [HabitsDao, HabitLogsDao, DayNotesDao, MonthlyGoalsDao],
+  tables: [Habits, HabitLogs, DayNotes, MonthlyGoals, Letters],
+  daos: [HabitsDao, HabitLogsDao, DayNotesDao, MonthlyGoalsDao, LettersDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Whether this is an in-memory test database.
@@ -38,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : isTest = true;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -80,6 +81,10 @@ class AppDatabase extends _$AppDatabase {
         await m.database.customStatement(
           'ALTER TABLE habits RENAME COLUMN seed_archetype TO icon',
         );
+      }
+      // v7 → v8: new Letters table for time capsules.
+      if (from < 8) {
+        await m.createTable(letters);
       }
     },
   );

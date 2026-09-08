@@ -41,6 +41,8 @@ No servers. No accounts. No subscriptions. Your data lives on your device.
   mood color. Memory, not metrics.
 * 🪞 **Echo** — the card resurfaces a past moment on its own: yesterday, a week,
   a month or a year ago. Tap to expand, «Ещё» for the next memory. No input.
+* ⏳ **Capsule** — one sentence to yourself in a month: write it, close it, and
+  when the day comes get a fullscreen letter with an «Ответить себе» reply button.
 * 📊 **Statistics** — a GitHub-style year heatmap, week-over-week trend,
   "mood ↔ completion" correlation and weekly rhythm insights.
 * 🎯 **Focus & monthly goals** — mark 1–5 habits as your focus: they move to

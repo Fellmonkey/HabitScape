@@ -71,6 +71,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             subtitle: 'Просмотр и восстановление архивированных привычек',
             onTap: () => context.push('/archive'),
           ),
+          const SizedBox(height: 8),
+          _SettingsTile(
+            key: K.capsulesSettingsEntry,
+            icon: Icons.markunread_mailbox_outlined,
+            title: 'Капсулы времени',
+            subtitle: 'Письма себе в будущее',
+            onTap: () => context.push('/capsules'),
+          ),
 
           const SizedBox(height: 24),
 

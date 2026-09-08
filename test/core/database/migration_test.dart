@@ -81,4 +81,11 @@ void main() {
     expect(after, hasLength(2));
     expect(after.where((l) => l.habitId == h1).single.status, LogStatus.skip);
   });
+
+  test('v8 schema includes the letters (capsule) table', () async {
+    expect(db.schemaVersion, 8);
+
+    // The table exists and is queryable; the DAO layer covers the rest.
+    await db.customStatement('SELECT COUNT(*) FROM letters');
+  });
 }

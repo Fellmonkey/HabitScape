@@ -18,6 +18,27 @@ int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;
 /// Days in a given month/year.
 int daysInMonth(int year, int month) => DateTime.utc(year, month + 1, 0).day;
 
+/// Shifts [from] by [months] (positive forward, negative back), clamping the
+/// day to the last day of the target month.
+///
+/// `DateTime.utc(2027, 2, 29)` normalizes to March 1 — the clamp prevents
+/// that, so Jan 31 + 1 month lands on Feb 28/29, never March 2.
+DateTime shiftMonths(DateTime from, int months) {
+  var year = from.year;
+  var month = from.month + months;
+  while (month > 12) {
+    month -= 12;
+    year += 1;
+  }
+  while (month < 1) {
+    month += 12;
+    year -= 1;
+  }
+  final lastDay = daysInMonth(year, month);
+  final day = from.day > lastDay ? lastDay : from.day;
+  return DateTime.utc(year, month, day);
+}
+
 /// Counts weekdays in [start, end], inclusive.
 int countWeekdaysInRange(DateTime start, DateTime end, List<int> weekdays) {
   var count = 0;

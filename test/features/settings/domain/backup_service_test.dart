@@ -21,6 +21,7 @@ void main() {
       habitLogsDao: db.habitLogsDao,
       dayNotesDao: db.dayNotesDao,
       monthlyGoalsDao: db.monthlyGoalsDao,
+      lettersDao: db.lettersDao,
     );
   });
 
@@ -35,10 +36,11 @@ void main() {
         final json = await service.exportToJson();
         final data = jsonDecode(json) as Map<String, dynamic>;
 
-        expect(data['version'], 1);
+        expect(data['version'], 2);
         expect(data['exportedAt'], isNotNull);
         expect(data['habits'], isEmpty);
         expect(data['habitLogs'], isEmpty);
+        expect(data['letters'], isEmpty);
       },
     );
 
@@ -72,6 +74,20 @@ void main() {
       final goalId = await db.monthlyGoalsDao.addGoal(janTs, 'Снять 4 видео');
       await db.monthlyGoalsDao.setGoalDone(goalId, isDone: true); // done
 
+      // Capsules: one still locked, one already opened
+      final delivery = DateTime.utc(2026, 2, 1).unixSeconds;
+      await db.lettersDao.addLetter(
+        deliverAt: delivery,
+        body: 'Надеюсь, ты бегаешь',
+        createdAt: janTs,
+      );
+      final openedId = await db.lettersDao.addLetter(
+        deliverAt: janTs,
+        body: 'Старое письмо',
+        createdAt: DateTime.utc(2025, 12, 1).unixSeconds,
+      );
+      await db.lettersDao.markOpened(openedId, janTs);
+
       // Export
       final exportedJson = await service.exportToJson();
 
@@ -82,6 +98,7 @@ void main() {
         habitLogsDao: db2.habitLogsDao,
         dayNotesDao: db2.dayNotesDao,
         monthlyGoalsDao: db2.monthlyGoalsDao,
+        lettersDao: db2.lettersDao,
       );
 
       final count = await service2.importFromJson(exportedJson);
@@ -118,11 +135,25 @@ void main() {
       expect(goals.first.title, 'Снять 4 видео');
       expect(goals.first.isDone, isTrue);
 
+      // Verify capsules: locked one stays locked, opened one stays opened
+      final letters = await db2.lettersDao.getAllLetters();
+      expect(letters, hasLength(2));
+
+      final locked = letters.firstWhere((l) => l.body == 'Надеюсь, ты бегаешь');
+      expect(locked.deliverAt, delivery);
+      expect(locked.createdAt, janTs);
+      expect(locked.isOpened, isFalse);
+      expect(locked.openedAt, isNull);
+
+      final opened = letters.firstWhere((l) => l.body == 'Старое письмо');
+      expect(opened.isOpened, isTrue);
+      expect(opened.openedAt, janTs);
+
       await db2.close();
     });
 
-    test('import with version=2 throws FormatException', () async {
-      final badJson = jsonEncode({'version': 2, 'habits': [], 'habitLogs': []});
+    test('import with version=3 throws FormatException', () async {
+      final badJson = jsonEncode({'version': 3, 'habits': [], 'habitLogs': []});
 
       expect(
         () => service.importFromJson(badJson),
@@ -130,13 +161,51 @@ void main() {
       );
     });
 
-    test('import replaces existing data', () async {
+    test(
+      'v1 backup (no letters) still imports and leaves letters empty',
+      () async {
+        final v1Json = jsonEncode({
+          'version': 1,
+          'habits': [
+            {
+              'name': 'New Habit',
+              'category': 'general',
+              'icon': 'check',
+              'frequencyType': 'daily',
+              'frequencyValue': '{}',
+              'timeOfDay': 'anytime',
+              'isFocus': false,
+              'isArchived': false,
+              'createdAt': DateTime.utc(2026, 1, 1).unixSeconds,
+            },
+          ],
+          'habitLogs': [],
+          'dayNotes': [],
+          'monthlyGoals': [],
+        });
+
+        await service.importFromJson(v1Json);
+
+        final habits = await db.habitsDao.getAllHabits();
+        expect(habits, hasLength(1));
+        expect(habits.first.name, 'New Habit');
+
+        final letters = await db.lettersDao.getAllLetters();
+        expect(letters, isEmpty);
+      },
+    );
+
+    test('import replaces existing data, including capsules', () async {
       // Insert initial data
       await db.habitsDao.insertHabit(makeHabitCompanion(name: 'Old Habit'));
+      await db.lettersDao.addLetter(
+        deliverAt: DateTime.utc(2026, 3, 1).unixSeconds,
+        body: 'Старая капсула',
+      );
 
-      // Import new data
+      // Import new data (v2 with letters)
       final importJson = jsonEncode({
-        'version': 1,
+        'version': 2,
         'habits': [
           {
             'name': 'New Habit',
@@ -151,6 +220,16 @@ void main() {
           },
         ],
         'habitLogs': [],
+        'dayNotes': [],
+        'monthlyGoals': [],
+        'letters': [
+          {
+            'createdAt': DateTime.utc(2026, 1, 1).unixSeconds,
+            'deliverAt': DateTime.utc(2026, 2, 1).unixSeconds,
+            'body': 'Новая капсула',
+            'isOpened': false,
+          },
+        ],
       });
 
       await service.importFromJson(importJson);
@@ -158,6 +237,11 @@ void main() {
       final habits = await db.habitsDao.getAllHabits();
       expect(habits, hasLength(1));
       expect(habits.first.name, 'New Habit');
+
+      final letters = await db.lettersDao.getAllLetters();
+      expect(letters, hasLength(1));
+      expect(letters.first.body, 'Новая капсула');
+      expect(letters.first.isOpened, isFalse);
     });
 
     test('null loggedHour preserved through round-trip', () async {
@@ -183,6 +267,7 @@ void main() {
         habitLogsDao: db2.habitLogsDao,
         dayNotesDao: db2.dayNotesDao,
         monthlyGoalsDao: db2.monthlyGoalsDao,
+        lettersDao: db2.lettersDao,
       );
 
       await service2.importFromJson(json);

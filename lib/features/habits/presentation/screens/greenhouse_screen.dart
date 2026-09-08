@@ -20,6 +20,7 @@ import '../widgets/echo_card.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
+import '../../../capsule/presentation/widgets/capsule_card.dart';
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
@@ -142,6 +143,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         // ── Echo: one past moment, no input ──
         const SliverToBoxAdapter(child: EchoCard()),
+
+        // ── Capsule: a letter to the future self ──
+        const SliverToBoxAdapter(child: CapsuleCard()),
 
         // ── Month goals ──
         // Not const: must rebuild after midnight to switch to the new month.

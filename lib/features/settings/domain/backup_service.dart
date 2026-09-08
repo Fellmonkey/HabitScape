@@ -4,13 +4,16 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
+import '../../../core/utils/date_helpers.dart';
 import '../../habits/data/day_notes_dao.dart';
 import '../../habits/data/habit_logs_dao.dart';
 import '../../habits/data/habits_dao.dart';
 import '../../habits/data/monthly_goals_dao.dart';
+import '../../capsule/data/letters_dao.dart';
 
 // Backup format version for forward compatibility.
-const _backupVersion = 1;
+// v2 adds the `letters` collection (time capsules).
+const _backupVersion = 2;
 
 class BackupService {
   BackupService({
@@ -18,12 +21,14 @@ class BackupService {
     required this.habitLogsDao,
     required this.dayNotesDao,
     required this.monthlyGoalsDao,
+    required this.lettersDao,
   });
 
   final HabitsDao habitsDao;
   final HabitLogsDao habitLogsDao;
   final DayNotesDao dayNotesDao;
   final MonthlyGoalsDao monthlyGoalsDao;
+  final LettersDao lettersDao;
 
   /// Exports the entire database to a JSON string.
   Future<String> exportToJson() async {
@@ -31,6 +36,7 @@ class BackupService {
     final logs = await habitLogsDao.getAllLogs();
     final notes = await dayNotesDao.getAllNotes();
     final goals = await monthlyGoalsDao.getAllGoals();
+    final letters = await lettersDao.getAllLetters();
 
     final data = {
       'version': _backupVersion,
@@ -39,6 +45,7 @@ class BackupService {
       'habitLogs': logs.map(_logToMap).toList(),
       'dayNotes': notes.map(_noteToMap).toList(),
       'monthlyGoals': goals.map(_goalToMap).toList(),
+      'letters': letters.map(_letterToMap).toList(),
     };
 
     return jsonEncode(data);
@@ -59,11 +66,13 @@ class BackupService {
     final logsList = data['habitLogs'] as List<dynamic>? ?? [];
     final notesList = data['dayNotes'] as List<dynamic>? ?? [];
     final goalsList = data['monthlyGoals'] as List<dynamic>? ?? [];
+    final lettersList = data['letters'] as List<dynamic>? ?? [];
 
     // Clear existing data (order matters for FK constraints).
     await habitLogsDao.deleteAllLogs();
     await dayNotesDao.deleteAllNotes();
     await monthlyGoalsDao.deleteAllGoals();
+    await lettersDao.deleteAllLetters();
     await habitsDao.deleteAllHabits();
 
     for (final h in habitsList) {
@@ -125,6 +134,22 @@ class BackupService {
       }
     }
 
+    // Import capsules, preserving their open state and dates.
+    for (final l in lettersList) {
+      final map = l as Map<String, dynamic>;
+      final id = await lettersDao.addLetter(
+        deliverAt: map['deliverAt'] as int,
+        body: map['body'] as String,
+        createdAt: map['createdAt'] as int?,
+      );
+      if (map['isOpened'] == true) {
+        await lettersDao.markOpened(
+          id,
+          map['openedAt'] as int? ?? DateTime.now().toMidnight.unixSeconds,
+        );
+      }
+    }
+
     return habitsList.length;
   }
 
@@ -162,5 +187,14 @@ class BackupService {
     'month': g.month,
     'title': g.title,
     'isDone': g.isDone,
+  };
+
+  static Map<String, dynamic> _letterToMap(Letter l) => {
+    'id': l.id,
+    'createdAt': l.createdAt,
+    'deliverAt': l.deliverAt,
+    'body': l.body,
+    'isOpened': l.isOpened,
+    'openedAt': l.openedAt,
   };
 }

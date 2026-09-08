@@ -490,6 +490,26 @@ class DebugDataSeeder {
     }
   }
 
+  /// Seeds a capsule that opens today — for verifying the Day-X letter flow.
+  Future<void> seedCapsuleDueToday() async {
+    final now = DateTime.now().toMidnight;
+    await db.lettersDao.addLetter(
+      deliverAt: now.unixSeconds,
+      body: 'Привет из прошлого! Это письмо ты написал себе — и вот день X.',
+      createdAt: shiftMonths(now, -1).unixSeconds,
+    );
+  }
+
+  /// Seeds a locked capsule that opens in a month — for verifying the closed card.
+  Future<void> seedCapsuleLocked() async {
+    final now = DateTime.now().toMidnight;
+    await db.lettersDao.addLetter(
+      deliverAt: shiftMonths(now, 1).unixSeconds,
+      body: 'Секретное письмо будущему себе.',
+      createdAt: now.unixSeconds,
+    );
+  }
+
   /// Maps a day's completion ratio to a mood with noise.
   static DayMood _moodForRatio(double ratio, Random rng) {
     final roll = rng.nextDouble();

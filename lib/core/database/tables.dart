@@ -34,6 +34,17 @@ class MonthlyGoals extends Table {
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
 }
 
+/// A time capsule: one message to your future self. No title, no recipient —
+/// just a body and a delivery date.
+class Letters extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get createdAt => integer()();
+  IntColumn get deliverAt => integer()();
+  TextColumn get body => text()();
+  BoolColumn get isOpened => boolean().withDefault(const Constant(false))();
+  IntColumn get openedAt => integer().nullable()();
+}
+
 /// Unique (habitId, date) so an upsert needs no read-before-write.
 @TableIndex(
   name: 'idx_habit_logs_habit_date',

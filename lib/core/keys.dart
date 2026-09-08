@@ -94,4 +94,25 @@ abstract final class K {
   static const themeModePicker = Key('theme_mode_picker');
   static const settingsShowHints = Key('settings_show_hints');
   static const settingsAboutAuthor = Key('settings_about_author');
+
+  // ── Capsules (time capsules) ───────────────────────────────
+  static const capsuleCard = Key('capsule_card');
+  static const capsuleCardDue = Key('capsule_card_due');
+  static const capsuleCardInvite = Key('capsule_card_invite');
+  static const capsuleScreen = Key('capsule_screen');
+  static const capsuleField = Key('capsule_field');
+  static const capsuleExpand = Key('capsule_expand');
+  static const capsuleSave = Key('capsule_save');
+
+  /// Per-preset chip: `capsule_preset_$name`
+  static Key capsulePreset(String name) => Key('capsule_preset_$name');
+
+  /// Per-capsule row on the screen: `capsule_item_$id`
+  static Key capsuleItem(int id) => Key('capsule_item_$id');
+
+  static const letterScreen = Key('letter_screen');
+  static const letterClose = Key('letter_close');
+  static const letterCloseText = Key('letter_close_text');
+  static const letterReply = Key('letter_reply');
+  static const capsulesSettingsEntry = Key('settings_capsules');
 }

@@ -113,6 +113,25 @@ DayNote makeDayNote({
   );
 }
 
+/// Create a Letter (capsule) data class instance.
+Letter makeLetterSnapshot({
+  int id = 1,
+  int? createdAt,
+  required int deliverAt,
+  String body = 'Письмо себе',
+  bool isOpened = false,
+  int? openedAt,
+}) {
+  return Letter(
+    id: id,
+    createdAt: createdAt ?? DateTime.utc(2026, 10, 1).unixSeconds,
+    deliverAt: deliverAt,
+    body: body,
+    isOpened: isOpened,
+    openedAt: openedAt,
+  );
+}
+
 /// Generate N done-logs with configurable time-of-day distribution.
 ///
 /// [startDate] — first log date (UTC midnight).

@@ -55,8 +55,8 @@ List<EchoMemory> selectEchoMemories(
   }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
   final targets = <EchoHorizon, (DateTime, int)>{
-    EchoHorizon.year: (_shiftMonths(today, 12), 3),
-    EchoHorizon.month: (_shiftMonths(today, 1), 2),
+    EchoHorizon.year: (shiftMonths(today, -12), 3),
+    EchoHorizon.month: (shiftMonths(today, -1), 2),
     EchoHorizon.week: (today.toMidnight.subtract(const Duration(days: 7)), 1),
     EchoHorizon.yesterday: (
       today.toMidnight.subtract(const Duration(days: 1)),
@@ -87,20 +87,4 @@ List<EchoMemory> selectEchoMemories(
   }
 
   return result;
-}
-
-/// Shifts [from] back by [months], clamping the day to the target month.
-///
-/// `DateTime.utc(2027, 2, 29)` normalizes to March 1 — the clamp prevents
-/// that, so "a year ago" from Feb 29 lands on Feb 28.
-DateTime _shiftMonths(DateTime from, int months) {
-  var year = from.year;
-  var month = from.month - months;
-  while (month < 1) {
-    month += 12;
-    year -= 1;
-  }
-  final lastDay = daysInMonth(year, month);
-  final day = from.day > lastDay ? lastDay : from.day;
-  return DateTime.utc(year, month, day);
 }

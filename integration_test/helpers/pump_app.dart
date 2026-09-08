@@ -9,6 +9,8 @@ import 'package:rythm/core/router/shell_scaffold.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/onboarding/onboarding_flags.dart';
+import 'package:rythm/features/capsule/presentation/screens/capsule_screen.dart';
+import 'package:rythm/features/capsule/presentation/screens/letter_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
@@ -62,6 +64,16 @@ GoRouter _createTestRouter() => GoRouter(
     GoRoute(
       path: '/month',
       builder: (context, state) => const MonthSpreadScreen(),
+    ),
+    GoRoute(
+      path: '/capsules',
+      builder: (context, state) =>
+          CapsuleScreen(autofocus: state.extra == true),
+    ),
+    GoRoute(
+      path: '/letter',
+      builder: (context, state) =>
+          LetterScreen(capsule: state.extra! as Letter),
     ),
   ],
 );

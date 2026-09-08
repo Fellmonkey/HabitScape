@@ -214,6 +214,33 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     }
   }
 
+  Future<void> _seedCapsule(
+    String label,
+    Future<void> Function(DebugDataSeeder seeder) run,
+  ) async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+    try {
+      final db = ref.read(databaseProvider);
+      final seeder = DebugDataSeeder(db);
+      await run(seeder);
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '✅ $label';
+      });
+      ref.invalidate(databaseProvider); // refresh the UI
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -270,6 +297,42 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.sageGreen,
               side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+
+        // Capsule Day-X debug helpers
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Капсула: день X создана',
+                    (s) => s.seedCapsuleDueToday(),
+                  ),
+            icon: const Icon(Icons.markunread_mailbox_outlined, size: 18),
+            label: const Text('Капсула: день X'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Капсула: закрытая создана',
+                    (s) => s.seedCapsuleLocked(),
+                  ),
+            icon: const Icon(Icons.inventory_2_outlined, size: 18),
+            label: const Text('Капсула: закрытая'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
             ),
           ),
         ),

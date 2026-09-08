@@ -74,4 +74,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Не удалось открыть ссылку'), findsOneWidget);
   });
+
+  testWidgets('settings screen offers the capsules entry', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPrefsProvider.overrideWith((_) async => prefs)],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Scroll to the Archive section.
+    await tester.drag(find.byType(ListView), const Offset(0, -250));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(K.capsulesSettingsEntry), findsOneWidget);
+    expect(find.text('Капсулы времени'), findsOneWidget);
+  });
 }
