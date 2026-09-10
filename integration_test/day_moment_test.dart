@@ -106,6 +106,38 @@ void main() {
       expect(find.text('Что запомнилось сегодня?'), findsOneWidget);
       expect(await db.dayNotesDao.getNoteForDate(todayTimestamp()), isNull);
     });
+
+    testWidgets('echo: promise after the first note, memory after a past day', (
+      tester,
+    ) async {
+      db = await pumpApp(tester);
+
+      // Fresh install — no echo card at all.
+      expect(find.byKey(K.echoCard), findsNothing);
+      expect(find.byKey(K.echoHint), findsNothing);
+
+      // Save today's moment: the promise line appears.
+      await tester.enterText(find.byKey(K.dayMomentField), 'Сегодняшний день');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(K.dayMomentSave));
+      await tester.pumpAndSettle();
+      expect(find.byKey(K.echoHint), findsOneWidget);
+
+      // A past note turns the hint into a real memory.
+      final yesterday = DateTime.now().toMidnight.subtract(
+        const Duration(days: 1),
+      );
+      await db.dayNotesDao.upsertNote(
+        yesterday.unixSeconds,
+        moment: 'Гулял у залива',
+        mood: DayMood.good,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(K.echoCard), findsOneWidget);
+      expect(find.textContaining('Вчера'), findsOneWidget);
+      expect(find.text('«Гулял у залива»'), findsOneWidget);
+    });
   });
 
   group('Month spread (Разворот месяца)', () {

@@ -16,6 +16,7 @@ import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
 import '../widgets/day_moment_card.dart';
+import '../widgets/echo_card.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
@@ -138,6 +139,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         SliverToBoxAdapter(
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
+
+        // ── Echo: one past moment, no input ──
+        const SliverToBoxAdapter(child: EchoCard()),
 
         // ── Month goals ──
         // Not const: must rebuild after midnight to switch to the new month.

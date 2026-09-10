@@ -73,6 +73,14 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     return (select(dayNotes)..orderBy([(n) => OrderingTerm.asc(n.date)])).get();
   }
 
+  /// Watches every note — used by the echo card, which needs the whole
+  /// archive and must refresh after today's note is saved.
+  Stream<List<DayNote>> watchAllNotes() {
+    return (select(
+      dayNotes,
+    )..orderBy([(n) => OrderingTerm.asc(n.date)])).watch();
+  }
+
   /// Deletes all day notes (for import).
   Future<int> deleteAllNotes() {
     return delete(dayNotes).go();

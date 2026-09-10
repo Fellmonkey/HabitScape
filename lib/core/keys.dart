@@ -40,6 +40,11 @@ abstract final class K {
   /// Opens the month spread from the greenhouse header.
   static const openMonthSpread = Key('open_month_spread');
 
+  // ── Echo (past moments) ────────────────────────────────────
+  static const echoCard = Key('echo_card');
+  static const echoNext = Key('echo_next');
+  static const echoHint = Key('echo_hint');
+
   // ── Month goals ────────────────────────────────────────────
   static const monthGoalsCard = Key('month_goals_card');
   static const monthGoalsAdd = Key('month_goals_add');
