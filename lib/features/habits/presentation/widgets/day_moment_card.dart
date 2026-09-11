@@ -2,35 +2,244 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
 
-/// Greenhouse card showing today's day moment (moment + mood). Tap to edit.
+/// Greenhouse card for today's day moment.
+///
+/// Empty state is an inline composer: one line + three mood buttons + save.
+/// The whole ritual stays on the card — no sheet, no extra decisions.
+/// A saved note opens the sheet for deeper editing.
 class DayMomentCard extends ConsumerWidget {
   const DayMomentCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noteAsync = ref.watch(todayDayNoteProvider);
-    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
       child: noteAsync.when(
         loading: () => const SizedBox.shrink(),
         error: (_, _) => const SizedBox.shrink(),
-        data: (note) => _buildCard(context, theme, note),
+        data: (note) {
+          final hasMoment = (note?.moment?.trim() ?? '').isNotEmpty;
+          return hasMoment
+              ? _SavedMoment(note: note!)
+              : _DayMomentComposer(initial: note);
+        },
       ),
     );
   }
+}
 
-  Widget _buildCard(BuildContext context, ThemeData theme, DayNote? note) {
-    final momentText = note?.moment?.trim() ?? '';
-    final hasMoment = momentText.isNotEmpty;
-    final mood = note?.mood;
+/// Inline composer: type a line, tap a mood, save. Three actions, ~15 sec.
+class _DayMomentComposer extends ConsumerStatefulWidget {
+  const _DayMomentComposer({required this.initial});
+
+  final DayNote? initial;
+
+  @override
+  ConsumerState<_DayMomentComposer> createState() => _DayMomentComposerState();
+}
+
+class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
+  late final TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+  DayMood? _mood;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initial?.moment ?? '');
+    _mood = widget.initial?.mood;
+    _controller.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_refresh);
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  bool get _canSave => _controller.text.trim().isNotEmpty || _mood != null;
+
+  Future<void> _save() async {
+    if (_saving || !_canSave) return;
+    setState(() => _saving = true);
+
+    final moment = _controller.text.trim();
+    await ref
+        .read(habitActionsProvider.notifier)
+        .saveDayNote(
+          moment: moment.isEmpty ? null : moment,
+          mood: _mood,
+          // Legacy value from an older note — keep it, never ask again.
+          timeQuality: widget.initial?.timeQuality,
+        );
+
+    if (!mounted) return;
+    Haptics.tap(ref.read(hapticsEnabledProvider));
+    _focusNode.unfocus();
+    setState(() => _saving = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      key: K.dayMomentCard,
+      color: theme.colorScheme.surface,
+      borderRadius: AppRadius.borderL,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  size: 20,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    key: K.dayMomentField,
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    maxLines: 1,
+                    maxLength: 200,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _save(),
+                    decoration: InputDecoration(
+                      hintText: 'Что запомнилось сегодня?',
+                      counterText: '',
+                      isDense: true,
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton.filled(
+                  key: K.dayMomentSave,
+                  tooltip: 'Сохранить',
+                  onPressed: _canSave && !_saving ? _save : null,
+                  icon: const Icon(Icons.check_rounded, size: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                for (final mood in DayMood.values) ...[
+                  if (mood != DayMood.values.first) const SizedBox(width: 8),
+                  Expanded(
+                    child: _MoodChoice(
+                      mood: mood,
+                      selected: _mood == mood,
+                      onTap: () =>
+                          setState(() => _mood = _mood == mood ? null : mood),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One of the three mood buttons in the inline composer.
+class _MoodChoice extends StatelessWidget {
+  const _MoodChoice({
+    required this.mood,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DayMood mood;
+  final bool selected;
+  final VoidCallback onTap;
+
+  String get _shortLabel => switch (mood) {
+    DayMood.good => 'Хорошо',
+    DayMood.ok => 'Так себе',
+    DayMood.bad => 'Плохо',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      key: K.dayMomentMood(mood.name),
+      borderRadius: AppRadius.borderS,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        decoration: BoxDecoration(
+          color: mood.color.withValues(alpha: selected ? 0.22 : 0.08),
+          borderRadius: AppRadius.borderS,
+          border: Border.all(
+            color: mood.color.withValues(alpha: selected ? 0.9 : 0.15),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: mood.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                _shortLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: selected ? mood.color : theme.colorScheme.onSurface,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Saved state: the moment + mood. Tap to edit in the fuller sheet.
+class _SavedMoment extends StatelessWidget {
+  const _SavedMoment({required this.note});
+
+  final DayNote note;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mood = note.mood;
 
     return Material(
       color: theme.colorScheme.surface,
@@ -45,7 +254,6 @@ class DayMomentCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                // mood indicator
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
@@ -55,9 +263,7 @@ class DayMomentCard extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  hasMoment || mood != null
-                      ? Icons.auto_awesome_rounded
-                      : Icons.edit_note_rounded,
+                  Icons.auto_awesome_rounded,
                   size: 20,
                   color:
                       mood?.color ??
@@ -79,24 +285,12 @@ class DayMomentCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (hasMoment)
-                      Text(
-                        momentText,
-                        style: theme.textTheme.bodyLarge,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    else
-                      Text(
-                        mood != null
-                            ? 'День отмечен · добавь момент'
-                            : 'Что запомнилось сегодня?',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
+                    Text(
+                      note.moment!.trim(),
+                      style: theme.textTheme.bodyLarge,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     if (mood != null) ...[
                       const SizedBox(height: 6),
                       Row(
@@ -133,7 +327,7 @@ class DayMomentCard extends ConsumerWidget {
     );
   }
 
-  void _openSheet(BuildContext context, DayNote? note) {
+  void _openSheet(BuildContext context, DayNote note) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

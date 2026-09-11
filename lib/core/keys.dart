@@ -34,6 +34,9 @@ abstract final class K {
   static const dayMomentSave = Key('day_moment_save');
   static const dayMomentHelp = Key('day_moment_help');
 
+  /// Inline mood button: `day_moment_mood_$mood`
+  static Key dayMomentMood(String mood) => Key('day_moment_mood_$mood');
+
   /// Opens the month spread from the greenhouse header.
   static const openMonthSpread = Key('open_month_spread');
 

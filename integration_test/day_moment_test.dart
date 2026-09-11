@@ -19,23 +19,21 @@ void main() {
       await db.close();
     });
 
-    testWidgets('empty hint → save moment + mood → displayed', (tester) async {
+    testWidgets('inline composer → save moment + mood → displayed', (
+      tester,
+    ) async {
       db = await pumpApp(tester);
 
-      // The card shows the empty-state hint.
+      // The card is an inline composer — no sheet needed.
       expect(find.byKey(K.dayMomentCard), findsOneWidget);
+      expect(find.byKey(K.dayMomentField), findsOneWidget);
       expect(find.text('Что запомнилось сегодня?'), findsOneWidget);
 
-      // Open the sheet.
-      await tester.tap(find.byKey(K.dayMomentCard));
-      await tester.pumpAndSettle();
-
-      // Enter a moment and pick a mood.
       await tester.enterText(
         find.byKey(K.dayMomentField),
         'Встретил друга у залива',
       );
-      await tester.tap(find.text('Хороший день'));
+      await tester.tap(find.byKey(K.dayMomentMood('good')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(K.dayMomentSave));
@@ -49,25 +47,21 @@ void main() {
       final note = await db.dayNotesDao.getNoteForDate(todayTimestamp());
       expect(note, isNotNull);
       expect(note!.moment, 'Встретил друга у залива');
+      expect(note.mood, DayMood.good);
     });
 
     testWidgets('mood-only note and editing an existing note', (tester) async {
       db = await pumpApp(tester);
 
-      // Save mood-only note.
-      await tester.tap(find.byKey(K.dayMomentCard));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Плохой день'));
+      // Mood-only: no typing at all.
+      await tester.tap(find.byKey(K.dayMomentMood('bad')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(K.dayMomentSave));
       await tester.pumpAndSettle();
 
-      expect(find.text('День отмечен · добавь момент'), findsOneWidget);
       expect(find.text('Плохой день'), findsOneWidget);
 
-      // Reopen and edit: add a moment.
-      await tester.tap(find.byKey(K.dayMomentCard));
-      await tester.pumpAndSettle();
+      // Add the moment inline — the mood stays selected.
       await tester.enterText(
         find.byKey(K.dayMomentField),
         'Голова болела весь день',
@@ -81,9 +75,12 @@ void main() {
 
       final note = await db.dayNotesDao.getNoteForDate(todayTimestamp());
       expect(note!.moment, 'Голова болела весь день');
+      expect(note.mood, DayMood.bad);
     });
 
-    testWidgets('clearing the note returns to the empty hint', (tester) async {
+    testWidgets('saved card opens the sheet; clearing returns to composer', (
+      tester,
+    ) async {
       db = await pumpApp(tester);
 
       // Seed a note directly.
@@ -96,9 +93,11 @@ void main() {
 
       expect(find.text('Красивый закат'), findsOneWidget);
 
-      // Open and clear the field, save.
+      // The saved card opens the fuller sheet for editing.
       await tester.tap(find.byKey(K.dayMomentCard));
       await tester.pumpAndSettle();
+      expect(find.byKey(K.dayMomentHelp), findsOneWidget);
+
       await tester.enterText(find.byKey(K.dayMomentField), '');
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(K.dayMomentSave));
