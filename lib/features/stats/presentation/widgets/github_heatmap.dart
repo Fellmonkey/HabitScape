@@ -7,7 +7,7 @@ import '../../../habits/domain/completion.dart';
 /// GitHub-style heatmap: 7 weekday rows × N week columns, each cell colored
 /// by the day's completion ratio. One [CustomPainter] paints the whole grid
 /// instead of ~380 individual widgets (layout cost on low-end devices).
-class GithubHeatmap extends StatelessWidget {
+class GithubHeatmap extends StatefulWidget {
   const GithubHeatmap({
     required this.days,
     this.cellSize = 12,
@@ -21,11 +21,29 @@ class GithubHeatmap extends StatelessWidget {
   final double gap;
 
   @override
+  State<GithubHeatmap> createState() => _GithubHeatmapState();
+}
+
+class _GithubHeatmapState extends State<GithubHeatmap> {
+  /// Built during the first layout — the viewport width is known then, so the
+  /// view opens on the most recent weeks instead of a year-old January.
+  ScrollController? _controller;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final days = widget.days;
     if (days.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final cellSize = widget.cellSize;
+    final gap = widget.gap;
     final theme = Theme.of(context);
     final first = days.first.date;
     final last = days.last.date;
@@ -45,26 +63,43 @@ class GithubHeatmap extends StatelessWidget {
     final totalWidth = labelWidth + gridWidth;
     final totalHeight = monthLabelHeight + labelGap + 7 * (cellSize + gap);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: CustomPaint(
-        size: Size(totalWidth, totalHeight),
-        painter: _HeatmapPainter(
-          days: days,
-          gridStart: gridStart,
-          first: first,
-          last: last,
-          weekCount: weekCount,
-          cellSize: cellSize,
-          gap: gap,
-          labelWidth: labelWidth,
-          monthLabelHeight: monthLabelHeight,
-          labelGap: labelGap,
-          weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 8),
-          monthLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
-          onSurface: theme.colorScheme.onSurface,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = constraints.maxWidth;
+        final endOffset = viewport.isFinite && viewport < totalWidth
+            ? totalWidth - viewport
+            : 0.0;
+        final controller = _controller ??= ScrollController(
+          initialScrollOffset: endOffset,
+        );
+
+        return SingleChildScrollView(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          child: CustomPaint(
+            size: Size(totalWidth, totalHeight),
+            painter: _HeatmapPainter(
+              days: days,
+              gridStart: gridStart,
+              first: first,
+              last: last,
+              weekCount: weekCount,
+              cellSize: cellSize,
+              gap: gap,
+              labelWidth: labelWidth,
+              monthLabelHeight: monthLabelHeight,
+              labelGap: labelGap,
+              weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 8,
+              ),
+              monthLabelStyle: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 9,
+              ),
+              onSurface: theme.colorScheme.onSurface,
+            ),
+          ),
+        );
+      },
     );
   }
 }
