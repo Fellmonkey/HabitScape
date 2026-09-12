@@ -166,35 +166,16 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     ThemeData theme,
     List<MonthSpreadDay> days,
   ) {
-    final moodCounts = _moodCountsOf(days);
     final moments = days.where((d) => d.hasMoment).toList();
     final monthTs = _monthTs;
 
     return CustomScrollView(
       slivers: [
-        // ── Summary strip: 🟢/🟡/🔴 ──
+        // ── Summary strip: moods, month progress, moments ──
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-            child: Row(
-              children: [
-                _MoodCount(
-                  mood: DayMood.good,
-                  count: moodCounts[DayMood.good]!,
-                ),
-                const SizedBox(width: 12),
-                _MoodCount(mood: DayMood.ok, count: moodCounts[DayMood.ok]!),
-                const SizedBox(width: 12),
-                _MoodCount(mood: DayMood.bad, count: moodCounts[DayMood.bad]!),
-                const Spacer(),
-                Text(
-                  '${moments.length} ${_pluralMoments(moments.length)}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
+            child: _MonthSummary(days: days),
           ),
         ),
 
@@ -304,7 +285,6 @@ class _MonthSpreadCapture extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final moodCounts = _moodCountsOf(days);
     final moments = days.where((d) => d.hasMoment).toList();
 
     return Container(
@@ -315,22 +295,7 @@ class _MonthSpreadCapture extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          Row(
-            children: [
-              _MoodCount(mood: DayMood.good, count: moodCounts[DayMood.good]!),
-              const SizedBox(width: 12),
-              _MoodCount(mood: DayMood.ok, count: moodCounts[DayMood.ok]!),
-              const SizedBox(width: 12),
-              _MoodCount(mood: DayMood.bad, count: moodCounts[DayMood.bad]!),
-              const Spacer(),
-              Text(
-                '${moments.length} ${_pluralMoments(moments.length)}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
+          _MonthSummary(days: days),
           const SizedBox(height: 12),
           _CalendarGrid(
             days: days,
@@ -355,7 +320,80 @@ class _MonthSpreadCapture extends StatelessWidget {
   }
 }
 
-// ── Mood summary chip ─────────────────────────────────────────
+// ── Month summary ─────────────────────────────────────────────
+
+/// Summary strip shared by the screen header and the PNG copy: mood chips,
+/// completion over the month's elapsed days and the written-moments counter.
+class _MonthSummary extends StatelessWidget {
+  const _MonthSummary({required this.days});
+
+  final List<MonthSpreadDay> days;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final moodCounts = _moodCountsOf(days);
+    final moments = days.where((d) => d.hasMoment).length;
+    final progress = monthCompletionPct(days: days, today: DateTime.now());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _MoodCount(mood: DayMood.good, count: moodCounts[DayMood.good]!),
+            const SizedBox(width: 12),
+            _MoodCount(mood: DayMood.ok, count: moodCounts[DayMood.ok]!),
+            const SizedBox(width: 12),
+            _MoodCount(mood: DayMood.bad, count: moodCounts[DayMood.bad]!),
+            const Spacer(),
+            Text(
+              '$moments ${_pluralMoments(moments)}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+        if (progress != null) ...[
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Text('Выполнено за месяц', style: theme.textTheme.labelSmall),
+              const Spacer(),
+              Text(
+                '${progress.round()}%',
+                key: K.monthSpreadProgress,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: _progressColor(progress, theme),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: AppRadius.borderS,
+            child: LinearProgressIndicator(
+              value: progress / 100.0,
+              minHeight: 6,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              valueColor: AlwaysStoppedAnimation(
+                _progressColor(progress, theme),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Color _progressColor(double pct, ThemeData theme) {
+    if (pct >= 80) return AppColors.sageGreen;
+    if (pct >= 40) return AppColors.warmAmber;
+    return AppColors.dustyRose;
+  }
+}
 
 Map<DayMood, int> _moodCountsOf(List<MonthSpreadDay> days) {
   final counts = <DayMood, int>{for (final m in DayMood.values) m: 0};

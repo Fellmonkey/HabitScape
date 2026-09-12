@@ -8,11 +8,17 @@ import '../../habits/domain/completion.dart';
 /// it's 🔴 in Y%. Pairs per-day completion with day mood.
 class MoodCorrelation {
   const MoodCorrelation({
+    required this.trackedDays,
     required this.fullDays,
     required this.fullDaysGood,
     required this.emptyDays,
     required this.emptyDaysBad,
   });
+
+  /// Days with expectations and a mood note — the sample the insight is
+  /// built from. Non-zero means the user is recording, just not the days
+  /// the comparison needs.
+  final int trackedDays;
 
   /// Days where every expected habit was done (with a mood note).
   final int fullDays;
@@ -49,6 +55,7 @@ MoodCorrelation computeMoodCorrelation({
     if (mood != null) moodByDay[note.date] = mood;
   }
 
+  var trackedDays = 0;
   var fullDays = 0;
   var fullDaysGood = 0;
   var emptyDays = 0;
@@ -57,6 +64,7 @@ MoodCorrelation computeMoodCorrelation({
     if (day.expected == 0) continue;
     final mood = moodByDay[day.date.unixSeconds];
     if (mood == null) continue;
+    trackedDays++;
     if (day.done == day.expected) {
       fullDays++;
       if (mood == DayMood.good) fullDaysGood++;
@@ -66,6 +74,7 @@ MoodCorrelation computeMoodCorrelation({
     }
   }
   return MoodCorrelation(
+    trackedDays: trackedDays,
     fullDays: fullDays,
     fullDaysGood: fullDaysGood,
     emptyDays: emptyDays,

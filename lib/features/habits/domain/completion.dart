@@ -92,6 +92,26 @@ class MonthSpreadDay {
   double get ratio => expected == 0 ? 0.0 : (done / expected).clamp(0.0, 1.0);
 }
 
+/// Completion % across the month's elapsed days — days still in the future
+/// are left out, so a running month is never dragged down by them.
+/// Null when nothing was expected on the elapsed days.
+///
+/// Pure — no DB access.
+double? monthCompletionPct({
+  required List<MonthSpreadDay> days,
+  required DateTime today,
+}) {
+  final cutoff = today.toMidnight;
+  var expected = 0;
+  var done = 0;
+  for (final day in days) {
+    if (day.date.isAfter(cutoff)) continue;
+    expected += day.expected;
+    done += day.done;
+  }
+  return expected == 0 ? null : done / expected * 100.0;
+}
+
 /// Builds the month-spread days for one month from raw DAO data.
 /// Pure — no DB access. Empty days stay present so the grid stays dense.
 List<MonthSpreadDay> computeMonthSpreadDays({

@@ -264,6 +264,7 @@ void main() {
 
       final corr = computeMoodCorrelation(days: days, notes: notes);
 
+      expect(corr.trackedDays, 2); // full + empty carry a note
       expect(corr.fullDays, 1);
       expect(corr.fullDaysGood, 1);
       expect(corr.emptyDays, 1);
@@ -279,9 +280,34 @@ void main() {
 
       final corr = computeMoodCorrelation(days: days, notes: const []);
 
+      expect(corr.trackedDays, 0);
       expect(corr.hasData, isFalse);
       expect(corr.goodShareOnFull, isNull);
       expect(corr.badShareOnEmpty, isNull);
+    });
+
+    test('tracked days are counted even when the insight has nothing to say', () {
+      final days = [
+        DayCompletion(date: DateTime.utc(2026, 1, 1), expected: 2, done: 1),
+        DayCompletion(date: DateTime.utc(2026, 1, 2), expected: 2, done: 1),
+      ];
+      final notes = [
+        makeDayNote(
+          date: DateTime.utc(2026, 1, 1).unixSeconds,
+          mood: DayMood.ok,
+        ),
+        makeDayNote(
+          date: DateTime.utc(2026, 1, 2).unixSeconds,
+          mood: DayMood.good,
+        ),
+      ];
+
+      final corr = computeMoodCorrelation(days: days, notes: notes);
+
+      expect(corr.trackedDays, 2); // the user is recording…
+      expect(corr.hasData, isFalse); // …but never fully done or fully empty
+      expect(corr.fullDays, 0);
+      expect(corr.emptyDays, 0);
     });
   });
 

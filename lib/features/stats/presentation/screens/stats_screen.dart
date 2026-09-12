@@ -297,14 +297,8 @@ class _MoodCorrelationCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderL,
       ),
-      child: !corr.hasData
-          ? Text(
-              'Заполняй «Момент дня» и отмечай привычки — покажем, как настроение связано с выполнением.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            )
-          : Column(
+      child: corr.hasData
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _CorrRow(
@@ -321,6 +315,14 @@ class _MoodCorrelationCard extends StatelessWidget {
                       : 'пока мало таких дней',
                 ),
               ],
+            )
+          : Text(
+              corr.trackedDays > 0
+                  ? 'Пока мало данных для сравнения: нужны дни, где выполнено всё или, наоборот, ничего.'
+                  : 'Заполняй «Момент дня» и отмечай привычки — покажем, как настроение связано с выполнением.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
     );
   }

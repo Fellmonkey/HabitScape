@@ -65,6 +65,9 @@ abstract final class K {
   /// Day-moment feed under the grid.
   static const monthSpreadMoments = Key('month_spread_moments');
 
+  /// Month completion percentage in the summary strip.
+  static const monthSpreadProgress = Key('month_spread_progress');
+
   // ── Habit card ─────────────────────────────────────────────
   /// Per-habit card: `habit_card_$id`
   static Key habitCard(int id) => Key('habit_card_$id');
