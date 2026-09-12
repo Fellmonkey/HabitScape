@@ -475,6 +475,7 @@ class _CalendarGrid extends StatelessWidget {
                         context,
                         cell: week[c]!,
                         isToday: week[c]!.date == today,
+                        isFuture: week[c]!.date.isAfter(today),
                       )
                     : const SizedBox.shrink(),
               ),
@@ -502,10 +503,12 @@ class _CalendarGrid extends StatelessWidget {
     BuildContext context, {
     required MonthSpreadDay cell,
     required bool isToday,
+    required bool isFuture,
   }) {
     final cellWidget = _DayCell(
       day: cell,
       isToday: isToday,
+      isFuture: isFuture,
       onTap: onDayTap,
       dayKey: debugDayKeys ? K.monthSpreadDay(cell.date.day) : null,
     );
@@ -515,17 +518,21 @@ class _CalendarGrid extends StatelessWidget {
 }
 
 /// A single day cell: mood-tinted background, habit progress, a dot when a
-/// day moment was written, today highlighted with a ring.
+/// day moment was written, today highlighted with a ring. Future days show
+/// the neutral marker instead of an empty progress bar, so a day that hasn't
+/// happened yet never reads as missed.
 class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.isToday,
+    required this.isFuture,
     required this.onTap,
     this.dayKey,
   });
 
   final MonthSpreadDay day;
   final bool isToday;
+  final bool isFuture;
   final ValueChanged<DateTime> onTap;
 
   /// Test key (`K.monthSpreadDay(n)`); null in the offscreen capture copy.
@@ -538,7 +545,7 @@ class _DayCell extends StatelessWidget {
     final bg =
         mood?.color.withValues(alpha: 0.3) ??
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
-    final hasHabits = day.expected > 0;
+    final hasHabits = day.expected > 0 && !isFuture;
 
     return Padding(
       padding: const EdgeInsets.all(2),
