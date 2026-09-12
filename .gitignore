@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.github/workflows/build_release_apk.yml
+android/app-signing-key.properties
+/docs
