@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
@@ -77,8 +78,14 @@ class HabitDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   PopupMenuButton<String>(
+                    key: K.habitDetailMenu,
                     onSelected: (val) => _handleMenu(context, ref, val, habit),
                     itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        key: K.habitDetailSkip,
+                        value: 'skip',
+                        child: Text('Пропустить сегодня'),
+                      ),
                       PopupMenuItem(
                         value: habit.isFocus ? 'unfocus' : 'focus',
                         child: Text(
@@ -186,6 +193,15 @@ class HabitDetailScreen extends ConsumerWidget {
     final nav = Navigator.of(context);
 
     switch (action) {
+      case 'skip':
+        await actions.markSkip(habitId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Пропуск засчитан. Ничего не сброшено.'),
+            ),
+          );
+        }
       case 'focus':
         final ok = await actions.toggleFocus(habitId, isFocus: true);
         if (!ok && context.mounted) {
@@ -245,8 +261,6 @@ class _HabitInfoRow extends StatelessWidget {
         _InfoChip(icon: icon.icon, label: icon.label),
         _InfoChip(icon: Icons.repeat, label: freqLabel),
         _InfoChip(icon: Icons.schedule, label: tod.localizedName),
-        if (habit.category.isNotEmpty)
-          _InfoChip(icon: Icons.label_outline, label: habit.category),
       ],
     );
   }
@@ -314,18 +328,7 @@ class _MonthStatsSection extends StatelessWidget {
               value: '${metrics.absoluteCompletions}',
             ),
             const SizedBox(width: 8),
-            _StatCard(label: 'Макс. серия', value: '${metrics.maxStreak}'),
-            const SizedBox(width: 8),
             _StatCard(label: 'Пропуски', value: '${metrics.skipCount}'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            _StatCard(
-              label: 'База',
-              value: '${metrics.absoluteCompletions}/${metrics.adjustedBase}',
-            ),
           ],
         ),
       ],

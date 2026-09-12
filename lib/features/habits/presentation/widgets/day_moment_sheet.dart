@@ -32,6 +32,10 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   late final AnimationController _saveController;
   late final Animation<double> _saveScale;
   DayMood? _mood;
+
+  /// Legacy 1–5 "time quality" value. No longer asked (it added friction
+  /// without ever being shown), but preserved on edit so old notes don't
+  /// silently lose data.
   int? _timeQuality;
 
   @override
@@ -173,9 +177,12 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
             TextField(
               key: K.dayMomentField,
               controller: _momentController,
+              autofocus: true,
               maxLines: 3,
               maxLength: 200,
               textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _save(),
               decoration: InputDecoration(
                 hintText: 'Например: встретил друга, гулял у залива…',
                 border: OutlineInputBorder(borderRadius: AppRadius.borderM),
@@ -202,32 +209,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
                   ),
                 );
               }).toList(),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Text(
-                  'Как рационально использовал время?',
-                  style: theme.textTheme.labelLarge,
-                ),
-                const SizedBox(width: 4),
-                Tooltip(
-                  message:
-                      'Оцени по шкале 1–5: 1 — впустую, 2 — лениво, '
-                      '3 — нормально, 4 — хорошо, 5 — максимально',
-                  triggerMode: TooltipTriggerMode.tap,
-                  child: Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _TimeQualitySelector(
-              selected: _timeQuality,
-              onChanged: (v) => setState(() => _timeQuality = v),
             ),
             const SizedBox(height: 20),
             ScaleTransition(
@@ -273,7 +254,7 @@ class _DayMomentHelpSheet extends StatelessWidget {
           Text('Зачем это нужно', style: theme.textTheme.headlineMedium),
           const SizedBox(height: 12),
           Text(
-            'Это вечерний ритуал на 3 минуты — он превращает прожитые дни '
+            'Это вечерний ритуал на 15 секунд — он превращает прожитые дни '
             'из «ещё одного вторника» в дни, которые ты помнишь.',
             style: theme.textTheme.bodyLarge,
           ),
@@ -310,113 +291,7 @@ class _DayMomentHelpSheet extends StatelessWidget {
   }
 }
 
-/// Time quality selector — 5 levels from "Wasted" (1) to "Max" (5),
-/// rendered as a row of tappable drops.
-class _TimeQualitySelector extends StatelessWidget {
-  const _TimeQualitySelector({required this.selected, required this.onChanged});
-
-  /// Current value (1–5), null when not set.
-  final int? selected;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final levels = TimeQuality.values.reversed.toList(); // show 5 → 1
-    final current = TimeQuality.fromValue(selected);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (final level in levels)
-              Expanded(
-                child: _QualityDrop(
-                  level: level,
-                  selected: selected == level.value,
-                  onTap: () =>
-                      onChanged(selected == level.value ? null : level.value),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 150),
-          child: Text(
-            current == null
-                ? 'Не отмечено'
-                : '${current.label} — день прошёл ${current == TimeQuality.max
-                      ? 'идеально'
-                      : current == TimeQuality.good
-                      ? 'хорошо'
-                      : current == TimeQuality.normal
-                      ? 'нормально'
-                      : current == TimeQuality.lazy
-                      ? 'лениво'
-                      : 'впустую'}',
-            key: ValueKey(selected),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color:
-                  current?.color ??
-                  theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A single tappable drop in the time-quality selector.
-class _QualityDrop extends StatelessWidget {
-  const _QualityDrop({
-    required this.level,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final TimeQuality level;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      key: K.timeQualityLevel(level.value),
-      borderRadius: AppRadius.borderS,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          height: selected ? 30 : 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: selected ? level.color : level.color.withValues(alpha: 0.25),
-            border: Border.all(
-              color: level.color.withValues(alpha: selected ? 1 : 0.5),
-              width: 1.5,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: level.color.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// Short help row: icon + title + description.
 class _HelpItem extends StatelessWidget {
   const _HelpItem({
     required this.icon,

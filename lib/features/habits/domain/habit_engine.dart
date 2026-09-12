@@ -73,8 +73,6 @@ class HabitEngine {
 
     var doneCount = 0;
     var skipCount = 0;
-    var maxStreak = 0;
-    var currentStreak = 0;
     var morningCount = 0;
     var afternoonCount = 0;
     var eveningCount = 0;
@@ -86,8 +84,6 @@ class HabitEngine {
       switch (log.status) {
         case LogStatus.done:
           doneCount++;
-          currentStreak++;
-          maxStreak = max(maxStreak, currentStreak);
           // Categorize time of day.
           final hour = log.loggedHour;
           if (hour != null) {
@@ -119,7 +115,6 @@ class HabitEngine {
     return HabitMetrics(
       completionPct: pct,
       absoluteCompletions: doneCount,
-      maxStreak: maxStreak,
       morningRatio: mRatio,
       afternoonRatio: aRatio,
       eveningRatio: eRatio,
@@ -135,7 +130,6 @@ class HabitMetrics {
   const HabitMetrics({
     required this.completionPct,
     required this.absoluteCompletions,
-    required this.maxStreak,
     required this.morningRatio,
     required this.afternoonRatio,
     required this.eveningRatio,
@@ -146,7 +140,6 @@ class HabitMetrics {
 
   final double completionPct;
   final int absoluteCompletions;
-  final int maxStreak;
   final double morningRatio;
   final double afternoonRatio;
   final double eveningRatio;

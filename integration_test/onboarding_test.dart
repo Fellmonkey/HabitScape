@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:rythm/core/database/app_database.dart';
@@ -34,8 +33,7 @@ Future<void> tapThrough(WidgetTester tester, Finder target) async {
   await settle(tester);
 }
 
-/// Dismisses the greenhouse tour on a fresh DB (2 steps; the habit-card
-/// step is skipped because there are no habits).
+/// Dismisses the greenhouse tour on a fresh DB (2 steps).
 Future<void> dismissGreenhouseTour(WidgetTester tester) async {
   await waitForTour(tester);
   await tapThrough(tester, find.byKey(K.dayMomentCard));
@@ -64,29 +62,10 @@ void main() {
     await tapThrough(tester, find.byKey(K.dayMomentCard));
     expect(find.text(TourContent.greenhouseSpread.description), findsOneWidget);
 
-    // Seed a habit so step 3 (the habit card) has a target.
-    final now = DateTime.now();
-    final habitId = await db.habitsDao.insertHabit(
-      HabitsCompanion(
-        name: const Value('Зарядка'),
-        icon: const Value('check'),
-        frequencyType: const Value('daily'),
-        frequencyValue: const Value('{}'),
-        timeOfDay: const Value('anytime'),
-        createdAt: Value(DateTime.utc(now.year, now.month - 1, 28).unixSeconds),
-      ),
-    );
-    await settle(tester);
-
-    // Step 3 — habit card gestures.
+    // Finish the tour — nothing else to teach.
     await tapThrough(tester, find.byKey(K.openMonthSpread));
-    expect(find.text(TourContent.greenhouseHabit.description), findsOneWidget);
-
-    // Finish the tour.
-    await tapThrough(tester, find.byKey(K.habitCard(habitId)));
     expect(find.text(TourContent.greenhouseMoment.description), findsNothing);
     expect(find.text(TourContent.greenhouseSpread.description), findsNothing);
-    expect(find.text(TourContent.greenhouseHabit.description), findsNothing);
 
     // The flag was persisted as soon as the tour started.
     final prefs = await SharedPreferences.getInstance();

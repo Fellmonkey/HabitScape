@@ -287,7 +287,6 @@ RhythmStats computeRhythmStats({
 class StatsOverview {
   const StatsOverview({
     required this.days,
-    required this.monthMoods,
     required this.yearTotalDone,
     required this.moodCorrelation,
     required this.weekTrend,
@@ -296,9 +295,6 @@ class StatsOverview {
 
   /// Last 365 days (oldest first) for the heatmap.
   final List<DayCompletion> days;
-
-  /// Mood → number of days this month with that mood.
-  final Map<DayMood, int> monthMoods;
 
   final int yearTotalDone;
 
@@ -311,7 +307,6 @@ class StatsOverview {
 StatsOverview buildStatsOverview({
   required List<Habit> habits,
   required List<HabitLog> yearLogs,
-  required List<DayNote> monthNotes,
   required List<DayNote> yearNotes,
   required DateTime now,
 }) {
@@ -325,15 +320,8 @@ StatsOverview buildStatsOverview({
     end: yearEnd,
   );
 
-  final monthMoods = <DayMood, int>{for (final m in DayMood.values) m: 0};
-  for (final note in monthNotes) {
-    final mood = note.mood;
-    if (mood != null) monthMoods[mood] = monthMoods[mood]! + 1;
-  }
-
   return StatsOverview(
     days: days,
-    monthMoods: monthMoods,
     yearTotalDone: yearLogs.where((l) => l.status == LogStatus.done).length,
     moodCorrelation: computeMoodCorrelation(days: days, notes: yearNotes),
     weekTrend: computeWeekTrend(habits: habits, logs: yearLogs, now: now),

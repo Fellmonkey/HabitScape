@@ -38,10 +38,6 @@ void main() {
       await tester.tap(find.text('Хороший день'));
       await tester.pumpAndSettle();
 
-      // Pick time quality (level 5 — max).
-      await tester.tap(find.byKey(K.timeQualityLevel(5)));
-      await tester.pumpAndSettle();
-
       await tester.tap(find.byKey(K.dayMomentSave));
       await tester.pumpAndSettle();
 
@@ -53,7 +49,6 @@ void main() {
       final note = await db.dayNotesDao.getNoteForDate(todayTimestamp());
       expect(note, isNotNull);
       expect(note!.moment, 'Встретил друга у залива');
-      expect(note.timeQuality, 5);
     });
 
     testWidgets('mood-only note and editing an existing note', (tester) async {

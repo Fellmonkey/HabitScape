@@ -33,9 +33,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     with OnboardingTourMixin<GreenhouseScreen> {
   bool _hideCompleted = false;
 
-  /// Whether the first habit card is already wrapped for the tour.
-  bool _habitCardWrapped = false;
-
   @override
   String get tourScope => OnboardingTours.greenhouse;
 
@@ -45,20 +42,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
     final theme = Theme.of(context);
-
-    // First habit appeared after the tour ran without a card — start the
-    // one-step mini-tour. The pending flag is only set by the UI create path.
-    ref.listen(activeHabitsProvider, (prev, next) {
-      final before = prev?.value?.length ?? 0;
-      final after = next.value?.length ?? 0;
-      if (before == 0 &&
-          after > 0 &&
-          ref.read(onboardingFlagsProvider.notifier).habitTutorialPending) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) startPendingTour();
-        });
-      }
-    });
 
     return Scaffold(
       body: SafeArea(
@@ -240,18 +223,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             final habit = items[index];
             final log = logByHabit[habit.id];
             // Isolates card animations so one card doesn't repaint the sliver.
-            final card = RepaintBoundary(
+            return RepaintBoundary(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: HabitCard(habit: habit, log: log),
               ),
             );
-            // Only the first card is wrapped; re-wrapping would clash keys.
-            if (!_habitCardWrapped) {
-              _habitCardWrapped = true;
-              return hintTarget(AppHintIds.greenhouseHabit, card);
-            }
-            return card;
           },
         ),
       ),
@@ -268,6 +245,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   List<_HabitGroup> _groupByTimeOfDay(List<Habit> habits, List<HabitLog> logs) {
     final today = DateTime.now();
+    final focus = <Habit>[];
     final morning = <Habit>[];
     final afternoon = <Habit>[];
     final evening = <Habit>[];
@@ -277,6 +255,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     for (final h in habits) {
       if (!isExpectedToday(h, today)) {
         notToday.add(h);
+        continue;
+      }
+      // Focus habits get their own section at the top — that is the whole
+      // point of marking 1–5 habits as focus.
+      if (h.isFocus) {
+        focus.add(h);
         continue;
       }
       switch (enums.TimeOfDay.fromString(h.timeOfDay)) {
@@ -292,6 +276,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     }
 
     return [
+      if (focus.isNotEmpty)
+        _HabitGroup(
+          label: 'Фокус',
+          icon: Icons.star_rounded,
+          color: AppColors.warmAmber,
+          habits: focus,
+          showMarkAll: false,
+        ),
       if (morning.isNotEmpty)
         _HabitGroup(
           label: enums.TimeOfDay.morning.localizedName,

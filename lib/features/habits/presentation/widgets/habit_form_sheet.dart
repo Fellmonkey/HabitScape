@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import 'icon_picker.dart';
@@ -31,6 +32,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
   late final Set<int> _cycleDays;
   late final Map<int, String> _cycleLabels;
   DateTime? _cycleStartDate;
+  bool _advancedExpanded = false;
 
   bool get _isEdit => widget.habit != null;
 
@@ -44,6 +46,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _frequency = FrequencyType.fromString(h.frequencyType);
       _timeOfDay = TimeOfDay.fromString(h.timeOfDay);
       _icon = HabitIcon.fromString(h.icon);
+      _advancedExpanded = true; // editing: show every field up front
 
       _selectedWeekdays = parseWeekdays(h.frequencyValue).toSet();
       final parsedX = parseXValue(h.frequencyValue);
@@ -141,7 +144,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     final theme = Theme.of(context);
 
     return DraggableScrollableSheet(
-      initialChildSize: _isEdit ? 0.75 : 0.65,
+      initialChildSize: _isEdit ? 0.8 : 0.6,
       minChildSize: 0.4,
       maxChildSize: 0.95,
       expand: false,
@@ -166,26 +169,12 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
 
             // ── Name ──
             TextField(
+              key: K.habitNameField,
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'Название',
                 border: OutlineInputBorder(borderRadius: AppRadius.borderM),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // ── Time of Day ──
-            Text('Время дня', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: TimeOfDay.values.map((t) {
-                return ChoiceChip(
-                  label: Text(t.localizedName),
-                  selected: _timeOfDay == t,
-                  onSelected: (_) => setState(() => _timeOfDay = t),
-                );
-              }).toList(),
             ),
             const SizedBox(height: 16),
 
@@ -225,17 +214,59 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
               ..._buildCycleSelector(theme),
             const SizedBox(height: 8),
 
-            // ── Habit icon ──
-            Text('Иконка', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            IconPicker(
-              selected: _icon,
-              onSelected: (ic) => setState(() => _icon = ic),
+            // ── Optional settings (time, icon) ──
+            // Hidden by default: a new habit needs a name and a frequency.
+            // Everything else has a sensible default.
+            ExpansionTile(
+              initiallyExpanded: _advancedExpanded,
+              onExpansionChanged: (v) => _advancedExpanded = v,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 8),
+              shape: const Border(),
+              collapsedShape: const Border(),
+              title: Text('Настроить', style: theme.textTheme.labelLarge),
+              subtitle: Text(
+                '${_timeOfDay.localizedName} · ${_icon.label}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Время дня', style: theme.textTheme.labelLarge),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 8,
+                    children: TimeOfDay.values.map((t) {
+                      return ChoiceChip(
+                        label: Text(t.localizedName),
+                        selected: _timeOfDay == t,
+                        onSelected: (_) => setState(() => _timeOfDay = t),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Иконка', style: theme.textTheme.labelLarge),
+                ),
+                const SizedBox(height: 8),
+                IconPicker(
+                  selected: _icon,
+                  onSelected: (ic) => setState(() => _icon = ic),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // ── Save Button ──
             FilledButton(
+              key: K.habitCreateButton,
               onPressed: _save,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -343,10 +374,9 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
           return sortedDays.map((day) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: TextField(
-                controller: TextEditingController(
-                  text: _cycleLabels[day] ?? '',
-                ),
+              child: TextFormField(
+                key: ValueKey('cycle_label_$day'),
+                initialValue: _cycleLabels[day] ?? '',
                 decoration: InputDecoration(
                   labelText: 'Подпись для дня $day',
                   border: OutlineInputBorder(borderRadius: AppRadius.borderS),

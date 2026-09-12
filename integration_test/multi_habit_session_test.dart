@@ -6,8 +6,8 @@ import 'package:rythm/core/keys.dart';
 
 import 'helpers/pump_app.dart';
 
-/// Helper: opens the create-habit sheet, fills in [name], picks [timeOfDay]
-/// chip label, and taps the create button.
+/// Helper: opens the create-habit sheet, fills in [name], picks a [timeOfDay]
+/// chip under «Настроить», picks a [frequency], and taps the create button.
 Future<void> _createHabit(
   WidgetTester tester, {
   required String name,
@@ -19,18 +19,20 @@ Future<void> _createHabit(
 
   await tester.enterText(find.byKey(K.habitNameField), name);
 
-  // Pick time of day chip.
-  await tester.tap(find.text(timeOfDay).last);
-  await tester.pumpAndSettle();
-
   // Pick frequency chip.
   await tester.tap(find.text(frequency).last);
   await tester.pumpAndSettle();
 
-  // Scroll down inside the DraggableScrollableSheet to reach the button.
-  await tester.drag(find.text('Семечко'), const Offset(0, -200));
+  // Time of day lives under the collapsed «Настроить» section.
+  await tester.tap(find.text('Настроить'));
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.text(timeOfDay).last);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(timeOfDay).last);
   await tester.pumpAndSettle();
 
+  await tester.ensureVisible(find.byKey(K.habitCreateButton));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(K.habitCreateButton));
   await tester.pumpAndSettle();
 }

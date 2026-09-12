@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -95,25 +94,6 @@ class StatsScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _MoodCorrelationCard(corr: stats.moodCorrelation),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-                // ── Mood counts ──
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Настроение за месяц',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _MoodRow(stats: stats),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -518,65 +498,6 @@ class _HeatmapCard extends StatelessWidget {
           const SizedBox(height: 4),
           const HeatmapLegend(),
         ],
-      ),
-    );
-  }
-}
-
-// ── Mood row ─────────────────────────────────────────────────
-
-class _MoodRow extends StatelessWidget {
-  const _MoodRow({required this.stats});
-
-  final StatsOverview stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final good = stats.monthMoods[DayMood.good] ?? 0;
-    final ok = stats.monthMoods[DayMood.ok] ?? 0;
-    final bad = stats.monthMoods[DayMood.bad] ?? 0;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: AppRadius.borderL,
-      ),
-      child: Row(
-        children: [
-          _MoodPill(color: DayMood.good.color, label: '$good 🟢'),
-          const SizedBox(width: 8),
-          _MoodPill(color: DayMood.ok.color, label: '$ok 🟡'),
-          const SizedBox(width: 8),
-          _MoodPill(color: DayMood.bad.color, label: '$bad 🔴'),
-        ],
-      ),
-    );
-  }
-}
-
-class _MoodPill extends StatelessWidget {
-  const _MoodPill({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.14),
-          borderRadius: AppRadius.borderS,
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelLarge,
-        ),
       ),
     );
   }

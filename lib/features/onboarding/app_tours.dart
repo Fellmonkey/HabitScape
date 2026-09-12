@@ -7,7 +7,6 @@ import 'tour_content.dart';
 abstract final class AppHintIds {
   static const greenhouseMoment = 'greenhouse-moment';
   static const greenhouseSpread = 'greenhouse-spread';
-  static const greenhouseHabit = 'greenhouse-habit';
   static const spreadGrid = 'spread-grid';
   static const spreadDay = 'spread-day';
   static const settingsExport = 'settings-export';
@@ -34,22 +33,8 @@ abstract final class AppTours {
         title: TourContent.greenhouseSpread.title,
         description: TourContent.greenhouseSpread.description,
       ),
-      HintStep(
-        targetId: AppHintIds.greenhouseHabit,
-        title: TourContent.greenhouseHabit.title,
-        description: TourContent.greenhouseHabit.description,
-        waitTimeout: Duration.zero,
-        missingTargetPolicy: HintMissingTargetPolicy.skipStep,
-      ),
     ],
   );
-
-  /// Mini-tour for the first habit card (greenhouse only).
-  static HintStep get greenhouseHabitPendingStep => HintStep(
-        targetId: AppHintIds.greenhouseHabit,
-        title: TourContent.greenhouseHabit.title,
-        description: TourContent.greenhouseHabit.description,
-      );
 
   static HintTour spread() => HintTour(
     id: AppTourIds.spread,

@@ -15,17 +15,10 @@ final onboardingFlagsProvider =
 
 class OnboardingFlags extends AsyncNotifier<Set<String>> {
   static const _key = 'onboarding_seen';
-  static const _habitPendingKey = 'greenhouse_habit_pending';
-
-  /// True when a first habit was created after the main tour already ran
-  /// (its habit-card step was skipped — there was no card yet).
-  bool _habitTutorialPending = false;
-  bool get habitTutorialPending => _habitTutorialPending;
 
   @override
   Future<Set<String>> build() async {
     final prefs = await ref.watch(sharedPrefsProvider.future);
-    _habitTutorialPending = prefs.getBool(_habitPendingKey) ?? false;
     return prefs.getStringList(_key)?.toSet() ?? <String>{};
   }
 
@@ -39,26 +32,10 @@ class OnboardingFlags extends AsyncNotifier<Set<String>> {
     await prefs.setStringList(_key, state.value?.toList() ?? const []);
   }
 
-  /// Arms the first-habit mini-tour (greenhouse shows it on the next card).
-  Future<void> setHabitTutorialPending() async {
-    _habitTutorialPending = true;
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await prefs.setBool(_habitPendingKey, true);
-  }
-
-  /// Consumes the pending first-habit tutorial.
-  Future<void> clearHabitTutorialPending() async {
-    _habitTutorialPending = false;
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await prefs.remove(_habitPendingKey);
-  }
-
   /// Clears all tour flags — debug menu and Settings.
   Future<void> resetAll() async {
     state = const AsyncData(<String>{});
-    _habitTutorialPending = false;
     final prefs = await ref.read(sharedPrefsProvider.future);
     await prefs.remove(_key);
-    await prefs.remove(_habitPendingKey);
   }
 }

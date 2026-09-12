@@ -17,8 +17,6 @@ final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
   final now = DateTime.now();
   final yearStart = now.toMidnight.subtract(const Duration(days: 364));
   final yearEnd = now.toMidnight.add(const Duration(days: 1));
-  final monthStart = DateTime.utc(now.year, now.month, 1);
-  final monthEnd = DateTime.utc(now.year, now.month + 1, 1);
 
   final habits = await habitsDao.getActiveHabits();
   final yearLogs = await logsDao.getLogsInRange(
@@ -29,18 +27,10 @@ final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
     yearStart.unixSeconds,
     yearEnd.unixSeconds,
   );
-  // Month moods derive from the year window — no second notes query.
-  final monthNotes = yearNotes
-      .where(
-        (n) =>
-            n.date >= monthStart.unixSeconds && n.date < monthEnd.unixSeconds,
-      )
-      .toList();
 
   return buildStatsOverview(
     habits: habits,
     yearLogs: yearLogs,
-    monthNotes: monthNotes,
     yearNotes: yearNotes,
     now: now,
   );

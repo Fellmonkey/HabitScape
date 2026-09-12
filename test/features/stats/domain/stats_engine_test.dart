@@ -115,7 +115,6 @@ void main() {
       final overview = buildStatsOverview(
         habits: [habit],
         yearLogs: yearLogs,
-        monthNotes: const [],
         yearNotes: const [],
         now: DateTime.utc(2026, 1, 31),
       );
@@ -125,34 +124,10 @@ void main() {
       expect(overview.days.length, 365);
     });
 
-    test('mood counts only non-null moods', () {
-      final overview = buildStatsOverview(
-        habits: const [],
-        yearLogs: const [],
-        monthNotes: [
-          makeDayNote(
-            date: DateTime.utc(2026, 1, 3).unixSeconds,
-            mood: DayMood.good,
-          ),
-          makeDayNote(
-            date: DateTime.utc(2026, 1, 4).unixSeconds,
-            mood: DayMood.bad,
-          ),
-        ],
-        yearNotes: const [],
-        now: DateTime.utc(2026, 1, 31),
-      );
-
-      expect(overview.monthMoods[DayMood.good], 1);
-      expect(overview.monthMoods[DayMood.ok], 0);
-      expect(overview.monthMoods[DayMood.bad], 1);
-    });
-
     test('empty data yields no insights', () {
       final overview = buildStatsOverview(
         habits: const [],
         yearLogs: const [],
-        monthNotes: const [],
         yearNotes: const [],
         now: DateTime.utc(2026, 1, 31),
       );
@@ -286,29 +261,32 @@ void main() {
       expect(corr.badShareOnEmpty, isNull);
     });
 
-    test('tracked days are counted even when the insight has nothing to say', () {
-      final days = [
-        DayCompletion(date: DateTime.utc(2026, 1, 1), expected: 2, done: 1),
-        DayCompletion(date: DateTime.utc(2026, 1, 2), expected: 2, done: 1),
-      ];
-      final notes = [
-        makeDayNote(
-          date: DateTime.utc(2026, 1, 1).unixSeconds,
-          mood: DayMood.ok,
-        ),
-        makeDayNote(
-          date: DateTime.utc(2026, 1, 2).unixSeconds,
-          mood: DayMood.good,
-        ),
-      ];
+    test(
+      'tracked days are counted even when the insight has nothing to say',
+      () {
+        final days = [
+          DayCompletion(date: DateTime.utc(2026, 1, 1), expected: 2, done: 1),
+          DayCompletion(date: DateTime.utc(2026, 1, 2), expected: 2, done: 1),
+        ];
+        final notes = [
+          makeDayNote(
+            date: DateTime.utc(2026, 1, 1).unixSeconds,
+            mood: DayMood.ok,
+          ),
+          makeDayNote(
+            date: DateTime.utc(2026, 1, 2).unixSeconds,
+            mood: DayMood.good,
+          ),
+        ];
 
-      final corr = computeMoodCorrelation(days: days, notes: notes);
+        final corr = computeMoodCorrelation(days: days, notes: notes);
 
-      expect(corr.trackedDays, 2); // the user is recording…
-      expect(corr.hasData, isFalse); // …but never fully done or fully empty
-      expect(corr.fullDays, 0);
-      expect(corr.emptyDays, 0);
-    });
+        expect(corr.trackedDays, 2); // the user is recording…
+        expect(corr.hasData, isFalse); // …but never fully done or fully empty
+        expect(corr.fullDays, 0);
+        expect(corr.emptyDays, 0);
+      },
+    );
   });
 
   group('computeWeekTrend', () {

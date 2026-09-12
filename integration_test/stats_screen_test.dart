@@ -74,7 +74,8 @@ void main() {
         scrollable: statsList,
       );
       expect(find.byKey(K.statsRhythm), findsOneWidget);
-      expect(find.text('Настроение за месяц'), findsOneWidget);
+      // Mood counts live in the month spread summary, not here.
+      expect(find.text('Настроение за месяц'), findsNothing);
     });
 
     testWidgets('empty state shows no-data message', (tester) async {

@@ -16,19 +16,6 @@ import 'package:rythm/features/settings/presentation/screens/settings_screen.dar
 import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Integration-test flags notifier: never arms the one-step «first habit»
-/// mini-tour. Tests create their first habit through the same UI form as a
-/// real user, which would otherwise pop a spotlight and hang pumpAndSettle
-/// (the showcase tooltip bounces forever). The mini-tour itself is covered
-/// by unit tests on the flags + mixin.
-class _NoHabitTutorialFlags extends OnboardingFlags {
-  @override
-  Future<void> setHabitTutorialPending() async {}
-
-  @override
-  Future<void> clearHabitTutorialPending() async {}
-}
-
 /// Creates an in-memory [AppDatabase] for integration tests (FK enabled).
 AppDatabase createIntegrationTestDatabase() {
   return AppDatabase.test(
@@ -117,7 +104,6 @@ Future<AppDatabase> pumpApp(
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPrefsProvider.overrideWith((_) async => prefs),
-        onboardingFlagsProvider.overrideWith(_NoHabitTutorialFlags.new),
       ],
       child: MaterialApp.router(
         title: 'HabitScape — integration test',

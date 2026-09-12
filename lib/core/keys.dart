@@ -37,9 +37,6 @@ abstract final class K {
   /// Opens the month spread from the greenhouse header.
   static const openMonthSpread = Key('open_month_spread');
 
-  /// Per-level drop in the day-moment sheet: `time_quality_level_$value`
-  static Key timeQualityLevel(int value) => Key('time_quality_level_$value');
-
   // ── Month goals ────────────────────────────────────────────
   static const monthGoalsCard = Key('month_goals_card');
   static const monthGoalsAdd = Key('month_goals_add');
@@ -75,9 +72,9 @@ abstract final class K {
   /// Per-habit check circle: `habit_check_$id`
   static Key habitCheck(int id) => Key('habit_check_$id');
 
-  // ── Swipe menu items ───────────────────────────────────────
-  static const swipeSkip = Key('swipe_skip');
-  static const swipeDelete = Key('swipe_delete');
+  // ── Habit detail actions ───────────────────────────────────
+  static const habitDetailMenu = Key('habit_detail_menu');
+  static const habitDetailSkip = Key('habit_detail_skip');
 
   // ── Mark-all buttons per group ─────────────────────────────
   static Key markAllGroup(String timeOfDay) => Key('mark_all_$timeOfDay');
