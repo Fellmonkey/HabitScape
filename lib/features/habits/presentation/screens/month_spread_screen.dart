@@ -49,7 +49,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _month = DateTime.utc(now.year, now.month, 1);
+    _month = firstOfMonth(now);
   }
 
   int get _monthTs => _month.unixSeconds;
@@ -79,7 +79,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
   void _goToToday() {
     final now = DateTime.now();
-    setState(() => _month = DateTime.utc(now.year, now.month, 1));
+    setState(() => _month = firstOfMonth(now));
   }
 
   bool get _isCurrentMonth {

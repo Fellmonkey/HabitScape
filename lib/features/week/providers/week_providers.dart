@@ -36,14 +36,23 @@ final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 
 /// The auto-summary of the current week.
 final weekSummaryProvider = FutureProvider<WeekSummary>((ref) async {
-  final habits = await ref.watch(habitsDaoProvider).getAllHabits();
-  final logs = await ref.watch(habitLogsDaoProvider).getAllLogs();
-  final notes = await ref.watch(dayNotesDaoProvider).getAllNotes();
+  final now = DateTime.now();
+  final weekStart = weekStartOf(now);
+  final weekEnd = weekStart.add(const Duration(days: 7));
+  final habits = await ref.watch(habitsDaoProvider).getActiveHabits();
+  final logs = await ref.watch(habitLogsDaoProvider).getLogsInRange(
+    weekStart.unixSeconds,
+    weekEnd.unixSeconds,
+  );
+  final notes = await ref.watch(dayNotesDaoProvider).getNotesInRange(
+    weekStart.unixSeconds,
+    weekEnd.unixSeconds,
+  );
   return computeWeekSummary(
     habits: habits,
     logs: logs,
     notes: notes,
-    today: DateTime.now(),
+    today: now,
   );
 });
 

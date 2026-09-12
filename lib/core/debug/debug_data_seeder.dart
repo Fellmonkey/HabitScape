@@ -328,7 +328,7 @@ class DebugDataSeeder {
       for (final meta in habitMeta) {
         // Skip months before creation
         if (m.isBefore(
-          DateTime.utc(meta.createdAt.year, meta.createdAt.month, 1),
+          firstOfMonth(meta.createdAt),
         )) {
           continue;
         }
@@ -342,7 +342,7 @@ class DebugDataSeeder {
           dayAgg: dayAgg,
         );
       }
-      m = DateTime.utc(m.year, m.month + 1, 1);
+      m = nextMonthStart(m);
     }
 
     // 5. Generate today's logs as pending (so Greenhouse shows them)
@@ -371,7 +371,7 @@ class DebugDataSeeder {
         ? meta.createdAt
         : monthStart;
     // Skip the current month — that's "live" data.
-    final currentMonthStart = DateTime.utc(now.year, now.month, 1);
+    final currentMonthStart = firstOfMonth(now);
     if (!monthStart.isBefore(currentMonthStart)) return;
 
     final totalDays = daysBetweenInclusive(effectiveStart, monthEnd);
@@ -480,7 +480,7 @@ class DebugDataSeeder {
 
   /// Seeds a few month goals for the current month.
   Future<void> _generateMonthGoals(DateTime now) async {
-    final monthTs = DateTime.utc(now.year, now.month, 1).unixSeconds;
+    final monthTs = firstOfMonth(now).unixSeconds;
     final goals = [
       'Снять 4 видео на YouTube',
       'Сдать тесты по учёбе',

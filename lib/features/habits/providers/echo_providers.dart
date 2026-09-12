@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/config/app_constants.dart';
 import '../../../core/settings/shared_prefs.dart';
 import '../domain/echo.dart';
 import 'habit_providers.dart';
@@ -9,7 +10,7 @@ import 'habit_providers.dart';
 const echoSeenDatesKey = 'echo_seen_dates';
 
 /// Keep the list small — 30 memories is enough to avoid obvious repeats.
-const _maxSeenDates = 30;
+const _maxSeenDates = AppConstants.echoSeenDatesLimit;
 
 /// The echo card's data: past moments ordered for display.
 ///

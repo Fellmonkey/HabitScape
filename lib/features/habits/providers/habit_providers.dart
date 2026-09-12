@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/enums.dart';
@@ -110,7 +111,7 @@ final monthSpreadProvider = FutureProvider.autoDispose
       final notesDao = ref.watch(dayNotesDaoProvider);
 
       final monthStart = dateFromUnix(monthTs).toMidnight;
-      final monthEnd = DateTime.utc(monthStart.year, monthStart.month + 1, 1);
+      final monthEnd = nextMonthStart(monthStart);
       final startTs = monthStart.unixSeconds;
       final endTs = monthEnd.unixSeconds;
 
@@ -163,7 +164,7 @@ final habitMonthLogsProvider = FutureProvider.autoDispose
     .family<List<HabitLog>, ({int habitId, int year, int month})>((ref, p) {
       final dao = ref.watch(habitLogsDaoProvider);
       final monthStart = DateTime.utc(p.year, p.month, 1);
-      final monthEnd = DateTime.utc(p.year, p.month + 1, 1);
+      final monthEnd = nextMonthStart(monthStart);
       return dao.getLogsForHabitInRange(
         p.habitId,
         monthStart.unixSeconds,
@@ -269,7 +270,7 @@ class HabitActions extends Notifier<void> {
   Future<int> addMonthGoal(String title, {int? monthTs}) {
     final ts =
         monthTs ??
-        DateTime.utc(DateTime.now().year, DateTime.now().month, 1).unixSeconds;
+        firstOfMonth(DateTime.now()).unixSeconds;
     return _goalsDao.addGoal(ts, title);
   }
 
@@ -304,7 +305,7 @@ class HabitActions extends Notifier<void> {
   Future<bool> toggleFocus(int habitId, {required bool isFocus}) async {
     if (isFocus) {
       final count = await _habitsDao.countFocusHabits();
-      if (count >= 5) return false;
+      if (count >= AppConstants.maxFocusHabits) return false;
     }
     await _habitsDao.toggleFocus(habitId, isFocus: isFocus);
     return true;

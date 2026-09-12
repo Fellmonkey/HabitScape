@@ -120,7 +120,7 @@ List<MonthSpreadDay> computeMonthSpreadDays({
   required List<DayNote> notes,
   required DateTime monthStart,
 }) {
-  final monthEnd = DateTime.utc(monthStart.year, monthStart.month + 1, 1);
+  final monthEnd = nextMonthStart(monthStart);
   final days = computeDailyCompletion(
     habits: habits,
     logs: logs,

@@ -1,5 +1,6 @@
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/config/app_constants.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 
 import '../../habits/domain/completion.dart';
@@ -254,13 +255,7 @@ RhythmStats computeRhythmStats({
     if (log.status != LogStatus.done) continue;
     final hour = log.loggedHour;
     if (hour == null) continue;
-    final bucket = hour >= 5 && hour < 12
-        ? 'morning'
-        : hour >= 12 && hour < 18
-        ? 'day'
-        : hour >= 18
-        ? 'evening'
-        : 'night';
+    final bucket = timeBucket(hour);
     counts[bucket] = counts[bucket]! + 1;
   }
   var totalTimed = 0;
@@ -310,7 +305,9 @@ StatsOverview buildStatsOverview({
   required List<DayNote> yearNotes,
   required DateTime now,
 }) {
-  final yearStart = now.toMidnight.subtract(const Duration(days: 364));
+  final yearStart = now.toMidnight.subtract(
+    Duration(days: AppConstants.statsHeatmapDays - 1),
+  );
   final yearEnd = now.toMidnight.add(const Duration(days: 1));
 
   final days = computeDailyCompletion(

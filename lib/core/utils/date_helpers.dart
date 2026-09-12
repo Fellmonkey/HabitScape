@@ -15,6 +15,14 @@ DateTime dateFromUnix(int unixSeconds) =>
 /// Unix timestamp for midnight of today.
 int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;
 
+/// First day (midnight UTC) of [date]'s month.
+DateTime firstOfMonth(DateTime date) => DateTime.utc(date.year, date.month, 1);
+
+/// First day (midnight UTC) of the month after [date]'s month — i.e. the
+/// exclusive upper bound of [date]'s month.
+DateTime nextMonthStart(DateTime date) =>
+    DateTime.utc(date.year, date.month + 1, 1);
+
 /// Days in a given month/year.
 int daysInMonth(int year, int month) => DateTime.utc(year, month + 1, 0).day;
 
@@ -54,4 +62,13 @@ int countWeekdaysInRange(DateTime start, DateTime end, List<int> weekdays) {
 /// Days between two dates, inclusive.
 int daysBetweenInclusive(DateTime start, DateTime end) {
   return end.toMidnight.difference(start.toMidnight).inDays + 1;
+}
+
+/// Classifies an hour (0..23) into a time-of-day bucket:
+/// `morning` (5-11), `day` (12-17), `evening` (18-23), `night` (0-4).
+String timeBucket(int hour) {
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'day';
+  if (hour >= 18) return 'evening';
+  return 'night';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_constants.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../domain/stats_engine.dart';
@@ -15,7 +16,9 @@ final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
   final notesDao = ref.watch(dayNotesDaoProvider);
 
   final now = DateTime.now();
-  final yearStart = now.toMidnight.subtract(const Duration(days: 364));
+  final yearStart = now.toMidnight.subtract(
+    Duration(days: AppConstants.statsHeatmapDays - 1),
+  );
   final yearEnd = now.toMidnight.add(const Duration(days: 1));
 
   final habits = await habitsDao.getActiveHabits();

@@ -87,13 +87,14 @@ class HabitEngine {
           // Categorize time of day.
           final hour = log.loggedHour;
           if (hour != null) {
-            if (hour >= 5 && hour < 12) {
-              morningCount++;
-            } else if (hour >= 12 && hour < 18) {
-              afternoonCount++;
-            } else {
-              eveningCount++;
-            }
+            final bucket = timeBucket(hour);
+             if (bucket == 'morning') {
+               morningCount++;
+             } else if (bucket == 'day') {
+               afternoonCount++;
+             } else {
+               eveningCount++;
+             }
           }
         case LogStatus.skip:
           skipCount++; // doesn't break the streak
