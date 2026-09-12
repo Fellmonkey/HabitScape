@@ -12,7 +12,7 @@ class FakeMonthSpreadExporter implements MonthSpreadExporter {
   String? lastFileName;
   Uint8List? lastBytes;
 
-  /// Number of `capturePng` calls (the reward-gated step).
+  /// Number of `capturePng` calls.
   int captureCalls = 0;
 
   /// If set, `capturePng` returns this instead of the default payload.

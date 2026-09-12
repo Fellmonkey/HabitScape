@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:hintful/hintful.dart';
 
-import '../../../../core/ads/ads_service.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,7 +14,6 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
-import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/completion.dart';
 import '../../providers/habit_providers.dart';
 import '../month_spread_exporter.dart';
@@ -252,34 +250,12 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
 
   // ── Month spread export (PNG) ───────────────────────────────
 
-  /// Shares a PNG photo of the month; a rewarded ad gates it on ad platforms.
+  /// Shares a PNG photo of the month.
   Future<void> _exportMonth() async {
     final days = ref
         .read(monthSpreadProvider(_monthTs))
         .whenOrNull(data: (d) => d);
     if (days == null || !mounted) return;
-
-    final ads = ref.read(adsServiceProvider);
-    if (ads.isAvailable) {
-      final choice = await showModalBottomSheet<String>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => const _ExportSheet(),
-      );
-      if (choice != 'rewarded' || !mounted) return;
-
-      final granted = await ads.showRewardedAd();
-      if (!granted) {
-        if (mounted) {
-          _showSnackBar(
-            context,
-            'Не удалось загрузить рекламу. Попробуйте позже.',
-          );
-        }
-        return;
-      }
-    }
-    if (!mounted) return;
 
     final exporter = ref.read(monthSpreadExporterProvider);
     final width = MediaQuery.sizeOf(context).width;
@@ -313,65 +289,6 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
-// ── Mood summary chip ─────────────────────────────────────────
-
-// ── Export bottom sheet ───────────────────────────────────────
-
-/// "Share the month" sheet: opt-in rewarded ad (Android) or cancel.
-class _ExportSheet extends StatelessWidget {
-  const _ExportSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    // Material ancestor so ListTile ink ripples paint correctly.
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SheetHandle(),
-            const SizedBox(height: 12),
-            Text('Поделиться месяцем', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              'Получите изображение «Разворота месяца» и отправьте его куда угодно.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              key: K.exportRewardedOption,
-              leading: Icon(Icons.play_circle_outline, color: primary),
-              title: Text('Посмотреть рекламу — бесплатно'),
-              subtitle: Text('Реклама займёт примерно 30 секунд'),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
-              onTap: () => Navigator.pop(context, 'rewarded'),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: Icon(
-                Icons.close,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              title: const Text('Отмена'),
-              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/ads/yandex_ads_service.dart';
 import 'core/debug/debug_menu_overlay.dart';
 import 'core/router/app_router.dart';
 import 'core/settings/theme_mode.dart';
@@ -12,9 +9,6 @@ import 'core/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Fire-and-forget: never await before runApp — an extra async gap widens
-  // the web startup race (flutter/flutter#187939).
-  unawaited(initializeAdsIfSupported());
   runApp(const ProviderScope(child: RythmApp()));
 }
 
