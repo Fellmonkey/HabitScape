@@ -150,18 +150,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        // ── Echo: one past moment, no input ──
         const SliverToBoxAdapter(child: EchoCard()),
 
-        // ── Week summary: closes the week on Sundays ──
-        const SliverToBoxAdapter(child: WeekSummaryCard()),
-
-        // ── Capsule: a letter to the future self ──
-        const SliverToBoxAdapter(child: CapsuleCard()),
-
-        // ── Month goals ──
-        // Not const: must rebuild after midnight to switch to the new month.
-        SliverToBoxAdapter(child: MonthGoalsCard()),
 
         if (habits.isEmpty)
           SliverFillRemaining(
@@ -177,6 +167,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           // ── Grouped habit lists ──
           for (final group in groups)
             ..._buildGroup(context, theme, group, logByHabit),
+
+        // -- Reflection block (bottom) --
+        const SliverToBoxAdapter(child: WeekSummaryCard()),
+        const SliverToBoxAdapter(child: CapsuleCard()),
+        const SliverToBoxAdapter(child: MonthGoalsCard()),
       ],
     );
   }

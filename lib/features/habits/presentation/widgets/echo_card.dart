@@ -6,9 +6,13 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/shared_prefs.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../domain/echo.dart';
 import '../../providers/echo_providers.dart';
+
+const _echoLastShownKey = 'echo_last_shown_date';
+const _echoCooldownDays = 2;
 
 /// «Эхо»: one past moment, chosen automatically from the archive.
 ///
@@ -25,6 +29,7 @@ class EchoCard extends ConsumerStatefulWidget {
 class _EchoCardState extends ConsumerState<EchoCard> {
   int _index = 0;
   bool _expanded = false;
+  bool _recorded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +41,26 @@ class _EchoCardState extends ConsumerState<EchoCard> {
       data: (feed) {
         if (!feed.hasAnyNote) return const SizedBox.shrink();
         if (feed.isEmpty) return _buildHint(context);
-        final memory = feed.memories[_index % feed.memories.length];
-        return _buildMemory(context, feed.memories.length, memory);
+        final prefsAsync = ref.watch(sharedPrefsProvider);
+        return prefsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (prefs) {
+            final last = prefs.getInt(_echoLastShownKey);
+            final today = DateTime.now().toMidnight.unixSeconds;
+            final cooldown = _echoCooldownDays * 86400;
+            final canShow = _recorded || last == null || (today - last) >= cooldown;
+            if (!canShow) return const SizedBox.shrink();
+            if (!_recorded) {
+              _recorded = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                prefs.setInt(_echoLastShownKey, today);
+              });
+            }
+            final memory = feed.memories[_index % feed.memories.length];
+            return _buildMemory(context, feed.memories.length, memory);
+          },
+        );
       },
     );
   }

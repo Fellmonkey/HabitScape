@@ -382,6 +382,62 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             enabled: !_seeding,
             onTap: () => _runScenario(scenario),
           ),
+
+        // UX scenarios
+        _CategoryHeader(title: 'UX сценарии'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () async {
+                    await _clearAll();
+                    await _resetOnboarding();
+                  },
+            icon: const Icon(Icons.child_care, size: 18),
+            label: const Text('UX: Новичок (пустая БД + подсказки)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.sageGreen,
+              side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _runScenario(
+                      debugScenarios.firstWhere(
+                        (s) => s.name == '5 привычек · 1 мес',
+                      ),
+                    ),
+            icon: const Icon(Icons.person, size: 18),
+            label: const Text('UX: Обычный (5 привычек, 1 мес)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _runScenario(
+                      debugScenarios.firstWhere(
+                        (s) => s.name == '30 привычек · 12 мес',
+                      ),
+                    ),
+            icon: const Icon(Icons.workspace_premium, size: 18),
+            label: const Text('UX: Опытный (30 привычек, 12 мес)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
       ],
     );
   }
