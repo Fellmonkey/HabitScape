@@ -8,6 +8,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import 'icon_picker.dart';
+import '../../domain/habit_templates.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 
@@ -109,6 +110,39 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     _ => '{}',
   };
 
+  void _applyTemplate(HabitTemplate template) {
+    setState(() {
+      _nameController.text = template.name;
+      _icon = template.icon;
+      _frequency = template.frequencyType;
+      _timeOfDay = template.timeOfDay;
+      _advancedExpanded = false;
+      switch (template.frequencyType) {
+        case FrequencyType.weekdays:
+          _selectedWeekdays
+            ..clear()
+            ..addAll(parseWeekdays(template.frequencyValue));
+        case FrequencyType.xPerWeek:
+          _xValue = parseXValue(template.frequencyValue);
+          if (_xValue < 1) _xValue = 3;
+        case FrequencyType.everyXDays:
+          _everyXDays = parseXValue(template.frequencyValue);
+          if (_everyXDays < 2) _everyXDays = 7;
+        case FrequencyType.cycle:
+          final c = parseCycle(template.frequencyValue);
+          _cycleLength = c.length;
+          _cycleDays
+            ..clear()
+            ..addAll(c.days);
+          _cycleLabels
+            ..clear()
+            ..addAll(c.labels);
+        case FrequencyType.daily:
+          break;
+      }
+    });
+  }
+
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
@@ -168,6 +202,23 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
             const SizedBox(height: 20),
 
             // ── Name ──
+            if (!_isEdit) ...[
+              Text('Шаблоны', style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: habitTemplates.map((t) {
+                  return ActionChip(
+                    avatar: Icon(t.icon.icon, size: 16),
+                    label: Text(t.name),
+                    onPressed: () => _applyTemplate(t),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             TextField(
               key: K.habitNameField,
               controller: _nameController,
