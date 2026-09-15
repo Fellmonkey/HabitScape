@@ -241,16 +241,40 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             return RepaintBoundary(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
-                child: _enteringIds.contains(habit.id)
-                    ? _Entrance(
-                        onComplete: () {
-                          if (mounted) {
-                            setState(() => _enteringIds.remove(habit.id));
-                          }
-                        },
-                        child: HabitCard(habit: habit, log: log),
-                      )
-                    : HabitCard(habit: habit, log: log),
+                child: Dismissible(
+                  key: K.habitCard(habit.id),
+                  direction: DismissDirection.horizontal,
+                  background: Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 20),
+                    color: AppColors.emeraldGlow.withValues(alpha: 0.18),
+                    child: const Icon(Icons.check_rounded, color: AppColors.emeraldGlow),
+                  ),
+                  secondaryBackground: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
+                    child: const Icon(Icons.pause_rounded, color: AppColors.coolGreyBlue),
+                  ),
+                  confirmDismiss: (direction) async {
+                    if (direction == DismissDirection.startToEnd) {
+                      await ref.read(habitActionsProvider.notifier).markDone(habit.id);
+                    } else {
+                      await ref.read(habitActionsProvider.notifier).markSkip(habit.id);
+                    }
+                    return false;
+                  },
+                  child: _enteringIds.contains(habit.id)
+                      ? _Entrance(
+                          onComplete: () {
+                            if (mounted) {
+                              setState(() => _enteringIds.remove(habit.id));
+                            }
+                          },
+                          child: HabitCard(habit: habit, log: log),
+                        )
+                      : HabitCard(habit: habit, log: log),
+                ),
               ),
             );
           },
