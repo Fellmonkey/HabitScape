@@ -17,6 +17,7 @@ import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
+import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
@@ -151,6 +152,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         ),
 
         const SliverToBoxAdapter(child: EchoCard()),
+
+        const SliverToBoxAdapter(child: FeatureHintBanner()),
 
 
         if (habits.isEmpty)
