@@ -8,8 +8,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/shared_prefs.dart';
 import '../../../../core/settings/theme_mode.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -63,6 +66,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 24),
 
           // ── Archive section ─────────────────────────────────────
+          _LastBackupTile(),
+
           _SectionHeader(title: 'Архив', theme: theme),
           const SizedBox(height: 8),
           _SettingsTile(
@@ -134,6 +139,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ],
         ),
       );
+      final prefs = await ref.read(sharedPrefsProvider.future);
+      await prefs.setInt('last_backup_date', DateTime.now().toMidnight.unixSeconds);
+      ref.invalidate(sharedPrefsProvider);
     } catch (e) {
       if (context.mounted) {
         _showSnackBar(context, 'Ошибка экспорта: $e');
@@ -226,6 +234,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+// -- Last backup info --
+class _LastBackupTile extends ConsumerWidget {
+  const _LastBackupTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final prefsAsync = ref.watch(sharedPrefsProvider);
+    return prefsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (prefs) {
+        final last = prefs.getInt('last_backup_date');
+        final theme = Theme.of(context);
+        String label;
+        if (last == null) {
+          label = 'Резервная копия ещё не создавалась';
+        } else {
+          final date = dateFromUnix(last);
+          label = 'Последний экспорт: ${date.day}.${date.month}.${date.year}';
+        }
+        final old = last != null &&
+            (DateTime.now().toMidnight.unixSeconds - last) > 30 * 86400;
+        return GlassCard(
+          child: ListTile(
+            leading: Icon(
+              old ? Icons.warning_amber_rounded : Icons.cloud_done_outlined,
+              color: old ? AppColors.warmAmber : theme.colorScheme.primary,
+            ),
+            title: Text(
+              old ? 'Давно не было бэкапа' : 'Резервная копия',
+              style: theme.textTheme.titleSmall,
+            ),
+            subtitle: Text(label, style: theme.textTheme.bodySmall),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+          ),
+        );
+      },
+    );
   }
 }
 
