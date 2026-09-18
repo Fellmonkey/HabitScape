@@ -12,6 +12,7 @@ class GithubHeatmap extends StatefulWidget {
     required this.days,
     this.cellSize = 12,
     this.gap = 3,
+    this.onDayTap,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class GithubHeatmap extends StatefulWidget {
   final List<DayCompletion> days;
   final double cellSize;
   final double gap;
+  final ValueChanged<DayCompletion>? onDayTap;
 
   @override
   State<GithubHeatmap> createState() => _GithubHeatmapState();
@@ -76,7 +78,24 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
         return SingleChildScrollView(
           controller: controller,
           scrollDirection: Axis.horizontal,
-          child: CustomPaint(
+          child: GestureDetector(
+            onTapDown: (details) {
+              final cb = widget.onDayTap;
+              if (cb == null) return;
+              final dx = details.localPosition.dx;
+              final dy = details.localPosition.dy;
+              final week = ((dx - labelWidth) / (cellSize + gap)).floor();
+              final dow = ((dy - monthLabelHeight - labelGap) / (cellSize + gap)).floor();
+              if (week < 0 || dow < 0 || dow > 6) return;
+              final date = gridStart.add(Duration(days: week * 7 + dow));
+              for (final d in days) {
+                if (d.date == date) {
+                  cb(d);
+                  return;
+                }
+              }
+            },
+            child: CustomPaint(
             size: Size(totalWidth, totalHeight),
             painter: _HeatmapPainter(
               days: days,
@@ -97,6 +116,7 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
               ),
               onSurface: theme.colorScheme.onSurface,
             ),
+          ),
           ),
         );
       },

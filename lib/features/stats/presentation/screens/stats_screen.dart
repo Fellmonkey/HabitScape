@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../domain/stats_engine.dart';
+import '../../../habits/domain/completion.dart';
 import '../../providers/stats_providers.dart';
 import '../widgets/github_heatmap.dart';
 
@@ -16,6 +17,22 @@ class StatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsOverviewProvider);
+    void showDayDetail(DayCompletion day) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(formatFullDate(day.date)),
+          content: Text('Выполнено: ${day.done} из ${day.expected}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Закрыть'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -74,7 +91,10 @@ class StatsScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: _HeatmapCard(stats: stats),
+                    child: _HeatmapCard(
+                       stats: stats,
+                       onDayTap: showDayDetail,
+                     ),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -476,9 +496,10 @@ class _MiniStat extends StatelessWidget {
 // ── Heatmap card ─────────────────────────────────────────────
 
 class _HeatmapCard extends StatelessWidget {
-  const _HeatmapCard({required this.stats});
+  const _HeatmapCard({required this.stats, this.onDayTap});
 
   final StatsOverview stats;
+  final ValueChanged<DayCompletion>? onDayTap;
 
   @override
   Widget build(BuildContext context) {
