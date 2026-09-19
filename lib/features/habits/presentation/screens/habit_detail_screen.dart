@@ -16,13 +16,22 @@ import '../../providers/habit_providers.dart';
 import '../widgets/habit_form_sheet.dart';
 
 /// Habit detail screen — stats, heatmap, streak info, time distribution.
-class HabitDetailScreen extends ConsumerWidget {
+class HabitDetailScreen extends ConsumerStatefulWidget {
   const HabitDetailScreen({required this.habitId, super.key});
 
   final int habitId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitDetailScreen> createState() => _HabitDetailScreenState();
+}
+
+class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
+  int _tab = 0;
+
+  int get habitId => widget.habitId;
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(todayProvider); // keep heatmap «today» highlights fresh
     final habitAsync = ref.watch(habitProvider(habitId));
     final theme = Theme.of(context);
@@ -108,6 +117,22 @@ class HabitDetailScreen extends ConsumerWidget {
                 ],
               ),
 
+              // ── Tabs ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 0, label: Text('Обзор')),
+                      ButtonSegment(value: 1, label: Text('История')),
+                      ButtonSegment(value: 2, label: Text('Метрики')),
+                    ],
+                    selected: {_tab},
+                    onSelectionChanged: (s) => setState(() => _tab = s.first),
+                  ),
+                ),
+              ),
+
               // ── Body ──
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -119,54 +144,66 @@ class HabitDetailScreen extends ConsumerWidget {
                     _HabitInfoRow(habit: habit),
                     const SizedBox(height: 20),
 
-                    // Current month stats
-                    metricsAsync.when(
-                      loading: () => const SizedBox(
-                        height: 120,
-                        child: Center(child: CircularProgressIndicator()),
+                    if (_tab == 0) ...[
+                      metricsAsync.when(
+                        loading: () => const SizedBox(
+                          height: 120,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (e, _) => Text('Ошибка метрик: $e'),
+                        data: (m) => _MonthStatsSection(
+                          metrics: m,
+                          year: now.year,
+                          month: now.month,
+                        ),
                       ),
-                      error: (e, _) => Text('Ошибка метрик: $e'),
-                      data: (m) => _MonthStatsSection(
-                        metrics: m,
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Активность за месяц',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      _MonthHeatmap(
+                        habitId: habitId,
                         year: now.year,
                         month: now.month,
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Heatmap calendar
-                    Text(
-                      'Активность за месяц',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    _MonthHeatmap(
-                      habitId: habitId,
-                      year: now.year,
-                      month: now.month,
-                    ),
-                    const SizedBox(height: 24),
+                      metricsAsync.when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
+                        data: (m) => _TimeDistributionSection(metrics: m),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
 
-                    // Time-of-day distribution
-                    metricsAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, _) => const SizedBox.shrink(),
-                      data: (m) => _TimeDistributionSection(metrics: m),
-                    ),
-                    const SizedBox(height: 24),
+                    if (_tab == 1) ...[
+                      Text('История', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                    ],
 
-                    // All-time logs history header
-                    Text('История', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
+                    if (_tab == 2) ...[
+                      metricsAsync.when(
+                        loading: () => const SizedBox(
+                          height: 120,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (e, _) => Text('Ошибка метрик: $e'),
+                        data: (m) => _MetricsDetailSection(metrics: m),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ],
                 ),
               ),
 
-              // ── History (lazy sliver, month by month) ──
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: _HistorySection(habitId: habitId),
-              ),
+              if (_tab == 1)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: _HistorySection(habitId: habitId),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
@@ -233,6 +270,33 @@ class HabitDetailScreen extends ConsumerWidget {
           if (context.mounted) nav.pop();
         }
     }
+  }
+}
+
+// ── Metrics detail ───────────────────────────────────────────
+class _MetricsDetailSection extends StatelessWidget {
+  const _MetricsDetailSection({required this.metrics});
+
+  final HabitMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Метрики', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Text('Выполнение: ${metrics.completionPct.toStringAsFixed(1)}%'),
+        Text('Выполнено: ${metrics.absoluteCompletions}'),
+        Text('Ожидалось: ${metrics.requiredBase}'),
+        Text('Пропуски: ${metrics.skipCount}'),
+        const SizedBox(height: 8),
+        Text('Утро: ${(metrics.morningRatio * 100).round()}%'),
+        Text('День: ${(metrics.afternoonRatio * 100).round()}%'),
+        Text('Вечер: ${(metrics.eveningRatio * 100).round()}%'),
+      ],
+    );
   }
 }
 
