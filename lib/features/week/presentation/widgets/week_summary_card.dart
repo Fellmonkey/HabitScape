@@ -6,10 +6,12 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/capsule/domain/capsule.dart';
 import '../../domain/week_summary.dart';
 import '../../providers/week_providers.dart';
+import '../../../../core/settings/shared_prefs.dart';
 
 /// «Итог недели»: a Sunday card that closes the week and captures one
 /// intention for the next one. The summary is analysis — what happened; the
@@ -25,6 +27,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
   final TextEditingController _controller = TextEditingController();
   bool _saving = false;
   bool _editing = false;
+  bool _answeredThisSession = false;
 
   @override
   void dispose() {
@@ -38,10 +41,13 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
     setState(() => _saving = true);
     await ref.read(weekIntentionActionsProvider.notifier).save(text);
     if (!mounted) return;
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    await prefs.setInt('week_summary_answered_week', weekStartOf(DateTime.now()).unixSeconds);
     Haptics.tap(ref.read(hapticsEnabledProvider));
     setState(() {
       _saving = false;
       _editing = false;
+      _answeredThisSession = true;
     });
   }
 
@@ -56,6 +62,15 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
       error: (_, _) => const SizedBox.shrink(),
       data: (summary) {
         if (!summary.hasMoodData && !summary.hasHabitData) {
+          return const SizedBox.shrink();
+        }
+        final now = DateTime.now();
+        final isWindow = now.weekday == DateTime.sunday || now.weekday == DateTime.monday;
+        if (!isWindow) return const SizedBox.shrink();
+        final prefs = ref.read(sharedPrefsProvider).value;
+        final weekStart = weekStartOf(now).unixSeconds;
+        final answeredWeek = prefs?.getInt('week_summary_answered_week');
+        if (answeredWeek == weekStart && !_answeredThisSession) {
           return const SizedBox.shrink();
         }
         final intention = intentionAsync.value;
@@ -214,7 +229,19 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
                   children: [
                     TextButton(
                       key: K.weekIntentionSkip,
-                      onPressed: () => setState(() => _saving = false),
+                      onPressed: () async {
+                        final prefs = await ref.read(sharedPrefsProvider.future);
+                        await prefs.setInt(
+                          'week_summary_answered_week',
+                          weekStartOf(DateTime.now()).unixSeconds,
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _saving = false;
+                            _answeredThisSession = true;
+                          });
+                        }
+                      },
                       child: const Text('Пропустить'),
                     ),
                     const SizedBox(width: 8),

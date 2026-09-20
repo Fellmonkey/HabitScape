@@ -7,7 +7,9 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart' as enums;
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/shared_prefs.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -43,6 +45,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// Habit ids created in this session — they get a one-shot entrance.
   final Set<int> _enteringIds = <int>{};
 
+  bool _echoTopResolved = false;
+  bool _echoAtTop = true;
+
   @override
   String get tourScope => OnboardingTours.greenhouse;
 
@@ -51,6 +56,20 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final habitsAsync = ref.watch(activeHabitsProvider);
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
+    final prefsAsync = ref.watch(sharedPrefsProvider);
+    if (!_echoTopResolved && prefsAsync.hasValue) {
+      final prefs = prefsAsync.value!;
+      final today = DateTime.now().toMidnight.unixSeconds;
+      final key = 'echo_shown_count_$today';
+      final count = prefs.getInt(key) ?? 0;
+      if (count < 2) {
+        _echoAtTop = true;
+        prefs.setInt(key, count + 1);
+      } else {
+        _echoAtTop = false;
+      }
+      _echoTopResolved = true;
+    }
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -151,7 +170,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        const SliverToBoxAdapter(child: EchoCard()),
+        if (_echoAtTop)
+          const SliverToBoxAdapter(child: EchoCard()),
+
+        const SliverToBoxAdapter(child: WeekSummaryCard()),
 
         const SliverToBoxAdapter(child: FeatureHintBanner()),
 
@@ -171,10 +193,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           for (final group in groups)
             ..._buildGroup(context, theme, group, logByHabit),
 
-        // -- Reflection block (bottom) --
-        const SliverToBoxAdapter(child: WeekSummaryCard()),
-        const SliverToBoxAdapter(child: CapsuleCard()),
+        // -- Reflection block (bottom): goals first --
         const SliverToBoxAdapter(child: MonthGoalsCard()),
+        const SliverToBoxAdapter(child: CapsuleCard()),
+        if (!_echoAtTop)
+          const SliverToBoxAdapter(child: EchoCard()),
       ],
     );
   }
