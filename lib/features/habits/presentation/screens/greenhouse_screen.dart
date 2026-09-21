@@ -282,6 +282,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
                     child: const Icon(Icons.pause_rounded, color: AppColors.coolGreyBlue),
                   ),
+                  movementDuration: const Duration(milliseconds: 220),
+                  resizeDuration: const Duration(milliseconds: 220),
+                  dismissThresholds: const {
+                    DismissDirection.horizontal: 0.35,
+                  },
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.startToEnd) {
                       await ref.read(habitActionsProvider.notifier).markDone(habit.id);
