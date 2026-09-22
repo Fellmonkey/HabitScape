@@ -19,6 +19,7 @@ import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
+import '../../../week/domain/week_summary.dart';
 import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';
@@ -59,8 +60,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final prefsAsync = ref.watch(sharedPrefsProvider);
     if (!_echoTopResolved && prefsAsync.hasValue) {
       final prefs = prefsAsync.value!;
-      final today = DateTime.now().toMidnight.unixSeconds;
-      final key = 'echo_shown_count_$today';
+      final weekStart = weekStartOf(DateTime.now()).unixSeconds;
+      final key = 'echo_top_count_$weekStart';
       final count = prefs.getInt(key) ?? 0;
       if (count < 2) {
         _echoAtTop = true;
