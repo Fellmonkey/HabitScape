@@ -41,6 +41,11 @@ class LettersDao extends DatabaseAccessor<AppDatabase> with _$LettersDaoMixin {
     )..orderBy([(l) => OrderingTerm.desc(l.createdAt)])).watch();
   }
 
+  /// Watches a single capsule by id (used by the letter screen).
+  Stream<Letter?> watchLetter(int id) {
+    return (select(letters)..where((l) => l.id.equals(id))).watchSingleOrNull();
+  }
+
   /// Adds a capsule and returns its id.
   Future<int> addLetter({
     required int deliverAt,

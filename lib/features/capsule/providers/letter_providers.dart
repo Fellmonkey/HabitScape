@@ -34,12 +34,7 @@ final letterProvider = StreamProvider.autoDispose.family<Letter?, int>((
   ref,
   id,
 ) {
-  return ref.watch(lettersDaoProvider).watchAllLetters().map((letters) {
-    for (final letter in letters) {
-      if (letter.id == id) return letter;
-    }
-    return null;
-  });
+  return ref.watch(lettersDaoProvider).watchLetter(id);
 });
 
 /// True once a note older than 30 days exists — the signal that the user has

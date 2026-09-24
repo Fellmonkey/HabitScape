@@ -56,6 +56,37 @@ String wroteAgoLabel(Letter letter) {
   return 'месяц назад';
 }
 
+/// Grouped view of capsules for the capsule screen.
+class CapsuleBuckets {
+  const CapsuleBuckets({
+    required this.upcoming,
+    required this.due,
+    required this.opened,
+  });
+
+  final List<Letter> upcoming;
+  final List<Letter> due;
+  final List<Letter> opened;
+}
+
+/// Groups capsules into upcoming / due / opened relative to [today].
+CapsuleBuckets groupCapsules(List<Letter> letters, DateTime today) {
+  final upcoming = <Letter>[];
+  final due = <Letter>[];
+  final opened = <Letter>[];
+  for (final letter in letters) {
+    switch (capsuleStatus(letter, today)) {
+      case CapsuleStatus.upcoming:
+        upcoming.add(letter);
+      case CapsuleStatus.due:
+        due.add(letter);
+      case CapsuleStatus.opened:
+        opened.add(letter);
+    }
+  }
+  return CapsuleBuckets(upcoming: upcoming, due: due, opened: opened);
+}
+
 /// Russian pluralization for days: 1 день, 2 дня, 5 дней (incl. 21 день).
 String pluralDays(int n) {
   final mod10 = n % 10;

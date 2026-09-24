@@ -4,62 +4,18 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 
-import 'scheduling.dart';
+import 'scheduling.dart' as sched;
 
 /// Pure engine for habit metrics — no side effects, no DB access.
 class HabitEngine {
   const HabitEngine._();
 
   /// Required base for a habit in a month, accounting for creation date.
+  ///
+  /// Delegates to the HabitSchedule module so month metrics share one
+  /// definition with the rest of the app.
   static int calculateRequiredBase(Habit habit, int year, int month) {
-    final freqType = FrequencyType.fromString(habit.frequencyType);
-    final createdAt = dateFromUnix(habit.createdAt);
-    final monthStart = DateTime.utc(year, month, 1);
-    final monthEnd = DateTime.utc(year, month + 1, 0);
-
-    // Effective start: max(month start, habit creation date).
-    final effectiveStart = createdAt.isAfter(monthStart)
-        ? createdAt
-        : monthStart;
-    // Created later than this month — no base.
-    if (effectiveStart.isAfter(monthEnd)) return 0;
-
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-
-    switch (freqType) {
-      case FrequencyType.daily:
-        return activeDays;
-
-      case FrequencyType.weekdays:
-        final weekdays = parseWeekdays(habit.frequencyValue);
-        return countWeekdaysInRange(effectiveStart, monthEnd, weekdays);
-
-      case FrequencyType.xPerWeek:
-        final x = parseXValue(habit.frequencyValue);
-        final weeks = activeDays / 7.0;
-        return (weeks * x).ceil();
-
-      case FrequencyType.everyXDays:
-        final x = parseXValue(habit.frequencyValue);
-        return (activeDays / x).ceil();
-
-      case FrequencyType.cycle:
-        final cycle = parseCycle(habit.frequencyValue);
-        var expected = 0;
-        final refDate = cycle.startDate != null
-            ? dateFromUnix(cycle.startDate!)
-            : createdAt;
-        final startDiff = effectiveStart.toMidnight
-            .difference(refDate.toMidnight)
-            .inDays;
-        for (var i = 0; i < activeDays; i++) {
-          final diff = startDiff + i;
-          if (diff < 0) continue;
-          final currentDay = (diff % cycle.length) + 1;
-          if (cycle.days.contains(currentDay)) expected++;
-        }
-        return expected;
-    }
+    return sched.calculateRequiredBase(habit, year, month);
   }
 
   /// Calculates completion metrics for a habit in a month.

@@ -31,31 +31,104 @@ T _parseCached<T>(Map<String, T> cache, String key, T Function() compute) {
 
 /// Whether a habit is expected on [today].
 bool isExpectedToday(Habit habit, DateTime today) {
-  final freqType = FrequencyType.fromString(habit.frequencyType);
+  return isExpectedOn(
+    frequencyType: habit.frequencyType,
+    frequencyValue: habit.frequencyValue,
+    createdAt: habit.createdAt,
+    today: today,
+  );
+}
+
+/// Whether a habit with the given frequency fields is expected on [today].
+///
+/// Owns the single definition of "expected on a day" for a habit's schedule.
+/// [createdAt] is a unix timestamp (seconds).
+bool isExpectedOn({
+  required String frequencyType,
+  required String frequencyValue,
+  required int createdAt,
+  required DateTime today,
+}) {
+  final freqType = FrequencyType.fromString(frequencyType);
   switch (freqType) {
     case FrequencyType.daily:
       return true;
     case FrequencyType.weekdays:
-      final weekdays = parseWeekdays(habit.frequencyValue);
+      final weekdays = parseWeekdays(frequencyValue);
       return weekdays.contains(today.weekday);
     case FrequencyType.xPerWeek:
       // Simplification: always show for x_per_week
       return true;
     case FrequencyType.everyXDays:
-      final x = parseXValue(habit.frequencyValue);
-      final created = dateFromUnix(habit.createdAt);
+      final x = parseXValue(frequencyValue);
+      final created = dateFromUnix(createdAt);
       final diff = today.toMidnight.difference(created.toMidnight).inDays;
       if (diff < 0) return false;
       return diff % x == 0;
     case FrequencyType.cycle:
-      final cycle = parseCycle(habit.frequencyValue);
+      final cycle = parseCycle(frequencyValue);
       final refDate = cycle.startDate != null
           ? dateFromUnix(cycle.startDate!)
-          : dateFromUnix(habit.createdAt);
+          : dateFromUnix(createdAt);
       final diff = today.toMidnight.difference(refDate.toMidnight).inDays;
       if (diff < 0) return false;
       final currentDayOfCycle = (diff % cycle.length) + 1;
       return cycle.days.contains(currentDayOfCycle);
+  }
+}
+
+/// Required base for a habit in a month, accounting for creation date.
+///
+/// Owns the single definition of "how many times is this habit expected in
+/// this month" so month metrics, week summaries and heatmaps agree.
+int calculateRequiredBase(Habit habit, int year, int month) {
+  final freqType = FrequencyType.fromString(habit.frequencyType);
+  final createdAt = dateFromUnix(habit.createdAt);
+  final monthStart = DateTime.utc(year, month, 1);
+  final monthEnd = DateTime.utc(year, month + 1, 0);
+
+  // Effective start: max(month start, habit creation date).
+  final effectiveStart = createdAt.isAfter(monthStart)
+      ? createdAt
+      : monthStart;
+  // Created later than this month — no base.
+  if (effectiveStart.isAfter(monthEnd)) return 0;
+
+  final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
+
+  switch (freqType) {
+    case FrequencyType.daily:
+      return activeDays;
+
+    case FrequencyType.weekdays:
+      final weekdays = parseWeekdays(habit.frequencyValue);
+      return countWeekdaysInRange(effectiveStart, monthEnd, weekdays);
+
+    case FrequencyType.xPerWeek:
+      final x = parseXValue(habit.frequencyValue);
+      final weeks = activeDays / 7.0;
+      return (weeks * x).ceil();
+
+    case FrequencyType.everyXDays:
+      final x = parseXValue(habit.frequencyValue);
+      return (activeDays / x).ceil();
+
+    case FrequencyType.cycle:
+      final cycle = parseCycle(habit.frequencyValue);
+      var expected = 0;
+      final refDate = cycle.startDate != null
+          ? dateFromUnix(cycle.startDate!)
+          : createdAt;
+      final startDiff = effectiveStart.toMidnight
+          .difference(refDate.toMidnight)
+          .inDays;
+      for (var i = 0; i < activeDays; i++) {
+        final diff = startDiff + i;
+        if (diff < 0) continue;
+        final currentDay = (diff % cycle.length) + 1;
+        if (cycle.days.contains(currentDay)) expected++;
+      }
+      return expected;
   }
 }
 

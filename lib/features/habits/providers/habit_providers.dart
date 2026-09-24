@@ -130,7 +130,7 @@ final monthSpreadProvider = FutureProvider.autoDispose
 
 /// Today's completion ratio: done / total expected.
 final dayProgressProvider = Provider<double>((ref) {
-  ref.watch(todayProvider);
+  final todayTs = ref.watch(todayProvider);
   final habitsAsync = ref.watch(activeHabitsProvider);
   final logsAsync = ref.watch(todayLogsProvider);
 
@@ -138,23 +138,16 @@ final dayProgressProvider = Provider<double>((ref) {
   final logs = logsAsync.value;
   if (habits == null || logs == null || habits.isEmpty) return 0.0;
 
-  final logByHabit = {for (final l in logs) l.habitId: l};
-
-  final now = DateTime.now();
-  var expected = 0;
-  var done = 0;
-
-  for (final habit in habits) {
-    if (isExpectedToday(habit, now)) {
-      expected++;
-      final log = logByHabit[habit.id];
-      if (log != null && log.status == LogStatus.done) {
-        done++;
-      }
-    }
-  }
-
-  return expected > 0 ? done / expected : 0.0;
+  final today = dateFromUnix(todayTs);
+  final days = computeDailyCompletion(
+    habits: habits,
+    logs: logs,
+    start: today,
+    end: today.add(const Duration(days: 1)),
+  );
+  if (days.isEmpty) return 0.0;
+  final day = days.first;
+  return day.expected > 0 ? day.done / day.expected : 0.0;
 });
 
 // ── Habit Engine provider (metrics for a month) ──────────────

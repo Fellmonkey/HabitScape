@@ -79,15 +79,10 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
     final letters = ref.watch(allCapsulesProvider).value ?? const <Letter>[];
     final today = DateTime.now();
 
-    final upcoming = letters
-        .where((l) => capsuleStatus(l, today) == CapsuleStatus.upcoming)
-        .toList();
-    final due = letters
-        .where((l) => capsuleStatus(l, today) == CapsuleStatus.due)
-        .toList();
-    final opened = letters
-        .where((l) => capsuleStatus(l, today) == CapsuleStatus.opened)
-        .toList();
+    final buckets = groupCapsules(letters, today);
+    final upcoming = buckets.upcoming;
+    final due = buckets.due;
+    final opened = buckets.opened;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Капсулы времени')),

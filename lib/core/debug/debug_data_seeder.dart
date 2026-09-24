@@ -618,22 +618,12 @@ class DebugDataSeeder {
   }
 
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {
-    switch (meta.freq.type) {
-      case FrequencyType.daily:
-        return true;
-      case FrequencyType.weekdays:
-        final days = parseWeekdays(meta.freq.value);
-        return days.contains(date.weekday);
-      case FrequencyType.xPerWeek:
-        // Simplified: log on ~x random days per week
-        return true;
-      case FrequencyType.everyXDays:
-        final x = parseXValue(meta.freq.value);
-        final diff = date.difference(meta.createdAt.toMidnight).inDays;
-        return diff % x == 0;
-      case FrequencyType.cycle:
-        return true;
-    }
+    return isExpectedOn(
+      frequencyType: meta.freq.type.name,
+      frequencyValue: meta.freq.value,
+      createdAt: meta.createdAt.unixSeconds,
+      today: date,
+    );
   }
 
   static int _hourForTimeOfDay(TimeOfDay tod, Random rng) => switch (tod) {
