@@ -4,13 +4,6 @@ import '../../../core/utils/date_helpers.dart';
 import '../../habits/domain/completion.dart';
 import '../../habits/domain/scheduling.dart';
 
-/// Monday of [date]'s week (ISO weeks start on Monday).
-DateTime weekStartOf(DateTime date) {
-  final midnight = date.toMidnight;
-  final day = midnight.weekday - DateTime.monday;
-  return midnight.subtract(Duration(days: day));
-}
-
 /// The auto-summary of a finished/ending week, computed on the fly.
 class WeekSummary {
   const WeekSummary({

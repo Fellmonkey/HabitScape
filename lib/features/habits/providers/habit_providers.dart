@@ -7,6 +7,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/enums.dart';
+import '../../../core/database/history_store.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
@@ -14,7 +15,6 @@ import '../data/habits_dao.dart';
 import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
 import '../domain/habit_engine.dart';
-import '../domain/scheduling.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -32,6 +32,18 @@ final dayNotesDaoProvider = Provider<DayNotesDao>((ref) {
 
 final monthlyGoalsDaoProvider = Provider<MonthlyGoalsDao>((ref) {
   return ref.watch(databaseProvider).monthlyGoalsDao;
+});
+
+// ── History store ────────────────────────────────────────────
+
+/// The single seam for loading windows of history; shared by the month
+/// spread, the week summary and the stats screen.
+final historyStoreProvider = Provider<HistoryStore>((ref) {
+  return HistoryStore(
+    habitsDao: ref.watch(habitsDaoProvider),
+    habitLogsDao: ref.watch(habitLogsDaoProvider),
+    dayNotesDao: ref.watch(dayNotesDaoProvider),
+  );
 });
 
 // ── Habit streams ────────────────────────────────────────────
@@ -106,22 +118,14 @@ final monthGoalsProvider = StreamProvider.autoDispose
 /// unix timestamp. One-shot fetch — the screen invalidates it after edits.
 final monthSpreadProvider = FutureProvider.autoDispose
     .family<List<MonthSpreadDay>, int>((ref, monthTs) async {
-      final habitsDao = ref.watch(habitsDaoProvider);
-      final logsDao = ref.watch(habitLogsDaoProvider);
-      final notesDao = ref.watch(dayNotesDaoProvider);
-
       final monthStart = dateFromUnix(monthTs).toMidnight;
-      final monthEnd = nextMonthStart(monthStart);
-      final startTs = monthStart.unixSeconds;
-      final endTs = monthEnd.unixSeconds;
-
-      final habits = await habitsDao.getActiveHabits();
-      final logs = await logsDao.getLogsInRange(startTs, endTs);
-      final notes = await notesDao.getNotesInRange(startTs, endTs);
+      final snapshot = await ref
+          .watch(historyStoreProvider)
+          .loadWindow(monthStart, nextMonthStart(monthStart));
       return computeMonthSpreadDays(
-        habits: habits,
-        logs: logs,
-        notes: notes,
+        habits: snapshot.habits,
+        logs: snapshot.logs,
+        notes: snapshot.notes,
         monthStart: monthStart,
       );
     });
@@ -190,6 +194,9 @@ final habitActionsProvider = NotifierProvider<HabitActions, void>(
   HabitActions.new,
 );
 
+/// Lifecycle states a habit can be moved between.
+enum HabitLifecycle { archive, restore, delete }
+
 class HabitActions extends Notifier<void> {
   @override
   void build() {}
@@ -197,7 +204,6 @@ class HabitActions extends Notifier<void> {
   HabitsDao get _habitsDao => ref.read(habitsDaoProvider);
   HabitLogsDao get _logsDao => ref.read(habitLogsDaoProvider);
   DayNotesDao get _dayNotesDao => ref.read(dayNotesDaoProvider);
-  MonthlyGoalsDao get _goalsDao => ref.read(monthlyGoalsDaoProvider);
 
   /// Create a new habit.
   Future<int> createHabit({
@@ -224,22 +230,25 @@ class HabitActions extends Notifier<void> {
     );
   }
 
-  /// Mark a habit as done for today.
-  Future<void> markDone(int habitId) async {
+  /// Logs [status] for [habitIds] on today — one batched write for done,
+  /// one for skip. Owns the "today" policy: the date stamp and (for done)
+  /// the hour are captured here, once.
+  Future<void> logToday(List<int> habitIds, {required LogStatus status}) async {
+    if (habitIds.isEmpty) return;
     final now = DateTime.now();
-    await _logsDao.markDone(habitId, now.toMidnight.unixSeconds, now.hour);
-  }
-
-  /// Marks many habits done for today in a single DB transaction.
-  Future<void> markAllDone(List<int> habitIds) {
-    if (habitIds.isEmpty) return Future.value();
-    final now = DateTime.now();
-    return _logsDao.markAllDone(habitIds, now.toMidnight.unixSeconds, now.hour);
-  }
-
-  /// Mark a habit as skipped for today.
-  Future<void> markSkip(int habitId) async {
-    await _logsDao.markSkip(habitId, todayTimestamp());
+    final ts = now.toMidnight.unixSeconds;
+    if (status == LogStatus.done) {
+      await _logsDao.markAllDone(habitIds, ts, now.hour);
+    } else {
+      await _logsDao.upsertLogs([
+        for (final id in habitIds)
+          HabitLogsCompanion(
+            habitId: Value(id),
+            date: Value(ts),
+            status: const Value(LogStatus.skip),
+          ),
+      ]);
+    }
   }
 
   /// Saves a day note: moment + mood + time quality (1–5).
@@ -258,44 +267,27 @@ class HabitActions extends Notifier<void> {
     );
   }
 
-  /// Add a goal to a month ([monthTs] = first-of-month unix timestamp,
-  /// defaults to the current month).
-  Future<int> addMonthGoal(String title, {int? monthTs}) {
-    final ts =
-        monthTs ??
-        firstOfMonth(DateTime.now()).unixSeconds;
-    return _goalsDao.addGoal(ts, title);
-  }
-
-  /// Sets the done state of a monthly goal.
-  Future<void> setMonthGoalDone(int goalId, {required bool isDone}) =>
-      _goalsDao.setGoalDone(goalId, isDone: isDone);
-
-  /// Delete a monthly goal.
-  Future<void> deleteMonthGoal(int goalId) => _goalsDao.deleteGoal(goalId);
-
   /// Clears a day note entirely. [dateTimestamp] defaults to today.
   Future<void> clearDayNote([int? dateTimestamp]) {
     return _dayNotesDao.clearNote(dateTimestamp ?? todayTimestamp());
   }
 
-  /// Archive a habit.
-  Future<void> archiveHabit(int habitId) async {
-    await _habitsDao.archiveHabit(habitId);
+  /// Moves a habit between lifecycle states: archive, restore, or delete.
+  /// Deleting is permanent — the caller confirms before invoking.
+  Future<void> setLifecycle(int habitId, HabitLifecycle action) async {
+    switch (action) {
+      case HabitLifecycle.archive:
+        await _habitsDao.archiveHabit(habitId);
+      case HabitLifecycle.restore:
+        await _habitsDao.unarchiveHabit(habitId);
+      case HabitLifecycle.delete:
+        await _habitsDao.deleteHabit(habitId);
+    }
   }
 
-  /// Restore an archived habit back to active.
-  Future<void> unarchiveHabit(int habitId) async {
-    await _habitsDao.unarchiveHabit(habitId);
-  }
-
-  /// Delete a habit permanently.
-  Future<void> deleteHabit(int habitId) async {
-    await _habitsDao.deleteHabit(habitId);
-  }
-
-  /// Toggle focus status (max 5 focus habits).
-  Future<bool> toggleFocus(int habitId, {required bool isFocus}) async {
+  /// Sets the focus flag, enforcing the 5-habit focus cap. Returns false
+  /// (without writing) when enabling focus would exceed the cap.
+  Future<bool> setFocus(int habitId, {required bool isFocus}) async {
     if (isFocus) {
       final count = await _habitsDao.countFocusHabits();
       if (count >= AppConstants.maxFocusHabits) return false;

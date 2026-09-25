@@ -2,20 +2,23 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
-import '../../../core/utils/date_helpers.dart';
-import '../../habits/data/day_notes_dao.dart';
-import '../../habits/data/habit_logs_dao.dart';
-import '../../habits/data/habits_dao.dart';
-import '../../habits/data/monthly_goals_dao.dart';
-import '../../capsule/data/letters_dao.dart';
-import '../../week/data/weekly_intentions_dao.dart';
+import '../../features/capsule/data/letters_dao.dart';
+import '../../features/habits/data/day_notes_dao.dart';
+import '../../features/habits/data/habit_logs_dao.dart';
+import '../../features/habits/data/habits_dao.dart';
+import '../../features/habits/data/monthly_goals_dao.dart';
+import '../../features/week/data/weekly_intentions_dao.dart';
+import '../utils/date_helpers.dart';
+import 'app_database.dart';
+import 'enums.dart';
 
 // Backup format version for forward compatibility.
 // v2 adds the `letters` collection (time capsules).
 const _backupVersion = 2;
 
+/// Exports and imports the whole database as one JSON document. Sits at the
+/// persistence seam: it is the only place that knows every collection and
+/// the order in which they must be cleared/rebuilt.
 class BackupService {
   BackupService({
     required this.habitsDao,

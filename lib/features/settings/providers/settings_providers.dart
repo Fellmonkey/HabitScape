@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../capsule/providers/letter_providers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../../week/providers/week_providers.dart';
-import '../domain/backup_service.dart';
+import '../../../core/database/backup_service.dart';
 
 // ── Backup service ─────────────────────────────────────────────
 

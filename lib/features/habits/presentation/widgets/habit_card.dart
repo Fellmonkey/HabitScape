@@ -86,7 +86,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
     if (_isDone) return;
     Haptics.medium(ref.read(hapticsEnabledProvider));
     if (!AppMotion.mayDisable(context)) _bounceController.forward(from: 0);
-    ref.read(habitActionsProvider.notifier).markDone(widget.habit.id);
+    ref
+        .read(habitActionsProvider.notifier)
+        .logToday([widget.habit.id], status: LogStatus.done);
   }
 
   @override

@@ -64,6 +64,13 @@ int daysBetweenInclusive(DateTime start, DateTime end) {
   return end.toMidnight.difference(start.toMidnight).inDays + 1;
 }
 
+/// Monday (midnight UTC) of [date]'s week — ISO weeks start on Monday.
+DateTime weekStartOf(DateTime date) {
+  final midnight = date.toMidnight;
+  final day = midnight.weekday - DateTime.monday;
+  return midnight.subtract(Duration(days: day));
+}
+
 /// Classifies an hour (0..23) into a time-of-day bucket:
 /// `morning` (5-11), `day` (12-17), `evening` (18-23), `night` (0-4).
 String timeBucket(int hour) {

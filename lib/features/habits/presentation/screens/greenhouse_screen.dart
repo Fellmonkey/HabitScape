@@ -9,7 +9,6 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/shared_prefs.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -17,9 +16,9 @@ import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
-import '../../domain/scheduling.dart';
+import '../../domain/echo_top.dart';
+import '../../domain/today_board.dart';
 import '../../providers/habit_providers.dart';
-import '../../../week/domain/week_summary.dart';
 import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';
@@ -60,15 +59,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final prefsAsync = ref.watch(sharedPrefsProvider);
     if (!_echoTopResolved && prefsAsync.hasValue) {
       final prefs = prefsAsync.value!;
-      final weekStart = weekStartOf(DateTime.now()).unixSeconds;
-      final key = 'echo_top_count_$weekStart';
+      final key = echoTopKeyForWeek(DateTime.now());
       final count = prefs.getInt(key) ?? 0;
-      if (count < 2) {
-        _echoAtTop = true;
-        prefs.setInt(key, count + 1);
-      } else {
-        _echoAtTop = false;
-      }
+      _echoAtTop = shouldEchoAtTop(count);
+      if (_echoAtTop) prefs.setInt(key, count + 1);
       _echoTopResolved = true;
     }
     final theme = Theme.of(context);
@@ -101,8 +95,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<HabitLog> logs,
     double dayProgress,
   ) {
-    // Index logs by habit id so per-habit lookup is O(1).
-    final groups = _groupByTimeOfDay(habits, logs);
+    // Section ordering comes from the TodayBoard module — the screen only
+    // renders. Logs are indexed by habit id so per-habit lookup is O(1).
+    final groups = groupToday(habits: habits, today: DateTime.now());
     final logByHabit = {for (final l in logs) l.habitId: l};
 
     return CustomScrollView(
@@ -206,10 +201,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   List<Widget> _buildGroup(
     BuildContext context,
     ThemeData theme,
-    _HabitGroup group,
+    TodayGroup group,
     Map<int, HabitLog> logByHabit,
   ) {
     var items = group.habits;
+    final (label, icon, color) = _groupVisuals(group.kind, context);
 
     if (_hideCompleted) {
       items = items.where((h) {
@@ -226,31 +222,27 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
           child: Row(
             children: [
-              Icon(group.icon, size: 18, color: group.color),
+              Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  group.label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: group.color,
-                  ),
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(color: color),
                 ),
               ),
               // "Mark all" button (only for scheduled groups)
-              if (group.showMarkAll)
+              if (group.canMarkAll)
                 TextButton.icon(
-                  key: K.markAllGroup(group.label),
+                  key: K.markAllGroup(label),
                   onPressed: () => _markAllInGroup(items),
                   icon: Icon(
                     Icons.done_all_rounded,
                     size: 16,
-                    color: group.color,
+                    color: color,
                   ),
                   label: Text(
                     'Выполнить все',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: group.color,
-                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(color: color),
                   ),
                 ),
             ],
@@ -289,10 +281,17 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     DismissDirection.horizontal: 0.35,
                   },
                   confirmDismiss: (direction) async {
+                    final actions = ref.read(habitActionsProvider.notifier);
                     if (direction == DismissDirection.startToEnd) {
-                      await ref.read(habitActionsProvider.notifier).markDone(habit.id);
+                      await actions.logToday(
+                        [habit.id],
+                        status: enums.LogStatus.done,
+                      );
                     } else {
-                      await ref.read(habitActionsProvider.notifier).markSkip(habit.id);
+                      await actions.logToday(
+                        [habit.id],
+                        status: enums.LogStatus.skip,
+                      );
                     }
                     return false;
                   },
@@ -317,90 +316,50 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   void _markAllInGroup(List<Habit> habits) {
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    ref.read(habitActionsProvider.notifier).markAllDone([
-      // one batched write
-      for (final h in habits) h.id,
-    ]);
+    ref.read(habitActionsProvider.notifier).logToday(
+      [for (final h in habits) h.id],
+      status: enums.LogStatus.done,
+    );
   }
 
-  List<_HabitGroup> _groupByTimeOfDay(List<Habit> habits, List<HabitLog> logs) {
-    final today = DateTime.now();
-    final focus = <Habit>[];
-    final morning = <Habit>[];
-    final afternoon = <Habit>[];
-    final evening = <Habit>[];
-    final anytime = <Habit>[];
-    final notToday = <Habit>[];
-
-    for (final h in habits) {
-      if (!isExpectedToday(h, today)) {
-        notToday.add(h);
-        continue;
-      }
-      // Focus habits get their own section at the top — that is the whole
-      // point of marking 1–5 habits as focus.
-      if (h.isFocus) {
-        focus.add(h);
-        continue;
-      }
-      switch (enums.TimeOfDay.fromString(h.timeOfDay)) {
-        case enums.TimeOfDay.morning:
-          morning.add(h);
-        case enums.TimeOfDay.afternoon:
-          afternoon.add(h);
-        case enums.TimeOfDay.evening:
-          evening.add(h);
-        case enums.TimeOfDay.anytime:
-          anytime.add(h);
-      }
-    }
-
-    return [
-      if (focus.isNotEmpty)
-        _HabitGroup(
-          label: 'Фокус',
-          icon: Icons.star_rounded,
-          color: AppColors.warmAmber,
-          habits: focus,
-          showMarkAll: false,
-        ),
-      if (morning.isNotEmpty)
-        _HabitGroup(
-          label: enums.TimeOfDay.morning.localizedName,
-          icon: enums.TimeOfDay.morning.icon,
-          color: enums.TimeOfDay.morning.color(context),
-          habits: morning,
-        ),
-      if (afternoon.isNotEmpty)
-        _HabitGroup(
-          label: enums.TimeOfDay.afternoon.localizedName,
-          icon: enums.TimeOfDay.afternoon.icon,
-          color: enums.TimeOfDay.afternoon.color(context),
-          habits: afternoon,
-        ),
-      if (evening.isNotEmpty)
-        _HabitGroup(
-          label: enums.TimeOfDay.evening.localizedName,
-          icon: enums.TimeOfDay.evening.icon,
-          color: enums.TimeOfDay.evening.color(context),
-          habits: evening,
-        ),
-      if (anytime.isNotEmpty)
-        _HabitGroup(
-          label: enums.TimeOfDay.anytime.localizedName,
-          icon: enums.TimeOfDay.anytime.icon,
-          color: enums.TimeOfDay.anytime.color(context),
-          habits: anytime,
-        ),
-      if (notToday.isNotEmpty)
-        _HabitGroup(
-          label: 'Не сегодня',
-          icon: Icons.event_busy_outlined,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-          habits: notToday,
-          showMarkAll: false,
-        ),
-    ];
+  /// Presentation mapping for a Today board section — the only place the
+  /// screen still knows what a section looks like.
+  (String, IconData, Color) _groupVisuals(
+    TodayGroupKind kind,
+    BuildContext context,
+  ) {
+    return switch (kind) {
+      TodayGroupKind.focus => (
+        'Фокус',
+        Icons.star_rounded,
+        AppColors.warmAmber,
+      ),
+      TodayGroupKind.morning => (
+        enums.TimeOfDay.morning.localizedName,
+        enums.TimeOfDay.morning.icon,
+        enums.TimeOfDay.morning.color(context),
+      ),
+      TodayGroupKind.afternoon => (
+        enums.TimeOfDay.afternoon.localizedName,
+        enums.TimeOfDay.afternoon.icon,
+        enums.TimeOfDay.afternoon.color(context),
+      ),
+      TodayGroupKind.evening => (
+        enums.TimeOfDay.evening.localizedName,
+        enums.TimeOfDay.evening.icon,
+        enums.TimeOfDay.evening.color(context),
+      ),
+      TodayGroupKind.anytime => (
+        enums.TimeOfDay.anytime.localizedName,
+        enums.TimeOfDay.anytime.icon,
+        enums.TimeOfDay.anytime.color(context),
+      ),
+      TodayGroupKind.notToday => (
+        'Не сегодня',
+        Icons.event_busy_outlined,
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+      ),
+    };
   }
 
   String _formatToday() => formatFullDate(DateTime.now());
@@ -594,20 +553,4 @@ class _EntranceState extends State<_Entrance>
   }
 }
 
-// ── Habit Group model ────────────────────────────────────────
 
-class _HabitGroup {
-  const _HabitGroup({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.habits,
-    this.showMarkAll = true,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final List<Habit> habits;
-  final bool showMarkAll;
-}

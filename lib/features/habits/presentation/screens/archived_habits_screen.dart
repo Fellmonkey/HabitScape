@@ -127,7 +127,9 @@ class _ArchivedHabitTile extends ConsumerWidget {
   }
 
   Future<void> _restore(BuildContext context, WidgetRef ref) async {
-    await ref.read(habitActionsProvider.notifier).unarchiveHabit(habit.id);
+    await ref
+        .read(habitActionsProvider.notifier)
+        .setLifecycle(habit.id, HabitLifecycle.restore);
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
@@ -161,7 +163,9 @@ class _ArchivedHabitTile extends ConsumerWidget {
     );
 
     if (confirmed != true || !context.mounted) return;
-    await ref.read(habitActionsProvider.notifier).deleteHabit(habit.id);
+    await ref
+        .read(habitActionsProvider.notifier)
+        .setLifecycle(habit.id, HabitLifecycle.delete);
   }
 }
 

@@ -6,7 +6,6 @@ import '../database/app_database.dart';
 import '../database/enums.dart';
 import '../utils/date_helpers.dart';
 import '../../features/habits/domain/scheduling.dart';
-import '../../features/week/domain/week_summary.dart';
 
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {

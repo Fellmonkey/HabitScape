@@ -38,20 +38,13 @@ final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 final weekSummaryProvider = FutureProvider<WeekSummary>((ref) async {
   final now = DateTime.now();
   final weekStart = weekStartOf(now);
-  final weekEnd = weekStart.add(const Duration(days: 7));
-  final habits = await ref.watch(habitsDaoProvider).getActiveHabits();
-  final logs = await ref.watch(habitLogsDaoProvider).getLogsInRange(
-    weekStart.unixSeconds,
-    weekEnd.unixSeconds,
-  );
-  final notes = await ref.watch(dayNotesDaoProvider).getNotesInRange(
-    weekStart.unixSeconds,
-    weekEnd.unixSeconds,
-  );
+  final snapshot = await ref
+      .watch(historyStoreProvider)
+      .loadWindow(weekStart, weekStart.add(const Duration(days: 7)));
   return computeWeekSummary(
-    habits: habits,
-    logs: logs,
-    notes: notes,
+    habits: snapshot.habits,
+    logs: snapshot.logs,
+    notes: snapshot.notes,
     today: now,
   );
 });

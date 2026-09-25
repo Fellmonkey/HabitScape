@@ -12,6 +12,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../providers/habit_providers.dart';
+import '../../providers/month_goal_providers.dart';
 
 /// Month goals — things to achieve this month, with checkboxes.
 class MonthGoalsCard extends ConsumerStatefulWidget {
@@ -138,11 +139,11 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
                   onToggle: () {
                     Haptics.tap(ref.read(hapticsEnabledProvider));
                     ref
-                        .read(habitActionsProvider.notifier)
+                        .read(monthGoalActionsProvider.notifier)
                         .setMonthGoalDone(goal.id, isDone: !goal.isDone);
                   },
                   onDelete: () => ref
-                      .read(habitActionsProvider.notifier)
+                      .read(monthGoalActionsProvider.notifier)
                       .deleteMonthGoal(goal.id),
                 ),
           ],
@@ -262,7 +263,7 @@ class _AddGoalSheetState extends ConsumerState<_AddGoalSheet> {
     final title = _controller.text.trim();
     if (title.isEmpty) return;
     await ref
-        .read(habitActionsProvider.notifier)
+        .read(monthGoalActionsProvider.notifier)
         .addMonthGoal(title, monthTs: widget.monthTs);
     if (mounted) Navigator.pop(context, true);
   }

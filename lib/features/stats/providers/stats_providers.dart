@@ -7,34 +7,22 @@ import '../domain/stats_engine.dart';
 
 /// Aggregated statistics for the stats screen. Auto-disposed so each visit
 /// recomputes from fresh data.
-final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((
-  ref,
-) async {
+final statsOverviewProvider = FutureProvider.autoDispose<StatsOverview>((ref) async {
   ref.watch(todayProvider); // recompute after midnight
-  final habitsDao = ref.watch(habitsDaoProvider);
-  final logsDao = ref.watch(habitLogsDaoProvider);
-  final notesDao = ref.watch(dayNotesDaoProvider);
-
   final now = DateTime.now();
   final yearStart = now.toMidnight.subtract(
     Duration(days: AppConstants.statsHeatmapDays - 1),
   );
   final yearEnd = now.toMidnight.add(const Duration(days: 1));
 
-  final habits = await habitsDao.getActiveHabits();
-  final yearLogs = await logsDao.getLogsInRange(
-    yearStart.unixSeconds,
-    yearEnd.unixSeconds,
-  );
-  final yearNotes = await notesDao.getNotesInRange(
-    yearStart.unixSeconds,
-    yearEnd.unixSeconds,
-  );
+  final snapshot = await ref
+      .watch(historyStoreProvider)
+      .loadWindow(yearStart, yearEnd);
 
   return buildStatsOverview(
-    habits: habits,
-    yearLogs: yearLogs,
-    yearNotes: yearNotes,
+    habits: snapshot.habits,
+    yearLogs: snapshot.logs,
+    yearNotes: snapshot.notes,
     now: now,
   );
 });

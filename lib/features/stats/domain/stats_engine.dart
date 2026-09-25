@@ -119,7 +119,7 @@ WeekTrend computeWeekTrend({
   required DateTime now,
 }) {
   final today = now.toMidnight;
-  final thisWeekStart = today.subtract(Duration(days: today.weekday - 1));
+  final thisWeekStart = weekStartOf(today);
   final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
   // Mon…today — both windows share this length.
   final windowDays = today.weekday;

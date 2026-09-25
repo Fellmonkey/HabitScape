@@ -227,7 +227,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     switch (action) {
       case 'skip':
-        await actions.markSkip(habitId);
+        await actions.logToday([habitId], status: LogStatus.skip);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -236,16 +236,16 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           );
         }
       case 'focus':
-        final ok = await actions.toggleFocus(habitId, isFocus: true);
+        final ok = await actions.setFocus(habitId, isFocus: true);
         if (!ok && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Максимум 5 фокусных привычек')),
           );
         }
       case 'unfocus':
-        await actions.toggleFocus(habitId, isFocus: false);
+        await actions.setFocus(habitId, isFocus: false);
       case 'archive':
-        await actions.archiveHabit(habitId);
+        await actions.setLifecycle(habitId, HabitLifecycle.archive);
         if (context.mounted) nav.pop();
       case 'delete':
         final confirmed = await showDialog<bool>(
@@ -266,7 +266,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           ),
         );
         if (confirmed == true) {
-          await actions.deleteHabit(habitId);
+          await actions.setLifecycle(habitId, HabitLifecycle.delete);
           if (context.mounted) nav.pop();
         }
     }
