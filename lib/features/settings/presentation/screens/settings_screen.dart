@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,8 +123,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
     try {
       final service = ref.read(backupServiceProvider);
-      final json = await service.exportToJson();
-      final bytes = Uint8List.fromList(json.codeUnits);
+      final bytes = await service.exportBackup();
 
       await SharePlus.instance.share(
         ShareParams(
@@ -140,7 +137,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ),
       );
       final prefs = await ref.read(sharedPrefsProvider.future);
-      await prefs.setInt('last_backup_date', DateTime.now().toMidnight.unixSeconds);
+      await prefs.setInt(
+        'last_backup_date',
+        DateTime.now().toMidnight.unixSeconds,
+      );
       ref.invalidate(sharedPrefsProvider);
     } catch (e) {
       if (context.mounted) {
@@ -192,9 +192,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         return;
       }
 
-      final json = String.fromCharCodes(bytes);
       final service = ref.read(backupServiceProvider);
-      final count = await service.importFromJson(json);
+      final count = await service.importBackup(bytes);
 
       if (context.mounted) {
         _showSnackBar(context, 'Импортировано привычек: $count');
@@ -257,7 +256,8 @@ class _LastBackupTile extends ConsumerWidget {
           final date = dateFromUnix(last);
           label = 'Последний экспорт: ${date.day}.${date.month}.${date.year}';
         }
-        final old = last != null &&
+        final old =
+            last != null &&
             (DateTime.now().toMidnight.unixSeconds - last) > 30 * 86400;
         return GlassCard(
           child: ListTile(

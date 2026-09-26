@@ -10,20 +10,18 @@ import 'package:rythm/core/database/backup_service.dart';
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';
 
+Uint8List _bytes(String json) => Uint8List.fromList(utf8.encode(json));
+
+Map<String, dynamic> _decode(Uint8List bytes) =>
+    jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+
 void main() {
   late AppDatabase db;
   late BackupService service;
 
   setUp(() {
     db = createTestDatabase();
-    service = BackupService(
-      habitsDao: db.habitsDao,
-      habitLogsDao: db.habitLogsDao,
-      dayNotesDao: db.dayNotesDao,
-      monthlyGoalsDao: db.monthlyGoalsDao,
-      lettersDao: db.lettersDao,
-      weeklyIntentionsDao: db.weeklyIntentionsDao,
-    );
+    service = BackupService(db);
   });
 
   tearDown(() async {
@@ -34,8 +32,8 @@ void main() {
     test(
       'empty DB export produces valid JSON with version and empty arrays',
       () async {
-        final json = await service.exportToJson();
-        final data = jsonDecode(json) as Map<String, dynamic>;
+        final bytes = await service.exportBackup();
+        final data = _decode(bytes);
 
         expect(data['version'], 2);
         expect(data['exportedAt'], isNotNull);
@@ -97,20 +95,13 @@ void main() {
       );
 
       // Export
-      final exportedJson = await service.exportToJson();
+      final exportedBytes = await service.exportBackup();
 
       // Import into a fresh database
       final db2 = createTestDatabase();
-      final service2 = BackupService(
-        habitsDao: db2.habitsDao,
-        habitLogsDao: db2.habitLogsDao,
-        dayNotesDao: db2.dayNotesDao,
-        monthlyGoalsDao: db2.monthlyGoalsDao,
-        lettersDao: db2.lettersDao,
-        weeklyIntentionsDao: db2.weeklyIntentionsDao,
-      );
+      final service2 = BackupService(db2);
 
-      final count = await service2.importFromJson(exportedJson);
+      final count = await service2.importBackup(exportedBytes);
       expect(count, 1);
 
       // Verify habits
@@ -123,9 +114,10 @@ void main() {
       expect(habits.first.timeOfDay, 'morning');
       expect(habits.first.isFocus, true);
 
-      // Verify logs
+      // Verify logs point at the imported habit
       final logs = await db2.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
+      expect(logs.first.habitId, habits.first.id);
       expect(logs.first.status, LogStatus.done);
       expect(logs.first.loggedHour, 8);
 
@@ -167,11 +159,125 @@ void main() {
       await db2.close();
     });
 
+    test('Cyrillic survives UTF-8 export and import', () async {
+      final habitId = await db.habitsDao.insertHabit(
+        makeHabitCompanion(name: 'Бег'),
+      );
+      await db.habitLogsDao.markDone(
+        habitId,
+        DateTime.utc(2026, 2, 3).unixSeconds,
+        8,
+      );
+      await db.dayNotesDao.upsertNote(
+        DateTime.utc(2026, 2, 3).unixSeconds,
+        moment: 'Пробежка утром',
+      );
+      await db.lettersDao.addLetter(
+        deliverAt: DateTime.utc(2026, 3, 1).unixSeconds,
+        body: 'Ты справился',
+      );
+
+      final bytes = await service.exportBackup();
+      // UTF-8 bytes for "Бег" must be present, not its UTF-16 code units.
+      expect(utf8.decode(bytes), contains('Бег'));
+
+      final db2 = createTestDatabase();
+      final service2 = BackupService(db2);
+      await service2.importBackup(bytes);
+
+      final habit = (await db2.habitsDao.getAllHabits()).single;
+      expect(habit.name, 'Бег');
+      expect(
+        (await db2.dayNotesDao.getAllNotes()).single.moment,
+        'Пробежка утром',
+      );
+      expect(
+        (await db2.lettersDao.getAllLetters()).single.body,
+        'Ты справился',
+      );
+
+      await db2.close();
+    });
+
+    test('restore into a used install remaps habit ids', () async {
+      final oldHabitId = await db.habitsDao.insertHabit(
+        makeHabitCompanion(name: 'Imported'),
+      );
+      await db.habitLogsDao.markDone(
+        oldHabitId,
+        DateTime.utc(2026, 4, 1).unixSeconds,
+        9,
+      );
+      final bytes = await service.exportBackup();
+
+      // A used install with its own habit and log.
+      final db2 = createTestDatabase();
+      final usedHabitId = await db2.habitsDao.insertHabit(
+        makeHabitCompanion(name: 'Existing'),
+      );
+      await db2.habitLogsDao.markDone(
+        usedHabitId,
+        DateTime.utc(2026, 4, 2).unixSeconds,
+        10,
+      );
+
+      await BackupService(db2).importBackup(bytes);
+
+      final habits = await db2.habitsDao.getAllHabits();
+      expect(habits, hasLength(1));
+      expect(habits.single.name, 'Imported');
+
+      final logs = await db2.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(1));
+      expect(logs.single.habitId, habits.single.id);
+
+      await db2.close();
+    });
+
+    test('failed import rolls back and keeps existing data', () async {
+      final existingId = await db.habitsDao.insertHabit(
+        makeHabitCompanion(name: 'Keep me'),
+      );
+      await db.habitLogsDao.markDone(
+        existingId,
+        DateTime.utc(2026, 4, 1).unixSeconds,
+        9,
+      );
+
+      final badJson = jsonEncode({
+        'version': 2,
+        'habits': [
+          {
+            'id': 7,
+            'name': 'Broken',
+            'createdAt': DateTime.utc(2026, 1, 1).unixSeconds,
+          },
+        ],
+        'habitLogs': [
+          {
+            'habitId': 999,
+            'date': DateTime.utc(2026, 1, 2).unixSeconds,
+            'status': 'done',
+          },
+        ],
+      });
+
+      await expectLater(
+        service.importBackup(_bytes(badJson)),
+        throwsA(isA<FormatException>()),
+      );
+
+      final habits = await db.habitsDao.getAllHabits();
+      expect(habits, hasLength(1));
+      expect(habits.single.name, 'Keep me');
+      expect(await db.habitLogsDao.getAllLogs(), hasLength(1));
+    });
+
     test('import with version=3 throws FormatException', () async {
       final badJson = jsonEncode({'version': 3, 'habits': [], 'habitLogs': []});
 
       expect(
-        () => service.importFromJson(badJson),
+        () => service.importBackup(_bytes(badJson)),
         throwsA(isA<FormatException>()),
       );
     });
@@ -199,7 +305,7 @@ void main() {
           'monthlyGoals': [],
         });
 
-        await service.importFromJson(v1Json);
+        await service.importBackup(_bytes(v1Json));
 
         final habits = await db.habitsDao.getAllHabits();
         expect(habits, hasLength(1));
@@ -247,7 +353,7 @@ void main() {
         ],
       });
 
-      await service.importFromJson(importJson);
+      await service.importBackup(_bytes(importJson));
 
       final habits = await db.habitsDao.getAllHabits();
       expect(habits, hasLength(1));
@@ -274,19 +380,10 @@ void main() {
         ),
       );
 
-      final json = await service.exportToJson();
+      final bytes = await service.exportBackup();
 
       final db2 = createTestDatabase();
-      final service2 = BackupService(
-        habitsDao: db2.habitsDao,
-        habitLogsDao: db2.habitLogsDao,
-        dayNotesDao: db2.dayNotesDao,
-        monthlyGoalsDao: db2.monthlyGoalsDao,
-        lettersDao: db2.lettersDao,
-        weeklyIntentionsDao: db2.weeklyIntentionsDao,
-      );
-
-      await service2.importFromJson(json);
+      await BackupService(db2).importBackup(bytes);
 
       final logs = await db2.habitLogsDao.getAllLogs();
       expect(logs.first.loggedHour, isNull);

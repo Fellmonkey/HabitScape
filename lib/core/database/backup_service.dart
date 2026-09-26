@@ -16,34 +16,31 @@ import 'enums.dart';
 // v2 adds the `letters` collection (time capsules).
 const _backupVersion = 2;
 
-/// Exports and imports the whole database as one JSON document. Sits at the
-/// persistence seam: it is the only place that knows every collection and
-/// the order in which they must be cleared/rebuilt.
+/// Exports and imports the whole database as one UTF-8 JSON backup.
+///
+/// Sits at the persistence seam: it owns encoding, the collection list, the
+/// old→new habit-id map, and the all-or-nothing import transaction. Callers
+/// only choose a file and report the result.
 class BackupService {
-  BackupService({
-    required this.habitsDao,
-    required this.habitLogsDao,
-    required this.dayNotesDao,
-    required this.monthlyGoalsDao,
-    required this.lettersDao,
-    required this.weeklyIntentionsDao,
-  });
+  BackupService(this._db);
 
-  final HabitsDao habitsDao;
-  final HabitLogsDao habitLogsDao;
-  final DayNotesDao dayNotesDao;
-  final MonthlyGoalsDao monthlyGoalsDao;
-  final LettersDao lettersDao;
-  final WeeklyIntentionsDao weeklyIntentionsDao;
+  final AppDatabase _db;
 
-  /// Exports the entire database to a JSON string.
-  Future<String> exportToJson() async {
-    final habits = await habitsDao.getAllHabits();
-    final logs = await habitLogsDao.getAllLogs();
-    final notes = await dayNotesDao.getAllNotes();
-    final goals = await monthlyGoalsDao.getAllGoals();
-    final letters = await lettersDao.getAllLetters();
-    final intentions = await weeklyIntentionsDao.getAllIntentions();
+  HabitsDao get _habitsDao => _db.habitsDao;
+  HabitLogsDao get _habitLogsDao => _db.habitLogsDao;
+  DayNotesDao get _dayNotesDao => _db.dayNotesDao;
+  MonthlyGoalsDao get _monthlyGoalsDao => _db.monthlyGoalsDao;
+  LettersDao get _lettersDao => _db.lettersDao;
+  WeeklyIntentionsDao get _weeklyIntentionsDao => _db.weeklyIntentionsDao;
+
+  /// Exports the entire database as UTF-8 encoded JSON bytes.
+  Future<Uint8List> exportBackup() async {
+    final habits = await _habitsDao.getAllHabits();
+    final logs = await _habitLogsDao.getAllLogs();
+    final notes = await _dayNotesDao.getAllNotes();
+    final goals = await _monthlyGoalsDao.getAllGoals();
+    final letters = await _lettersDao.getAllLetters();
+    final intentions = await _weeklyIntentionsDao.getAllIntentions();
 
     final data = {
       'version': _backupVersion,
@@ -56,20 +53,13 @@ class BackupService {
       'weeklyIntentions': intentions.map(_intentionToMap).toList(),
     };
 
-    return jsonEncode(data);
+    return Uint8List.fromList(utf8.encode(jsonEncode(data)));
   }
 
-  /// Imports a full backup from JSON, replacing all existing data.
-  /// Returns the number of habits imported.
-  Future<int> importFromJson(String jsonString) async {
-    final data = jsonDecode(jsonString) as Map<String, dynamic>;
-    final version = data['version'] as int? ?? 1;
-    if (version > _backupVersion) {
-      throw FormatException(
-        'Unsupported backup version: $version (max supported: $_backupVersion)',
-      );
-    }
-
+  /// Imports a full backup from UTF-8 bytes, replacing all existing data in a
+  /// single transaction. Returns the number of habits imported.
+  Future<int> importBackup(Uint8List bytes) async {
+    final data = _decode(bytes);
     final habitsList = data['habits'] as List<dynamic>? ?? [];
     final logsList = data['habitLogs'] as List<dynamic>? ?? [];
     final notesList = data['dayNotes'] as List<dynamic>? ?? [];
@@ -77,110 +67,136 @@ class BackupService {
     final lettersList = data['letters'] as List<dynamic>? ?? [];
     final intentionsList = data['weeklyIntentions'] as List<dynamic>? ?? [];
 
-    // Clear existing data (order matters for FK constraints).
-    await habitLogsDao.deleteAllLogs();
-    await dayNotesDao.deleteAllNotes();
-    await monthlyGoalsDao.deleteAllGoals();
-    await lettersDao.deleteAllLetters();
-    await weeklyIntentionsDao.deleteAllIntentions();
-    await habitsDao.deleteAllHabits();
+    return _db.transaction(() async {
+      // Clear in foreign-key order: children before parents.
+      await _habitLogsDao.deleteAllLogs();
+      await _dayNotesDao.deleteAllNotes();
+      await _monthlyGoalsDao.deleteAllGoals();
+      await _lettersDao.deleteAllLetters();
+      await _weeklyIntentionsDao.deleteAllIntentions();
+      await _habitsDao.deleteAllHabits();
 
-    for (final h in habitsList) {
-      final map = h as Map<String, dynamic>;
-      await habitsDao.insertHabit(
-        HabitsCompanion(
-          name: Value(map['name'] as String),
-          category: Value(map['category'] as String? ?? 'general'),
-          icon: Value(
-            map['icon'] as String? ??
-                map['seedArchetype'] as String? ??
-                'check',
+      final habitIdMap = <int, int>{};
+      for (var i = 0; i < habitsList.length; i++) {
+        final map = habitsList[i] as Map<String, dynamic>;
+        final oldId = map['id'] as int? ?? i + 1;
+        final newId = await _habitsDao.insertHabit(
+          HabitsCompanion(
+            name: Value(map['name'] as String),
+            category: Value(map['category'] as String? ?? 'general'),
+            icon: Value(
+              map['icon'] as String? ??
+                  map['seedArchetype'] as String? ??
+                  'check',
+            ),
+            frequencyType: Value(map['frequencyType'] as String? ?? 'daily'),
+            frequencyValue: Value(map['frequencyValue'] as String? ?? '{}'),
+            timeOfDay: Value(map['timeOfDay'] as String? ?? 'anytime'),
+            isFocus: Value(map['isFocus'] as bool? ?? false),
+            isArchived: Value(map['isArchived'] as bool? ?? false),
+            createdAt: Value(map['createdAt'] as int),
           ),
-          frequencyType: Value(map['frequencyType'] as String? ?? 'daily'),
-          frequencyValue: Value(map['frequencyValue'] as String? ?? '{}'),
-          timeOfDay: Value(map['timeOfDay'] as String? ?? 'anytime'),
-          isFocus: Value(map['isFocus'] as bool? ?? false),
-          isArchived: Value(map['isArchived'] as bool? ?? false),
-          createdAt: Value(map['createdAt'] as int),
-        ),
-      );
-    }
-
-    for (final l in logsList) {
-      final map = l as Map<String, dynamic>;
-      await habitLogsDao.upsertLog(
-        HabitLogsCompanion(
-          habitId: Value(map['habitId'] as int),
-          date: Value(map['date'] as int),
-          status: Value(
-            LogStatus.fromString(map['status'] as String? ?? 'pending'),
-          ),
-          loggedHour: Value(map['loggedHour'] as int?),
-        ),
-      );
-    }
-
-    for (final n in notesList) {
-      final map = n as Map<String, dynamic>;
-      await dayNotesDao.upsertNote(
-        map['date'] as int,
-        moment: map['moment'] as String?,
-        mood: map['mood'] == null
-            ? null
-            : DayMood.fromString(map['mood'] as String),
-        timeQuality: map['timeQuality'] as int?,
-      );
-    }
-
-    // Import monthly goals; the fresh id lets us set done on the same row.
-    for (final g in goalsList) {
-      final map = g as Map<String, dynamic>;
-      final id = await monthlyGoalsDao.addGoal(
-        map['month'] as int,
-        map['title'] as String,
-      );
-      if (map['isDone'] == true) {
-        await monthlyGoalsDao.setGoalDone(id, isDone: true);
+        );
+        habitIdMap[oldId] = newId;
       }
-    }
 
-    // Import capsules, preserving their open state and dates.
-    for (final l in lettersList) {
-      final map = l as Map<String, dynamic>;
-      final id = await lettersDao.addLetter(
-        deliverAt: map['deliverAt'] as int,
-        body: map['body'] as String,
-        createdAt: map['createdAt'] as int?,
-      );
-      if (map['isOpened'] == true) {
-        await lettersDao.markOpened(
-          id,
-          map['openedAt'] as int? ?? DateTime.now().toMidnight.unixSeconds,
+      for (final l in logsList) {
+        final map = l as Map<String, dynamic>;
+        final oldHabitId = map['habitId'] as int;
+        final newHabitId = habitIdMap[oldHabitId];
+        if (newHabitId == null) {
+          throw FormatException(
+            'Backup log references unknown habit $oldHabitId',
+          );
+        }
+        await _habitLogsDao.upsertLog(
+          HabitLogsCompanion(
+            habitId: Value(newHabitId),
+            date: Value(map['date'] as int),
+            status: Value(
+              LogStatus.fromString(map['status'] as String? ?? 'pending'),
+            ),
+            loggedHour: Value(map['loggedHour'] as int?),
+          ),
         );
       }
-      final reaction = map['reaction'] as String?;
-      if (reaction != null) {
-        await lettersDao.setReaction(id, reaction);
-      }
-      final reply = map['reply'] as String?;
-      if (reply != null) {
-        await lettersDao.setReply(id, reply);
-      }
-    }
 
-    // Import weekly intentions.
-    for (final i in intentionsList) {
-      final map = i as Map<String, dynamic>;
-      final intention = map['intention'] as String?;
-      if (intention != null && intention.isNotEmpty) {
-        await weeklyIntentionsDao.setIntention(
-          map['weekStart'] as int,
-          intention,
+      for (final n in notesList) {
+        final map = n as Map<String, dynamic>;
+        await _dayNotesDao.upsertNote(
+          map['date'] as int,
+          moment: map['moment'] as String?,
+          mood: map['mood'] == null
+              ? null
+              : DayMood.fromString(map['mood'] as String),
+          timeQuality: map['timeQuality'] as int?,
         );
       }
-    }
 
-    return habitsList.length;
+      // Import monthly goals; the fresh id lets us set done on the same row.
+      for (final g in goalsList) {
+        final map = g as Map<String, dynamic>;
+        final id = await _monthlyGoalsDao.addGoal(
+          map['month'] as int,
+          map['title'] as String,
+        );
+        if (map['isDone'] == true) {
+          await _monthlyGoalsDao.setGoalDone(id, isDone: true);
+        }
+      }
+
+      // Import capsules, preserving their open state and dates.
+      for (final l in lettersList) {
+        final map = l as Map<String, dynamic>;
+        final id = await _lettersDao.addLetter(
+          deliverAt: map['deliverAt'] as int,
+          body: map['body'] as String,
+          createdAt: map['createdAt'] as int?,
+        );
+        if (map['isOpened'] == true) {
+          await _lettersDao.markOpened(
+            id,
+            map['openedAt'] as int? ?? DateTime.now().toMidnight.unixSeconds,
+          );
+        }
+        final reaction = map['reaction'] as String?;
+        if (reaction != null) {
+          await _lettersDao.setReaction(id, reaction);
+        }
+        final reply = map['reply'] as String?;
+        if (reply != null) {
+          await _lettersDao.setReply(id, reply);
+        }
+      }
+
+      // Import weekly intentions.
+      for (final i in intentionsList) {
+        final map = i as Map<String, dynamic>;
+        final intention = map['intention'] as String?;
+        if (intention != null && intention.isNotEmpty) {
+          await _weeklyIntentionsDao.setIntention(
+            map['weekStart'] as int,
+            intention,
+          );
+        }
+      }
+
+      return habitsList.length;
+    });
+  }
+
+  Map<String, dynamic> _decode(Uint8List bytes) {
+    final decoded = jsonDecode(utf8.decode(bytes));
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Backup root must be a JSON object');
+    }
+    final version = decoded['version'] as int? ?? 1;
+    if (version > _backupVersion) {
+      throw FormatException(
+        'Unsupported backup version: $version (max supported: $_backupVersion)',
+      );
+    }
+    return decoded;
   }
 
   // ── Serialization helpers ────────────────────────────────────
