@@ -1,6 +1,5 @@
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
-import 'package:rythm/core/config/app_constants.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 
 import '../../habits/domain/completion.dart';
@@ -299,22 +298,21 @@ class StatsOverview {
 }
 
 /// Builds the full [StatsOverview] from raw DAO data. Pure — no DB access.
+/// [start] and [end] come from the HistoryStore window that produced the data,
+/// so this module never re-derives the date range.
 StatsOverview buildStatsOverview({
   required List<Habit> habits,
   required List<HabitLog> yearLogs,
   required List<DayNote> yearNotes,
+  required DateTime start,
+  required DateTime end,
   required DateTime now,
 }) {
-  final yearStart = now.toMidnight.subtract(
-    Duration(days: AppConstants.statsHeatmapDays - 1),
-  );
-  final yearEnd = now.toMidnight.add(const Duration(days: 1));
-
   final days = computeDailyCompletion(
     habits: habits,
     logs: yearLogs,
-    start: yearStart,
-    end: yearEnd,
+    start: start,
+    end: end,
   );
 
   return StatsOverview(

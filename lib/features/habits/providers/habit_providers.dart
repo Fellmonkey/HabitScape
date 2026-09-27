@@ -118,15 +118,14 @@ final monthGoalsProvider = StreamProvider.autoDispose
 /// unix timestamp. One-shot fetch — the screen invalidates it after edits.
 final monthSpreadProvider = FutureProvider.autoDispose
     .family<List<MonthSpreadDay>, int>((ref, monthTs) async {
-      final monthStart = dateFromUnix(monthTs).toMidnight;
       final snapshot = await ref
           .watch(historyStoreProvider)
-          .loadWindow(monthStart, nextMonthStart(monthStart));
+          .month(dateFromUnix(monthTs));
       return computeMonthSpreadDays(
         habits: snapshot.habits,
         logs: snapshot.logs,
         notes: snapshot.notes,
-        monthStart: monthStart,
+        monthStart: snapshot.start,
       );
     });
 
@@ -157,16 +156,19 @@ final dayProgressProvider = Provider<double>((ref) {
 // ── Habit Engine provider (metrics for a month) ──────────────
 
 /// One month of logs for a habit — shared by the heatmap and history pager.
+/// Goes through [HistoryStore] so the window policy stays in one place.
 final habitMonthLogsProvider = FutureProvider.autoDispose
-    .family<List<HabitLog>, ({int habitId, int year, int month})>((ref, p) {
-      final dao = ref.watch(habitLogsDaoProvider);
-      final monthStart = DateTime.utc(p.year, p.month, 1);
-      final monthEnd = nextMonthStart(monthStart);
-      return dao.getLogsForHabitInRange(
-        p.habitId,
-        monthStart.unixSeconds,
-        monthEnd.unixSeconds,
-      );
+    .family<List<HabitLog>, ({int habitId, int year, int month})>((
+      ref,
+      p,
+    ) async {
+      final snapshot = await ref
+          .watch(historyStoreProvider)
+          .habitMonth(
+            habitId: p.habitId,
+            month: DateTime.utc(p.year, p.month, 1),
+          );
+      return snapshot.logs;
     });
 
 /// Computed metrics for a habit in a month. Reuses [habitProvider] and

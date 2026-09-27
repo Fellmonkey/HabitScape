@@ -37,10 +37,7 @@ final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 /// The auto-summary of the current week.
 final weekSummaryProvider = FutureProvider<WeekSummary>((ref) async {
   final now = DateTime.now();
-  final weekStart = weekStartOf(now);
-  final snapshot = await ref
-      .watch(historyStoreProvider)
-      .loadWindow(weekStart, weekStart.add(const Duration(days: 7)));
+  final snapshot = await ref.watch(historyStoreProvider).week(now);
   return computeWeekSummary(
     habits: snapshot.habits,
     logs: snapshot.logs,

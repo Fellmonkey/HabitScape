@@ -112,11 +112,17 @@ void main() {
         ),
       ];
 
+      final now = DateTime.utc(2026, 1, 31);
+      final end = DateTime.utc(2026, 2, 1);
+      final start = end.subtract(const Duration(days: 365));
+
       final overview = buildStatsOverview(
         habits: [habit],
         yearLogs: yearLogs,
         yearNotes: const [],
-        now: DateTime.utc(2026, 1, 31),
+        start: start,
+        end: end,
+        now: now,
       );
 
       // Year window is 2025-02-01 … 2026-02-01 (exclusive): all 3 done.
@@ -125,11 +131,15 @@ void main() {
     });
 
     test('empty data yields no insights', () {
+      final now = DateTime.utc(2026, 1, 31);
+      final end = DateTime.utc(2026, 2, 1);
       final overview = buildStatsOverview(
         habits: const [],
         yearLogs: const [],
         yearNotes: const [],
-        now: DateTime.utc(2026, 1, 31),
+        start: end.subtract(const Duration(days: 365)),
+        end: end,
+        now: now,
       );
 
       expect(overview.weekTrend.hasData, isFalse);
