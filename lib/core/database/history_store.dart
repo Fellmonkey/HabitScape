@@ -65,22 +65,42 @@ class HistoryStore {
   Future<WindowSnapshot> habitMonth({
     required int habitId,
     required DateTime month,
-  }) async {
+  }) {
     final start = firstOfMonth(month);
-    final end = nextMonthStart(start);
+    return habitRange(
+      habitId: habitId,
+      start: start,
+      end: nextMonthStart(start),
+    );
+  }
+
+  /// One habit's logs in [start, end), with the habit as the population.
+  Future<WindowSnapshot> habitRange({
+    required int habitId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final s = start.toMidnight;
+    final e = end.toMidnight;
     final habit = await habitsDao.getHabit(habitId);
     final logs = await habitLogsDao.getLogsForHabitInRange(
       habitId,
-      start.unixSeconds,
-      end.unixSeconds,
+      s.unixSeconds,
+      e.unixSeconds,
     );
     return WindowSnapshot(
-      start: start,
-      end: end,
+      start: s,
+      end: e,
       habits: [habit],
       logs: logs,
       notes: const [],
     );
+  }
+
+  /// The month of the habit's earliest log, or null when it has none.
+  Future<DateTime?> firstLogMonth(int habitId) async {
+    final ts = await habitLogsDao.earliestLogDate(habitId);
+    return ts == null ? null : firstOfMonth(dateFromUnix(ts));
   }
 
   /// Loads [start, end) — both normalized to midnight UTC — for the active

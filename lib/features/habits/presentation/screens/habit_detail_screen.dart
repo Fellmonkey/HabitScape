@@ -11,6 +11,7 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 
 import '../../domain/habit_engine.dart';
+import '../../domain/habit_history.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
 import '../widgets/habit_form_sheet.dart';
@@ -721,25 +722,10 @@ class _TimeBar extends StatelessWidget {
   }
 }
 
-// ── History (lazy, loaded month by month) ────────────────────
+// ── History (lazy, loaded in chunks) ─────────────────────────
 
-/// One loaded month of logs for the history list.
-class _MonthLogGroup {
-  const _MonthLogGroup({
-    required this.year,
-    required this.month,
-    required this.logs,
-  });
-
-  final int year, month;
-  final List<HabitLog> logs;
-
-  int get doneCount => logs.where((l) => l.status == LogStatus.done).length;
-  int get skipCount => logs.where((l) => l.status == LogStatus.skip).length;
-}
-
-/// Lazily loads the habit's history month by month (newest first) as the
-/// user scrolls — never fetches or builds the whole history at once.
+/// Renders [HabitHistory]. The cursor, page fetch, month grouping and
+/// exhaustion rule live in the domain module; this widget only draws.
 class _HistorySection extends ConsumerStatefulWidget {
   const _HistorySection({required this.habitId});
 
@@ -750,98 +736,56 @@ class _HistorySection extends ConsumerStatefulWidget {
 }
 
 class _HistorySectionState extends ConsumerState<_HistorySection> {
-  final List<_MonthLogGroup> _months = [];
-  bool _loading = false;
-  bool _allLoaded = false;
-
-  /// Next month to load, as (year, month). Starts at the current month
-  /// and walks backwards.
-  late int _year;
-  late int _month;
+  late final HabitHistory _history;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _year = now.year;
-    _month = now.month;
-    _loadNextMonth();
+    _history = HabitHistory(
+      habitId: widget.habitId,
+      store: ref.read(historyStoreProvider),
+    );
+    _loadMore();
   }
 
-  Future<void> _loadNextMonth() async {
-    if (_loading || _allLoaded) return;
-    _loading = true;
-    try {
-      final dao = ref.read(habitLogsDaoProvider);
-      // Load one month per trigger: probe the current month; if it has logs,
-      // append it and step back so the next trigger loads the previous one.
-      // If empty, walk back (up to a cap) to find the next non-empty month.
-      for (var i = 0; i < 24; i++) {
-        final logs = await dao.getLogsForHabitInRange(
-          widget.habitId,
-          DateTime.utc(_year, _month, 1).unixSeconds,
-          DateTime.utc(_year, _month + 1, 1).unixSeconds,
-        );
-        if (logs.isNotEmpty) {
-          if (mounted) {
-            setState(() {
-              _months.add(
-                _MonthLogGroup(year: _year, month: _month, logs: logs),
-              );
-            });
-          }
-          _stepBack(); // advance the cursor — otherwise the month repeats forever
-          return;
-        }
-        if (!_stepBack()) {
-          // empty month — walk back
-          _allLoaded = true;
-          if (mounted) setState(() {});
-          return;
-        }
-      }
-    } finally {
-      _loading = false;
-    }
+  Future<void> _loadMore() async {
+    await _history.loadNextPage();
+    if (mounted) setState(() {});
   }
 
-  /// Moves the cursor one month back; false when history is exhausted.
-  bool _stepBack() {
-    if (_month == 1) {
-      if (_year <= 2000) return false;
-      _year--;
-      _month = 12;
-    } else {
-      _month--;
-    }
-    return true;
-  }
-
-  /// Total sliver items: one header per month + one log row per log +
-  /// a trailing spacer when there may be more history.
+  /// Total sliver items: one header per month + one row per log + a trailing
+  /// footer while more history may exist.
   int get _itemCount {
-    var count = _months.length; // headers
-    for (final m in _months) {
+    var count = _history.months.length;
+    for (final m in _history.months) {
       count += m.logs.length;
     }
-    if (!_allLoaded) count += 1; // footer trigger
+    if (!_history.isExhausted) count += 1;
     return count;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_months.isEmpty && _allLoaded) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            'Нет записей',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.4),
+    if (_history.months.isEmpty) {
+      if (_history.isExhausted) {
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              'Нет записей',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
             ),
           ),
+        );
+      }
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: CircularProgressIndicator()),
         ),
       );
     }
@@ -850,7 +794,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
       itemCount: _itemCount,
       itemBuilder: (context, index) {
         var remaining = index; // map flat index to (month, log) pairs
-        for (final m in _months) {
+        for (final m in _history.months) {
           if (remaining == 0) {
             return _MonthHeader(group: m);
           }
@@ -861,7 +805,9 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
           remaining -= m.logs.length;
         }
         // Footer visible at the end — load more on scroll.
-        WidgetsBinding.instance.addPostFrameCallback((_) => _loadNextMonth());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_history.isLoading) _loadMore();
+        });
         return const SizedBox(height: 40);
       },
     );
@@ -871,7 +817,7 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
 class _MonthHeader extends StatelessWidget {
   const _MonthHeader({required this.group});
 
-  final _MonthLogGroup group;
+  final HabitHistoryMonth group;
 
   @override
   Widget build(BuildContext context) {

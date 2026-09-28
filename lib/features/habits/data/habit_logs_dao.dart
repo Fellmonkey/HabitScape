@@ -52,6 +52,16 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     return (select(habitLogs)..orderBy([(l) => OrderingTerm.asc(l.id)])).get();
   }
 
+  /// Earliest log date for [habitId], or null when it has no logs.
+  Future<int?> earliestLogDate(int habitId) async {
+    final minDate = habitLogs.date.min();
+    final query = selectOnly(habitLogs)
+      ..addColumns([minDate])
+      ..where(habitLogs.habitId.equals(habitId));
+    final row = await query.getSingle();
+    return row.read(minDate);
+  }
+
   /// Deletes all logs (for import).
   Future<int> deleteAllLogs() {
     return delete(habitLogs).go();
