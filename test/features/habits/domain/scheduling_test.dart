@@ -5,6 +5,115 @@ import 'package:rythm/features/habits/domain/scheduling.dart';
 import '../../../fixtures/test_factories.dart';
 
 void main() {
+  // ── decode ──────────────────────────────────────────────────
+
+  group('HabitFrequency.decode', () {
+    test('daily ignores its value', () {
+      final frequency = HabitFrequency.decode('daily', '{}');
+      expect(frequency, isA<DailyFrequency>());
+      expect(frequency.encode(), '{}');
+    });
+
+    test('weekdays reads a days map', () {
+      final frequency = HabitFrequency.decode('weekdays', '{"days":[1,3,5]}');
+      expect(frequency, isA<WeekdaysFrequency>());
+      expect((frequency as WeekdaysFrequency).days, [1, 3, 5]);
+    });
+
+    test('weekdays reads a bare list', () {
+      final frequency = HabitFrequency.decode('weekdays', '[1,2,3]');
+      expect((frequency as WeekdaysFrequency).days, [1, 2, 3]);
+    });
+
+    test('weekdays sorts and de-duplicates days', () {
+      final frequency = HabitFrequency.decode('weekdays', '{"days":[5,1,3,1]}');
+      expect((frequency as WeekdaysFrequency).days, [1, 3, 5]);
+    });
+
+    test('weekdays falls back to Mon-Fri for invalid input', () {
+      for (final value in ['invalid', '{}', '{"days":[]}']) {
+        final frequency = HabitFrequency.decode('weekdays', value);
+        expect((frequency as WeekdaysFrequency).days, [1, 2, 3, 4, 5]);
+      }
+    });
+
+    test('xPerWeek and everyXDays read a map or a bare integer', () {
+      final xPerWeek = HabitFrequency.decode('xPerWeek', '{"x":3}');
+      expect((xPerWeek as XPerWeekFrequency).x, 3);
+
+      final everyXDays = HabitFrequency.decode('everyXDays', '5');
+      expect((everyXDays as EveryXDaysFrequency).x, 5);
+    });
+
+    test('xPerWeek and everyXDays clamp invalid values to 1', () {
+      final xPerWeek = HabitFrequency.decode('xPerWeek', 'invalid');
+      expect((xPerWeek as XPerWeekFrequency).x, 1);
+
+      final everyXDays = HabitFrequency.decode('everyXDays', '{"x":0}');
+      expect((everyXDays as EveryXDaysFrequency).x, 1);
+    });
+
+    test('cycle reads length, days, labels and start date', () {
+      final frequency = HabitFrequency.decode(
+        'cycle',
+        '{"length":5,"days":[1,3],"labels":{"1":"Старт"},"startDate":1767225600}',
+      );
+      expect(frequency, isA<CycleFrequency>());
+      final cycle = frequency as CycleFrequency;
+      expect(cycle.length, 5);
+      expect(cycle.days, [1, 3]);
+      expect(cycle.labels, {1: 'Старт'});
+      expect(cycle.startDate, 1767225600);
+    });
+
+    test('cycle falls back to a five-day cycle on invalid input', () {
+      final cycle = HabitFrequency.decode('cycle', 'invalid') as CycleFrequency;
+      expect(cycle.length, 5);
+      expect(cycle.days, [1]);
+    });
+
+    test('unknown type falls back to daily', () {
+      expect(
+        HabitFrequency.decode('unknown', '{"x":3}'),
+        isA<DailyFrequency>(),
+      );
+    });
+
+    test('decoded values are cached by type and value', () {
+      final first = HabitFrequency.decode('weekdays', '{"days":[1,2]}');
+      final second = HabitFrequency.decode('weekdays', '{"days":[1,2]}');
+      expect(identical(first, second), isTrue);
+    });
+  });
+
+  // ── encode round-trip ───────────────────────────────────────
+
+  group('encode round-trip', () {
+    final frequencies = <HabitFrequency>[
+      const DailyFrequency(),
+      WeekdaysFrequency(const [1, 3, 5]),
+      const XPerWeekFrequency(3),
+      const EveryXDaysFrequency(4),
+      CycleFrequency(
+        length: 6,
+        days: const [1, 4],
+        labels: const {1: 'Старт'},
+        startDate: 1767225600,
+      ),
+    ];
+
+    for (final frequency in frequencies) {
+      test('${frequency.runtimeType} survives decode(encode())', () {
+        final restored = HabitFrequency.decode(
+          frequency.type.name,
+          frequency.encode(),
+        );
+        expect(restored.encode(), frequency.encode());
+        expect(restored.type, frequency.type);
+      });
+    }
+  });
+
   // ── isExpectedToday ─────────────────────────────────────────
 
   group('isExpectedToday', () {
@@ -114,45 +223,25 @@ void main() {
         expect(isExpectedToday(habit, DateTime.utc(2026, 1, 10)), isTrue);
       });
     });
-  });
 
-  // ── parseWeekdays ───────────────────────────────────────────
-
-  group('parseWeekdays', () {
-    test('parses map with days key', () {
-      expect(parseWeekdays('{"days":[1,3,5]}'), [1, 3, 5]);
-    });
-
-    test('parses bare list', () {
-      expect(parseWeekdays('[1,2,3]'), [1, 2, 3]);
-    });
-
-    test('invalid JSON returns default Mon-Fri', () {
-      expect(parseWeekdays('invalid'), [1, 2, 3, 4, 5]);
-    });
-
-    test('empty object returns default Mon-Fri', () {
-      expect(parseWeekdays('{}'), [1, 2, 3, 4, 5]);
-    });
-  });
-
-  // ── parseXValue ─────────────────────────────────────────────
-
-  group('parseXValue', () {
-    test('parses map with x key', () {
-      expect(parseXValue('{"x":3}'), 3);
-    });
-
-    test('parses bare integer', () {
-      expect(parseXValue('5'), 5);
-    });
-
-    test('invalid JSON returns default 1', () {
-      expect(parseXValue('invalid'), 1);
-    });
-
-    test('empty object returns default 1', () {
-      expect(parseXValue('{}'), 1);
+    group('cycle', () {
+      test('uses the configured start date and day positions', () {
+        final habit = makeHabit(
+          frequencyType: 'cycle',
+          frequencyValue:
+              '{"length":4,"days":[1,3],"startDate":${DateTime.utc(2026, 1, 1).unixSeconds}}',
+        );
+        // Day 1 of the cycle.
+        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 1)), isTrue);
+        // Day 2 — rest.
+        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 2)), isFalse);
+        // Day 3 — trained.
+        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 3)), isTrue);
+        // Day 5 wraps to day 1.
+        expect(isExpectedToday(habit, DateTime.utc(2026, 1, 5)), isTrue);
+        // Before the cycle starts nothing is expected.
+        expect(isExpectedToday(habit, DateTime.utc(2025, 12, 31)), isFalse);
+      });
     });
   });
 }

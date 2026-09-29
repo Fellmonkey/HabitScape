@@ -5,76 +5,323 @@ import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/localized_dates.dart';
 
-// ── Memoized frequency parsing ───────────────────────────────
+// ── Frequency value object ───────────────────────────────────
 //
-// Frequency values are short JSON strings parsed on hot paths, so results
-// are cached per input string. The cache is bounded and cleared wholesale
-// when it overflows.
-const _maxParseCacheEntries = 128;
+// A habit's schedule is one value: type + parameters. The database still
+// stores it as `(frequencyType, frequencyValue)` for compatibility, but every
+// producer and consumer passes [HabitFrequency], never raw JSON.
 
-final Map<String, List<int>> _weekdaysCache = {};
-final Map<String, int> _xValueCache = {};
-final Map<
-  String,
-  ({int length, List<int> days, Map<int, String> labels, int? startDate})
->
-_cycleCache = {};
+const _maxCacheEntries = 128;
+final Map<String, HabitFrequency> _frequencyCache = {};
 
-T _parseCached<T>(Map<String, T> cache, String key, T Function() compute) {
-  final value = cache[key];
-  if (value != null) return value;
-  final computed = compute();
-  if (cache.length >= _maxParseCacheEntries) cache.clear();
-  cache[key] = computed;
-  return computed;
+sealed class HabitFrequency {
+  const HabitFrequency();
+
+  FrequencyType get type;
+  String encode();
+  String get label;
+
+  /// Whether a habit with this schedule is expected on [today].
+  bool isExpectedOn({required DateTime createdAt, required DateTime today});
+
+  /// How many times this schedule expects the habit in the active range.
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  });
+
+  static HabitFrequency decode(String type, String value) {
+    final key = '$type|$value';
+    final cached = _frequencyCache[key];
+    if (cached != null) return cached;
+
+    final frequency = _decode(type, value);
+    if (_frequencyCache.length >= _maxCacheEntries) _frequencyCache.clear();
+    _frequencyCache[key] = frequency;
+    return frequency;
+  }
+
+  static HabitFrequency fromHabit(Habit habit) =>
+      decode(habit.frequencyType, habit.frequencyValue);
+
+  static HabitFrequency _decode(String type, String value) {
+    final decoded = _tryDecode(value);
+    switch (FrequencyType.fromString(type)) {
+      case FrequencyType.daily:
+        return const DailyFrequency();
+      case FrequencyType.weekdays:
+        return WeekdaysFrequency(_weekdaysFrom(decoded));
+      case FrequencyType.xPerWeek:
+        return XPerWeekFrequency(_xFrom(decoded));
+      case FrequencyType.everyXDays:
+        return EveryXDaysFrequency(_xFrom(decoded));
+      case FrequencyType.cycle:
+        return CycleFrequency._fromJson(decoded);
+    }
+  }
+
+  static Object? _tryDecode(String value) {
+    try {
+      return jsonDecode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static List<int> _weekdaysFrom(Object? decoded) {
+    if (decoded is Map && decoded['days'] is List) {
+      return (decoded['days'] as List).whereType<int>().toList();
+    }
+    if (decoded is List) return decoded.whereType<int>().toList();
+    return const [1, 2, 3, 4, 5];
+  }
+
+  static int _xFrom(Object? decoded) {
+    final x = decoded is Map && decoded['x'] is int
+        ? decoded['x'] as int
+        : decoded is int
+        ? decoded
+        : 1;
+    return x < 1 ? 1 : x;
+  }
 }
+
+class DailyFrequency extends HabitFrequency {
+  const DailyFrequency();
+
+  @override
+  FrequencyType get type => FrequencyType.daily;
+
+  @override
+  String encode() => '{}';
+
+  @override
+  String get label => 'Каждый день';
+
+  @override
+  bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
+      true;
+
+  @override
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  }) => daysBetweenInclusive(effectiveStart, monthEnd);
+}
+
+class WeekdaysFrequency extends HabitFrequency {
+  WeekdaysFrequency(List<int> days)
+    : days = List.unmodifiable(_cleanDays(days));
+
+  final List<int> days;
+
+  @override
+  FrequencyType get type => FrequencyType.weekdays;
+
+  @override
+  String encode() => jsonEncode({'days': days});
+
+  @override
+  String get label => days.map((d) => shortWeekdayNames[d]).join(', ');
+
+  @override
+  bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
+      days.contains(today.weekday);
+
+  @override
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  }) => countWeekdaysInRange(effectiveStart, monthEnd, days);
+
+  static List<int> _cleanDays(List<int> input) {
+    final clean = input.where((d) => d >= 1 && d <= 7).toSet().toList()..sort();
+    return clean.isEmpty ? const [1, 2, 3, 4, 5] : clean;
+  }
+}
+
+class XPerWeekFrequency extends HabitFrequency {
+  const XPerWeekFrequency(this.x) : assert(x >= 1);
+
+  final int x;
+
+  @override
+  FrequencyType get type => FrequencyType.xPerWeek;
+
+  @override
+  String encode() => jsonEncode({'x': x});
+
+  @override
+  String get label => '$x× в нед';
+
+  @override
+  bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
+      true; // Simplification: always show for x_per_week.
+
+  @override
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  }) {
+    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
+    return (activeDays / 7.0 * x).ceil();
+  }
+}
+
+class EveryXDaysFrequency extends HabitFrequency {
+  const EveryXDaysFrequency(this.x) : assert(x >= 1);
+
+  final int x;
+
+  @override
+  FrequencyType get type => FrequencyType.everyXDays;
+
+  @override
+  String encode() => jsonEncode({'x': x});
+
+  @override
+  String get label => _everyXLabel(x);
+
+  @override
+  bool isExpectedOn({required DateTime createdAt, required DateTime today}) {
+    final diff = today.toMidnight.difference(createdAt.toMidnight).inDays;
+    if (diff < 0) return false;
+    return diff % x == 0;
+  }
+
+  @override
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  }) {
+    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
+    return (activeDays / x).ceil();
+  }
+}
+
+class CycleFrequency extends HabitFrequency {
+  CycleFrequency({
+    required int length,
+    required List<int> days,
+    Map<int, String> labels = const {},
+    this.startDate,
+  }) : length = length < 2 ? 2 : length,
+       days = List.unmodifiable(_cleanDays(days, length < 2 ? 2 : length)),
+       labels = Map.unmodifiable(
+         Map.fromEntries(
+           labels.entries.where(
+             (e) => e.key >= 1 && e.key <= (length < 2 ? 2 : length),
+           ),
+         ),
+       );
+
+  factory CycleFrequency._fromJson(Object? decoded) {
+    if (decoded is Map && decoded['length'] is int && decoded['days'] is List) {
+      final labels = <int, String>{};
+      if (decoded['labels'] is Map) {
+        for (final entry in (decoded['labels'] as Map).entries) {
+          final key = int.tryParse(entry.key.toString());
+          if (key != null) labels[key] = entry.value.toString();
+        }
+      }
+      return CycleFrequency(
+        length: decoded['length'] as int,
+        days: (decoded['days'] as List).whereType<int>().toList(),
+        labels: labels,
+        startDate: decoded['startDate'] as int?,
+      );
+    }
+    return CycleFrequency(length: 5, days: const [1]);
+  }
+
+  final int length;
+  final List<int> days;
+  final Map<int, String> labels;
+  final int? startDate;
+
+  @override
+  FrequencyType get type => FrequencyType.cycle;
+
+  @override
+  String encode() => jsonEncode({
+    'length': length,
+    'days': days,
+    'labels': labels.map((k, v) => MapEntry(k.toString(), v)),
+    if (startDate != null) 'startDate': startDate,
+  });
+
+  @override
+  String get label => 'Цикл $length дн. (дни: ${days.join(',')})';
+
+  @override
+  bool isExpectedOn({required DateTime createdAt, required DateTime today}) {
+    final reference = _referenceDate(createdAt);
+    final diff = today.toMidnight.difference(reference).inDays;
+    if (diff < 0) return false;
+    return days.contains(diff % length + 1);
+  }
+
+  @override
+  int requiredBase({
+    required DateTime createdAt,
+    required DateTime effectiveStart,
+    required DateTime monthEnd,
+  }) {
+    final reference = _referenceDate(createdAt);
+    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
+    final startDiff = effectiveStart.toMidnight.difference(reference).inDays;
+    var expected = 0;
+    for (var i = 0; i < activeDays; i++) {
+      final diff = startDiff + i;
+      if (diff < 0) continue;
+      if (days.contains(diff % length + 1)) expected++;
+    }
+    return expected;
+  }
+
+  /// Label for [date] when it falls inside this cycle, if one is configured.
+  String? labelFor(DateTime date, DateTime createdAt) {
+    final diff = date.toMidnight.difference(_referenceDate(createdAt)).inDays;
+    if (diff < 0) return null;
+    return labels[diff % length + 1];
+  }
+
+  DateTime _referenceDate(DateTime createdAt) =>
+      startDate != null ? dateFromUnix(startDate!) : createdAt.toMidnight;
+
+  static List<int> _cleanDays(List<int> input, int length) {
+    final clean = input.where((d) => d >= 1 && d <= length).toSet().toList()
+      ..sort();
+    return clean.isEmpty ? const [1] : clean;
+  }
+}
+
+// ── Schedule queries ─────────────────────────────────────────
 
 /// Whether a habit is expected on [today].
 bool isExpectedToday(Habit habit, DateTime today) {
   return isExpectedOn(
-    frequencyType: habit.frequencyType,
-    frequencyValue: habit.frequencyValue,
+    frequency: HabitFrequency.fromHabit(habit),
     createdAt: habit.createdAt,
     today: today,
   );
 }
 
-/// Whether a habit with the given frequency fields is expected on [today].
-///
-/// Owns the single definition of "expected on a day" for a habit's schedule.
-/// [createdAt] is a unix timestamp (seconds).
+/// Whether a habit with the given [frequency] is expected on [today].
 bool isExpectedOn({
-  required String frequencyType,
-  required String frequencyValue,
+  required HabitFrequency frequency,
   required int createdAt,
   required DateTime today,
 }) {
-  final freqType = FrequencyType.fromString(frequencyType);
-  switch (freqType) {
-    case FrequencyType.daily:
-      return true;
-    case FrequencyType.weekdays:
-      final weekdays = parseWeekdays(frequencyValue);
-      return weekdays.contains(today.weekday);
-    case FrequencyType.xPerWeek:
-      // Simplification: always show for x_per_week
-      return true;
-    case FrequencyType.everyXDays:
-      final x = parseXValue(frequencyValue);
-      final created = dateFromUnix(createdAt);
-      final diff = today.toMidnight.difference(created.toMidnight).inDays;
-      if (diff < 0) return false;
-      return diff % x == 0;
-    case FrequencyType.cycle:
-      final cycle = parseCycle(frequencyValue);
-      final refDate = cycle.startDate != null
-          ? dateFromUnix(cycle.startDate!)
-          : dateFromUnix(createdAt);
-      final diff = today.toMidnight.difference(refDate.toMidnight).inDays;
-      if (diff < 0) return false;
-      final currentDayOfCycle = (diff % cycle.length) + 1;
-      return cycle.days.contains(currentDayOfCycle);
-  }
+  return frequency.isExpectedOn(
+    createdAt: dateFromUnix(createdAt),
+    today: today,
+  );
 }
 
 /// Required base for a habit in a month, accounting for creation date.
@@ -82,159 +329,31 @@ bool isExpectedOn({
 /// Owns the single definition of "how many times is this habit expected in
 /// this month" so month metrics, week summaries and heatmaps agree.
 int calculateRequiredBase(Habit habit, int year, int month) {
-  final freqType = FrequencyType.fromString(habit.frequencyType);
   final createdAt = dateFromUnix(habit.createdAt);
   final monthStart = DateTime.utc(year, month, 1);
   final monthEnd = DateTime.utc(year, month + 1, 0);
 
   // Effective start: max(month start, habit creation date).
-  final effectiveStart = createdAt.isAfter(monthStart)
-      ? createdAt
-      : monthStart;
+  final effectiveStart = createdAt.isAfter(monthStart) ? createdAt : monthStart;
   // Created later than this month — no base.
   if (effectiveStart.isAfter(monthEnd)) return 0;
 
-  final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-
-  switch (freqType) {
-    case FrequencyType.daily:
-      return activeDays;
-
-    case FrequencyType.weekdays:
-      final weekdays = parseWeekdays(habit.frequencyValue);
-      return countWeekdaysInRange(effectiveStart, monthEnd, weekdays);
-
-    case FrequencyType.xPerWeek:
-      final x = parseXValue(habit.frequencyValue);
-      final weeks = activeDays / 7.0;
-      return (weeks * x).ceil();
-
-    case FrequencyType.everyXDays:
-      final x = parseXValue(habit.frequencyValue);
-      return (activeDays / x).ceil();
-
-    case FrequencyType.cycle:
-      final cycle = parseCycle(habit.frequencyValue);
-      var expected = 0;
-      final refDate = cycle.startDate != null
-          ? dateFromUnix(cycle.startDate!)
-          : createdAt;
-      final startDiff = effectiveStart.toMidnight
-          .difference(refDate.toMidnight)
-          .inDays;
-      for (var i = 0; i < activeDays; i++) {
-        final diff = startDiff + i;
-        if (diff < 0) continue;
-        final currentDay = (diff % cycle.length) + 1;
-        if (cycle.days.contains(currentDay)) expected++;
-      }
-      return expected;
-  }
-}
-
-/// Parses a weekday list from a JSON frequency value (default Mon–Fri).
-/// Cached per input string — callers must not mutate the result.
-List<int> parseWeekdays(String json) {
-  return _parseCached(_weekdaysCache, json, () {
-    try {
-      final decoded = jsonDecode(json);
-      if (decoded is Map && decoded.containsKey('days')) {
-        return (decoded['days'] as List).cast<int>();
-      }
-      if (decoded is List) return decoded.cast<int>();
-    } catch (_) {}
-    return const [1, 2, 3, 4, 5];
-  });
-}
-
-/// Parses a single integer from a JSON frequency value (default 1).
-/// Cached per input string.
-int parseXValue(String json) {
-  return _parseCached(_xValueCache, json, () {
-    try {
-      final decoded = jsonDecode(json);
-      if (decoded is Map && decoded.containsKey('x')) {
-        return decoded['x'] as int;
-      }
-      if (decoded is int) return decoded;
-    } catch (_) {}
-    return 1;
-  });
-}
-
-/// Parses cycle configuration (length, active days, optional labels).
-/// Cached per input string — callers must not mutate `days`/`labels`.
-({int length, List<int> days, Map<int, String> labels, int? startDate})
-parseCycle(String json) {
-  return _parseCached(_cycleCache, json, () {
-    try {
-      final decoded = jsonDecode(json);
-      if (decoded is Map &&
-          decoded.containsKey('length') &&
-          decoded.containsKey('days')) {
-        final length = decoded['length'] as int;
-        final days = (decoded['days'] as List).cast<int>();
-        final labels = <int, String>{};
-        if (decoded.containsKey('labels')) {
-          final rawLabels = decoded['labels'] as Map;
-          for (final entry in rawLabels.entries) {
-            labels[int.parse(entry.key.toString())] = entry.value.toString();
-          }
-        }
-        final startDate = decoded['startDate'] as int?;
-        return (
-          length: length,
-          days: days,
-          labels: labels,
-          startDate: startDate,
-        );
-      }
-    } catch (_) {}
-    return (
-      length: 5,
-      days: const [1],
-      labels: const {},
-      startDate: null,
-    ); // fallback
-  });
+  return HabitFrequency.fromHabit(habit).requiredBase(
+    createdAt: createdAt,
+    effectiveStart: effectiveStart,
+    monthEnd: monthEnd,
+  );
 }
 
 /// Label for the current cycle day, if any.
 String? getCycleLabelForDate(Habit habit, DateTime date) {
-  final freqType = FrequencyType.fromString(habit.frequencyType);
-  if (freqType != FrequencyType.cycle) return null;
-
-  final cycle = parseCycle(habit.frequencyValue);
-  final refDate = cycle.startDate != null
-      ? dateFromUnix(cycle.startDate!)
-      : dateFromUnix(habit.createdAt);
-  final diff = date.toMidnight.difference(refDate.toMidnight).inDays;
-  if (diff < 0) return null;
-  final currentDayOfCycle = (diff % cycle.length) + 1;
-
-  return cycle.labels[currentDayOfCycle];
+  final frequency = HabitFrequency.fromHabit(habit);
+  if (frequency is! CycleFrequency) return null;
+  return frequency.labelFor(date, dateFromUnix(habit.createdAt));
 }
-
-// ── Human-readable labels ────────────────────────────────────
 
 /// Short human-readable frequency description, e.g. "Mon, Wed, Fri", "3×/week".
-String frequencyLabel(Habit habit) {
-  final type = FrequencyType.fromString(habit.frequencyType);
-  return switch (type) {
-    FrequencyType.daily => 'Каждый день',
-    FrequencyType.weekdays => parseWeekdays(
-      habit.frequencyValue,
-    ).map((d) => shortWeekdayNames[d]).join(', '),
-    FrequencyType.xPerWeek => '${parseXValue(habit.frequencyValue)}× в нед',
-    FrequencyType.everyXDays => _everyXLabel(parseXValue(habit.frequencyValue)),
-    FrequencyType.cycle => _cycleLabel(habit.frequencyValue),
-  };
-}
-
-String _cycleLabel(String json) {
-  final cycle = parseCycle(json);
-  return 'Цикл ${cycle.length} дн. (дни: ${cycle.days.join(',')})';
-}
+String frequencyLabel(Habit habit) => HabitFrequency.fromHabit(habit).label;
 
 String _everyXLabel(int x) {
   if (x == 1) return 'Каждый день';

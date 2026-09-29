@@ -15,6 +15,7 @@ import '../data/habits_dao.dart';
 import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
 import '../domain/habit_engine.dart';
+import '../domain/scheduling.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -212,8 +213,7 @@ class HabitActions extends Notifier<void> {
     required String name,
     required String category,
     required HabitIcon icon,
-    required FrequencyType frequencyType,
-    required String frequencyValue,
+    required HabitFrequency frequency,
     required TimeOfDay timeOfDay,
     bool isFocus = false,
   }) async {
@@ -223,8 +223,8 @@ class HabitActions extends Notifier<void> {
         name: Value(name),
         category: Value(category),
         icon: Value(icon.name),
-        frequencyType: Value(frequencyType.name),
-        frequencyValue: Value(frequencyValue),
+        frequencyType: Value(frequency.type.name),
+        frequencyValue: Value(frequency.encode()),
         timeOfDay: Value(timeOfDay.name),
         isFocus: Value(isFocus),
         createdAt: Value(now.unixSeconds),
@@ -303,8 +303,7 @@ class HabitActions extends Notifier<void> {
     required int habitId,
     required String name,
     required HabitIcon icon,
-    required FrequencyType frequencyType,
-    required String frequencyValue,
+    required HabitFrequency frequency,
     required TimeOfDay timeOfDay,
   }) async {
     final existing = await _habitsDao.getHabit(habitId);
@@ -314,8 +313,8 @@ class HabitActions extends Notifier<void> {
         name: Value(name),
         category: Value(existing.category),
         icon: Value(icon.name),
-        frequencyType: Value(frequencyType.name),
-        frequencyValue: Value(frequencyValue),
+        frequencyType: Value(frequency.type.name),
+        frequencyValue: Value(frequency.encode()),
         timeOfDay: Value(timeOfDay.name),
         isFocus: Value(existing.isFocus),
         isArchived: Value(existing.isArchived),

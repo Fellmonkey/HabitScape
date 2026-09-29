@@ -215,20 +215,19 @@ const _timeSlots = [
 // ── Frequency templates ────────────────────────────────────
 
 class _FreqTemplate {
-  const _FreqTemplate(this.type, this.value);
-  final FrequencyType type;
-  final String value;
+  const _FreqTemplate(this.frequency);
+  final HabitFrequency frequency;
 }
 
-const _freqTemplates = [
-  _FreqTemplate(FrequencyType.daily, '{}'),
-  _FreqTemplate(FrequencyType.daily, '{}'),
-  _FreqTemplate(FrequencyType.weekdays, '{"days":[1,2,3,4,5]}'),
-  _FreqTemplate(FrequencyType.weekdays, '{"days":[1,3,5]}'),
-  _FreqTemplate(FrequencyType.xPerWeek, '{"x":3}'),
-  _FreqTemplate(FrequencyType.xPerWeek, '{"x":5}'),
-  _FreqTemplate(FrequencyType.everyXDays, '{"x":2}'),
-  _FreqTemplate(FrequencyType.everyXDays, '{"x":3}'),
+final _freqTemplates = [
+  const _FreqTemplate(DailyFrequency()),
+  const _FreqTemplate(DailyFrequency()),
+  _FreqTemplate(WeekdaysFrequency(const [1, 2, 3, 4, 5])),
+  _FreqTemplate(WeekdaysFrequency(const [1, 3, 5])),
+  const _FreqTemplate(XPerWeekFrequency(3)),
+  const _FreqTemplate(XPerWeekFrequency(5)),
+  const _FreqTemplate(EveryXDaysFrequency(2)),
+  const _FreqTemplate(EveryXDaysFrequency(3)),
 ];
 
 /// Seeds the database with realistic data for a [DebugScenario].
@@ -301,8 +300,8 @@ class DebugDataSeeder {
           name: '$name$suffix',
           createdAt: createdDate.unixSeconds,
           icon: Value(icon.name),
-          frequencyType: Value(freq.type.name),
-          frequencyValue: Value(freq.value),
+          frequencyType: Value(freq.frequency.type.name),
+          frequencyValue: Value(freq.frequency.encode()),
           timeOfDay: Value(tod.name),
         ),
       );
@@ -326,9 +325,7 @@ class DebugDataSeeder {
     while (m.isBefore(endMonth)) {
       for (final meta in habitMeta) {
         // Skip months before creation
-        if (m.isBefore(
-          firstOfMonth(meta.createdAt),
-        )) {
+        if (m.isBefore(firstOfMonth(meta.createdAt))) {
           continue;
         }
 
@@ -618,8 +615,7 @@ class DebugDataSeeder {
 
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {
     return isExpectedOn(
-      frequencyType: meta.freq.type.name,
-      frequencyValue: meta.freq.value,
+      frequency: meta.freq.frequency,
       createdAt: meta.createdAt.unixSeconds,
       today: date,
     );

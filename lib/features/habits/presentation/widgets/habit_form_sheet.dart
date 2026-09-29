@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,13 +43,21 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
 
     if (h != null) {
       _nameController = TextEditingController(text: h.name);
-      _frequency = FrequencyType.fromString(h.frequencyType);
+      final frequency = HabitFrequency.fromHabit(h);
+      _frequency = frequency.type;
       _timeOfDay = TimeOfDay.fromString(h.timeOfDay);
       _icon = HabitIcon.fromString(h.icon);
       _advancedExpanded = true; // editing: show every field up front
 
-      _selectedWeekdays = parseWeekdays(h.frequencyValue).toSet();
-      final parsedX = parseXValue(h.frequencyValue);
+      _selectedWeekdays = switch (frequency) {
+        WeekdaysFrequency(:final days) => days.toSet(),
+        _ => {1, 2, 3, 4, 5},
+      };
+      final parsedX = frequency is XPerWeekFrequency
+          ? frequency.x
+          : frequency is EveryXDaysFrequency
+          ? frequency.x
+          : 1;
       _xValue = _frequency == FrequencyType.xPerWeek && parsedX > 1
           ? parsedX
           : 3;
@@ -58,7 +65,9 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
           ? parsedX
           : 7;
 
-      final cycle = parseCycle(h.frequencyValue);
+      final cycle = frequency is CycleFrequency
+          ? frequency
+          : CycleFrequency(length: 5, days: const [1]);
       _cycleLength = cycle.length;
       _cycleDays = cycle.days.toSet();
       _cycleLabels = Map.from(cycle.labels);
@@ -88,56 +97,53 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     super.dispose();
   }
 
-  String _buildFrequencyValue() => switch (_frequency) {
-    FrequencyType.weekdays => jsonEncode({
-      'days': _selectedWeekdays.toList()..sort(),
-    }),
-    FrequencyType.xPerWeek => jsonEncode({'x': _xValue}),
-    FrequencyType.everyXDays => jsonEncode({'x': _everyXDays}),
-    FrequencyType.cycle => jsonEncode({
-      'length': _cycleLength,
-      'days': _cycleDays.toList()..sort(),
-      'labels': _cycleLabels.map((k, v) => MapEntry(k.toString(), v)),
-      if (_cycleStartDate != null)
-        'startDate':
-            DateTime(
-              _cycleStartDate!.year,
-              _cycleStartDate!.month,
-              _cycleStartDate!.day,
-            ).millisecondsSinceEpoch ~/
-            1000,
-    }),
-    _ => '{}',
+  HabitFrequency _buildFrequency() => switch (_frequency) {
+    FrequencyType.weekdays => WeekdaysFrequency(
+      _selectedWeekdays.toList()..sort(),
+    ),
+    FrequencyType.xPerWeek => XPerWeekFrequency(_xValue),
+    FrequencyType.everyXDays => EveryXDaysFrequency(_everyXDays),
+    FrequencyType.cycle => CycleFrequency(
+      length: _cycleLength,
+      days: _cycleDays.toList()..sort(),
+      labels: _cycleLabels,
+      startDate: _cycleStartDate == null
+          ? null
+          : DateTime(
+                  _cycleStartDate!.year,
+                  _cycleStartDate!.month,
+                  _cycleStartDate!.day,
+                ).millisecondsSinceEpoch ~/
+                1000,
+    ),
+    _ => const DailyFrequency(),
   };
 
   void _applyTemplate(HabitTemplate template) {
     setState(() {
       _nameController.text = template.name;
       _icon = template.icon;
-      _frequency = template.frequencyType;
+      _frequency = template.frequency.type;
       _timeOfDay = template.timeOfDay;
       _advancedExpanded = false;
-      switch (template.frequencyType) {
-        case FrequencyType.weekdays:
+      switch (template.frequency) {
+        case WeekdaysFrequency(:final days):
           _selectedWeekdays
             ..clear()
-            ..addAll(parseWeekdays(template.frequencyValue));
-        case FrequencyType.xPerWeek:
-          _xValue = parseXValue(template.frequencyValue);
-          if (_xValue < 1) _xValue = 3;
-        case FrequencyType.everyXDays:
-          _everyXDays = parseXValue(template.frequencyValue);
-          if (_everyXDays < 2) _everyXDays = 7;
-        case FrequencyType.cycle:
-          final c = parseCycle(template.frequencyValue);
-          _cycleLength = c.length;
+            ..addAll(days);
+        case XPerWeekFrequency(:final x):
+          _xValue = x < 1 ? 3 : x;
+        case EveryXDaysFrequency(:final x):
+          _everyXDays = x < 2 ? 7 : x;
+        case CycleFrequency frequency:
+          _cycleLength = frequency.length;
           _cycleDays
             ..clear()
-            ..addAll(c.days);
+            ..addAll(frequency.days);
           _cycleLabels
             ..clear()
-            ..addAll(c.labels);
-        case FrequencyType.daily:
+            ..addAll(frequency.labels);
+        case DailyFrequency():
           break;
       }
     });
@@ -147,7 +153,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    final freqValue = _buildFrequencyValue();
+    final frequency = _buildFrequency();
     final actions = ref.read(habitActionsProvider.notifier);
 
     if (_isEdit) {
@@ -155,8 +161,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         habitId: widget.habit!.id,
         name: name,
         icon: _icon,
-        frequencyType: _frequency,
-        frequencyValue: freqValue,
+        frequency: frequency,
         timeOfDay: _timeOfDay,
       );
       if (mounted) Navigator.pop(context);
@@ -165,8 +170,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         name: name,
         category: 'general',
         icon: _icon,
-        frequencyType: _frequency,
-        frequencyValue: freqValue,
+        frequency: frequency,
         timeOfDay: _timeOfDay,
       );
       if (mounted) Navigator.pop(context, id);
