@@ -345,6 +345,48 @@ void main() {
       expect(trend.hasData, isTrue);
     });
 
+    test('pools counts instead of averaging daily percentages', () {
+      // Daily habit A + a Monday-only habit B. Mon–Wed: A done all three,
+      // B pending on Monday. Daily ratios are 100%, 100%, 50% (mean 83.3%),
+      // while the pooled measure is 3 done of 4 expectations (75%).
+      final daily = makeHabit(
+        id: 1,
+        name: 'Вода',
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
+      );
+      final mondays = makeHabit(
+        id: 2,
+        name: 'Йога',
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1]}',
+        createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
+      );
+      final logs = [
+        for (var i = 0; i < 3; i++)
+          makeLog(
+            habitId: 1,
+            date: DateTime.utc(2026, 2, 2 + i).unixSeconds,
+            status: LogStatus.done,
+          ),
+        makeLog(
+          habitId: 2,
+          date: DateTime.utc(2026, 2, 2).unixSeconds,
+          status: LogStatus.pending,
+        ),
+      ];
+
+      final trend = computeWeekTrend(
+        habits: [daily, mondays],
+        logs: logs,
+        now: DateTime.utc(2026, 2, 4),
+      );
+
+      expect(trend.thisWeekPct, closeTo(75.0, 0.01));
+      expect(trend.thisWeekDone, 3);
+      expect(trend.thisWeekExpected, 4);
+    });
+
     test('no data when nothing expected in either week', () {
       final habit = makeHabit(
         name: 'Поздняя',

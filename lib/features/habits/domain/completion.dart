@@ -4,12 +4,112 @@ import '../../../core/utils/date_helpers.dart';
 
 import 'scheduling.dart';
 
+/// The single skip policy of the app: a skipped day is excused, so it is
+/// removed from the denominator instead of counting as a failure.
+enum SkipPolicy { excuseExpectation }
+
+/// One completion measure — a numerator, the expectations that count, and
+/// the policy applied to skips.
+///
+/// Every screen asks for a measure built here instead of re-deriving a
+/// percentage: day ratio, habit month, week, trend and weekday rhythm all
+/// share this denominator. Pooling sums counts before dividing, so a week is
+/// never an average of daily percentages.
+class Completion {
+  const Completion._({
+    required this.done,
+    required this.expected,
+    required this.skipped,
+  });
+
+  /// Builds a measure from raw counts. A skip excuses one expectation; counts
+  /// are clamped so a malformed input can never produce >100% or a negative
+  /// denominator.
+  factory Completion.fromCounts({
+    required int done,
+    required int expected,
+    int skipped = 0,
+  }) {
+    final safeExpected = expected < 0 ? 0 : expected;
+    final safeSkipped = skipped < 0
+        ? 0
+        : (skipped > safeExpected ? safeExpected : skipped);
+    final countable = safeExpected - safeSkipped;
+    final safeDone = done < 0 ? 0 : (done > countable ? countable : done);
+    return Completion._(
+      done: safeDone,
+      expected: safeExpected,
+      skipped: safeSkipped,
+    );
+  }
+
+  static const empty = Completion._(done: 0, expected: 0, skipped: 0);
+
+  /// How many expectations were met.
+  final int done;
+
+  /// Expectations before skips are excused.
+  final int expected;
+
+  /// Expectations excused by a skip.
+  final int skipped;
+
+  SkipPolicy get skipPolicy => SkipPolicy.excuseExpectation;
+
+  /// The numerator: completed expectations.
+  int get numerator => done;
+
+  /// The denominator: expectations left after excusing skips.
+  int get denominator => expected - skipped;
+
+  bool get hasExpectation => denominator > 0;
+
+  /// 0.0 … 1.0, or null when every expectation was excused.
+  double? get ratio {
+    if (!hasExpectation) return null;
+    return (done / denominator).clamp(0.0, 1.0);
+  }
+
+  /// Percentage 0…100, or null when every expectation was excused.
+  double? get percent {
+    final value = ratio;
+    return value == null ? null : value * 100.0;
+  }
+
+  /// Zero when there is nothing to measure — for widgets that need a number.
+  double get ratioOrZero => ratio ?? 0.0;
+  double get percentOrZero => percent ?? 0.0;
+
+  /// Sums counts, then divides once. This is what makes a week or a trend
+  /// agree with its parts.
+  static Completion pool(Iterable<Completion> measures) {
+    var done = 0;
+    var expected = 0;
+    var skipped = 0;
+    for (final measure in measures) {
+      done += measure.done;
+      expected += measure.expected;
+      skipped += measure.skipped;
+    }
+    return Completion.fromCounts(
+      done: done,
+      expected: expected,
+      skipped: skipped,
+    );
+  }
+
+  /// Pools the measures of [days]. Callers decide which days are elapsed.
+  static Completion overDays(Iterable<DayCompletion> days) =>
+      pool(days.map((day) => day.completion));
+}
+
 /// Completion level of a single day — feeds the heatmap and month spread.
 class DayCompletion {
   const DayCompletion({
     required this.date,
     required this.expected,
     required this.done,
+    this.skipped = 0,
   });
 
   final DateTime date;
@@ -20,8 +120,16 @@ class DayCompletion {
   /// How many of them were marked done.
   final int done;
 
+  /// Expectations excused by a skip log.
+  final int skipped;
+
+  Completion get completion =>
+      Completion.fromCounts(done: done, expected: expected, skipped: skipped);
+
+  bool get hasExpectation => completion.hasExpectation;
+
   /// 0.0 (nothing done) … 1.0 (everything done). 0 when nothing expected.
-  double get ratio => expected == 0 ? 0.0 : (done / expected).clamp(0.0, 1.0);
+  double get ratio => completion.ratioOrZero;
 }
 
 /// Computes per-day completion for [start, end) across all [habits].
@@ -42,23 +150,39 @@ List<DayCompletion> computeDailyCompletion({
   while (day.isBefore(end.toMidnight)) {
     var expected = 0;
     var done = 0;
+    var skipped = 0;
+    final dayLogs = logsByDay[day.unixSeconds];
     for (final habit in habits) {
       // Never expect a habit before it was created.
       if (day.isBefore(dateFromUnix(habit.createdAt).toMidnight)) continue;
       if (!isExpectedToday(habit, day)) continue;
       expected++;
-      final dayLogs = logsByDay[day.unixSeconds];
-      if (dayLogs != null &&
-          dayLogs.any(
-            (l) => l.habitId == habit.id && l.status == LogStatus.done,
-          )) {
+      final status = _statusFor(dayLogs, habit.id);
+      if (status == LogStatus.done) {
         done++;
+      } else if (status == LogStatus.skip) {
+        skipped++;
       }
     }
-    result.add(DayCompletion(date: day, expected: expected, done: done));
+    result.add(
+      DayCompletion(
+        date: day,
+        expected: expected,
+        done: done,
+        skipped: skipped,
+      ),
+    );
     day = day.add(const Duration(days: 1));
   }
   return result;
+}
+
+LogStatus? _statusFor(List<HabitLog>? dayLogs, int habitId) {
+  if (dayLogs == null) return null;
+  for (final log in dayLogs) {
+    if (log.habitId == habitId) return log.status;
+  }
+  return null;
 }
 
 /// One day of the month spread: completion + mood + time quality
@@ -68,6 +192,7 @@ class MonthSpreadDay {
     required this.date,
     required this.expected,
     required this.done,
+    this.skipped = 0,
     required this.mood,
     required this.timeQuality,
     required this.moment,
@@ -76,6 +201,7 @@ class MonthSpreadDay {
   final DateTime date;
   final int expected;
   final int done;
+  final int skipped;
 
   /// Day mood (null when not recorded).
   final DayMood? mood;
@@ -88,8 +214,11 @@ class MonthSpreadDay {
 
   bool get hasMoment => moment != null && moment!.trim().isNotEmpty;
 
+  Completion get completion =>
+      Completion.fromCounts(done: done, expected: expected, skipped: skipped);
+
   /// 0.0 … 1.0 completion; 0 when nothing expected.
-  double get ratio => expected == 0 ? 0.0 : (done / expected).clamp(0.0, 1.0);
+  double get ratio => completion.ratioOrZero;
 }
 
 /// Completion % across the month's elapsed days — days still in the future
@@ -102,14 +231,8 @@ double? monthCompletionPct({
   required DateTime today,
 }) {
   final cutoff = today.toMidnight;
-  var expected = 0;
-  var done = 0;
-  for (final day in days) {
-    if (day.date.isAfter(cutoff)) continue;
-    expected += day.expected;
-    done += day.done;
-  }
-  return expected == 0 ? null : done / expected * 100.0;
+  final elapsed = days.where((day) => !day.date.isAfter(cutoff));
+  return Completion.pool(elapsed.map((day) => day.completion)).percent;
 }
 
 /// Builds the month-spread days for one month from raw DAO data.
@@ -139,6 +262,7 @@ List<MonthSpreadDay> computeMonthSpreadDays({
         date: d.date,
         expected: d.expected,
         done: d.done,
+        skipped: d.skipped,
         mood: noteByDay[d.date.unixSeconds]?.mood,
         timeQuality: noteByDay[d.date.unixSeconds]?.timeQuality,
         moment: noteByDay[d.date.unixSeconds]?.moment,

@@ -61,11 +61,11 @@ MoodCorrelation computeMoodCorrelation({
   var emptyDays = 0;
   var emptyDaysBad = 0;
   for (final day in days) {
-    if (day.expected == 0) continue;
+    if (!day.hasExpectation) continue;
     final mood = moodByDay[day.date.unixSeconds];
     if (mood == null) continue;
     trackedDays++;
-    if (day.done == day.expected) {
+    if (day.done == day.completion.denominator) {
       fullDays++;
       if (mood == DayMood.good) fullDaysGood++;
     } else if (day.done == 0) {
@@ -93,7 +93,8 @@ class WeekTrend {
     required this.thisWeekExpected,
   });
 
-  /// Average daily completion % (done/expected) across the two weeks.
+  /// Pooled completion % (done ÷ countable expectations) across the two
+  /// weeks — the same measure as the week summary, not a mean of day ratios.
   final double thisWeekPct;
   final double lastWeekPct;
 
@@ -123,32 +124,17 @@ WeekTrend computeWeekTrend({
   // Mon…today — both windows share this length.
   final windowDays = today.weekday;
 
-  ({double pct, int days, int done, int expected}) weekStats(
-    DateTime start,
-    DateTime end,
-  ) {
+  ({Completion completion, int days}) weekStats(DateTime start, DateTime end) {
     final days = computeDailyCompletion(
       habits: habits,
       logs: logs,
       start: start,
       end: end,
     );
-    var sum = 0.0;
-    var n = 0;
-    var done = 0;
-    var expected = 0;
-    for (final d in days) {
-      if (d.expected == 0) continue;
-      sum += d.ratio;
-      n++;
-      done += d.done;
-      expected += d.expected;
-    }
+    final activeDays = days.where((d) => d.hasExpectation).toList();
     return (
-      pct: n == 0 ? 0.0 : sum / n * 100.0,
-      days: n,
-      done: done,
-      expected: expected,
+      completion: Completion.overDays(activeDays),
+      days: activeDays.length,
     );
   }
 
@@ -162,12 +148,12 @@ WeekTrend computeWeekTrend({
   );
 
   return WeekTrend(
-    thisWeekPct: thisWeek.pct,
-    lastWeekPct: lastWeek.pct,
+    thisWeekPct: thisWeek.completion.percentOrZero,
+    lastWeekPct: lastWeek.completion.percentOrZero,
     thisWeekDays: thisWeek.days,
     lastWeekDays: lastWeek.days,
-    thisWeekDone: thisWeek.done,
-    thisWeekExpected: thisWeek.expected,
+    thisWeekDone: thisWeek.completion.numerator,
+    thisWeekExpected: thisWeek.completion.denominator,
   );
 }
 
@@ -177,14 +163,21 @@ class WeekdayStat {
     required this.weekday,
     required this.done,
     required this.expected,
+    this.skipped = 0,
   });
 
   /// 1 = Mon … 7 = Sun.
   final int weekday;
   final int done;
   final int expected;
+  final int skipped;
 
-  double get ratio => expected == 0 ? 0.0 : done / expected;
+  Completion get completion =>
+      Completion.fromCounts(done: done, expected: expected, skipped: skipped);
+
+  bool get hasExpectation => completion.hasExpectation;
+
+  double get ratio => completion.ratioOrZero;
 }
 
 /// Weekly rhythm insights: best/worst weekday and peak activity time.
@@ -220,16 +213,23 @@ RhythmStats computeRhythmStats({
 }) {
   final expected = List<int>.filled(7, 0);
   final done = List<int>.filled(7, 0);
+  final skipped = List<int>.filled(7, 0);
   for (final day in days) {
-    if (day.expected == 0) continue;
+    if (!day.hasExpectation) continue;
     final w = day.date.weekday - 1;
     expected[w] += day.expected;
     done[w] += day.done;
+    skipped[w] += day.skipped;
   }
 
   final weekdays = [
     for (var w = 0; w < 7; w++)
-      WeekdayStat(weekday: w + 1, done: done[w], expected: expected[w]),
+      WeekdayStat(
+        weekday: w + 1,
+        done: done[w],
+        expected: expected[w],
+        skipped: skipped[w],
+      ),
   ];
 
   int? best;
@@ -237,7 +237,7 @@ RhythmStats computeRhythmStats({
   var bestRatio = -1.0;
   var worstRatio = 2.0;
   for (final s in weekdays) {
-    if (s.expected == 0) continue;
+    if (!s.hasExpectation) continue;
     if (s.ratio > bestRatio) {
       bestRatio = s.ratio;
       best = s.weekday;

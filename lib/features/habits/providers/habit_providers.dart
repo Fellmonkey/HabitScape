@@ -151,7 +151,7 @@ final dayProgressProvider = Provider<double>((ref) {
   );
   if (days.isEmpty) return 0.0;
   final day = days.first;
-  return day.expected > 0 ? day.done / day.expected : 0.0;
+  return day.completion.ratioOrZero;
 });
 
 // ── Habit Engine provider (metrics for a month) ──────────────

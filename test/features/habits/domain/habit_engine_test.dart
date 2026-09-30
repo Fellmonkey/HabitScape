@@ -237,7 +237,7 @@ void main() {
       },
     );
 
-    test('31 skips / 31 required gives adjustedBase=1, pct=0', () {
+    test('31 skips / 31 required gives an excused base and pct=0', () {
       final habit = makeHabit(createdAt: jan1);
       final logs = List.generate(
         31,
@@ -246,8 +246,8 @@ void main() {
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
 
-      expect(m.adjustedBase, 1); // max(1, 31 - 31) = max(1, 0) = 1
-      expect(m.completionPct, 0.0); // 0 done / 1
+      expect(m.adjustedBase, 0); // every expectation excused
+      expect(m.completionPct, 0.0);
       expect(m.skipCount, 31);
     });
 

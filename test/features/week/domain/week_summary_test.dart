@@ -86,6 +86,31 @@ void main() {
       expect(summary.weakest!.$4, 7);
     });
 
+    test('skips are excused from the week denominator', () {
+      // Monday skipped, Tue/Wed done, the rest pending: 2 done of 6 counted.
+      final logs = [
+        makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.skip),
+        makeLog(
+          habitId: 1,
+          date: mon.add(const Duration(days: 1)).unixSeconds,
+          status: LogStatus.done,
+        ),
+        makeLog(habitId: 1, date: wed.unixSeconds, status: LogStatus.done),
+      ];
+      final summary = computeWeekSummary(
+        habits: [habit],
+        logs: logs,
+        notes: const [],
+        today: sun,
+      );
+
+      expect(summary.completionPct, closeTo(2 / 6 * 100, 0.01));
+      expect(summary.weakest!.$3, 2);
+      expect(summary.weakest!.$4, 6);
+      // An all-skip day has no expectation left and cannot be the best day.
+      expect(summary.bestDay, mon.add(const Duration(days: 1)));
+    });
+
     test('picks the best day by completion ratio', () {
       final logs = [
         makeLog(habitId: 1, date: mon.unixSeconds, status: LogStatus.done),

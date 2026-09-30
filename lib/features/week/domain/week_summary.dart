@@ -101,12 +101,12 @@ WeekSummary computeWeekSummary({
   final hasAnyLogThisWeek = logByDayHabit.isNotEmpty;
 
   // ── Per-habit completion over scheduled days ───────────────
-  final expected = <int, int>{};
-  final done = <int, int>{};
+  final measures = <int, Completion>{};
 
   for (final habit in activeHabits) {
     var habitExpected = 0;
     var habitDone = 0;
+    var habitSkipped = 0;
     for (final day in elapsedDays) {
       // Never count a habit before it was created.
       if (day.isBefore(dateFromUnix(habit.createdAt).toMidnight)) continue;
@@ -114,32 +114,35 @@ WeekSummary computeWeekSummary({
       habitExpected++;
       final status = logByDayHabit[day.unixSeconds]?[habit.id];
       if (status == LogStatus.done) habitDone++;
+      if (status == LogStatus.skip) habitSkipped++;
     }
-    if (habitExpected > 0) {
-      expected[habit.id] = habitExpected;
-      done[habit.id] = habitDone;
-    }
+    final measure = Completion.fromCounts(
+      done: habitDone,
+      expected: habitExpected,
+      skipped: habitSkipped,
+    );
+    if (measure.hasExpectation) measures[habit.id] = measure;
   }
 
-  var totalExpected = 0;
-  var totalDone = 0;
+  final weekMeasure = Completion.pool(measures.values);
   (int habitId, String name, int done, int expected)? weakest;
   for (final habit in activeHabits) {
-    final habitExpected = expected[habit.id] ?? 0;
-    if (habitExpected == 0) continue;
-    totalExpected += habitExpected;
-    final habitDone = done[habit.id] ?? 0;
-    totalDone += habitDone;
-    final current = (habit.id, habit.name, habitDone, habitExpected);
-    if (weakest == null ||
-        (habitDone / habitExpected) < (weakest.$3 / weakest.$4)) {
+    final measure = measures[habit.id];
+    if (measure == null) continue;
+    final current = (
+      habit.id,
+      habit.name,
+      measure.numerator,
+      measure.denominator,
+    );
+    if (weakest == null || measure.ratioOrZero < (weakest.$3 / weakest.$4)) {
       weakest = current;
     }
   }
 
-  final completionPct = (!hasAnyLogThisWeek || totalExpected == 0)
+  final completionPct = (!hasAnyLogThisWeek || !weekMeasure.hasExpectation)
       ? null
-      : totalDone / totalExpected * 100;
+      : weekMeasure.percent;
   if (!hasAnyLogThisWeek) weakest = null;
 
   // ── Best day ──────────────────────────────────────────────
@@ -148,7 +151,7 @@ WeekSummary computeWeekSummary({
   DateTime? bestDay;
   double bestRatio = -1;
   for (final dayCompletion in elapsedDayCompletions) {
-    if (dayCompletion.expected == 0) continue;
+    if (!dayCompletion.hasExpectation) continue;
     final ratio = dayCompletion.ratio;
     if (ratio > bestRatio) {
       bestRatio = ratio;
