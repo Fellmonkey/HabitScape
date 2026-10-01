@@ -21,6 +21,30 @@ void main() {
     });
   });
 
+  group('closingWeekStart', () {
+    final mon = DateTime.utc(2026, 10, 26); // Monday
+    final sun = DateTime.utc(2026, 11, 1); // Sunday
+
+    test('Sunday closes the week that is ending', () {
+      expect(closingWeekStart(sun), mon);
+      expect(isWeekSummaryWindow(sun), isTrue);
+    });
+
+    test('Monday closes the week that just ended', () {
+      final nextMonday = mon.add(const Duration(days: 7));
+
+      expect(closingWeekStart(nextMonday), mon);
+      expect(isWeekSummaryWindow(nextMonday), isTrue);
+    });
+
+    test('Tuesday has a closing week but no open window', () {
+      final tuesday = mon.add(const Duration(days: 1));
+
+      expect(closingWeekStart(tuesday), mon);
+      expect(isWeekSummaryWindow(tuesday), isFalse);
+    });
+  });
+
   group('computeWeekSummary', () {
     final mon = DateTime.utc(2026, 10, 26); // Monday
     final wed = DateTime.utc(2026, 10, 28);
@@ -38,6 +62,28 @@ void main() {
       expect(summary.hasMoodData, isFalse);
       expect(summary.hasHabitData, isFalse);
       expect(summary.weakest, isNull);
+    });
+
+    test('summarizes the requested closing week, not the current one', () {
+      final nextMonday = mon.add(const Duration(days: 7));
+      final logs = [
+        for (var i = 0; i < 7; i++)
+          makeLog(
+            habitId: 1,
+            date: mon.add(Duration(days: i)).unixSeconds,
+            status: LogStatus.done,
+          ),
+      ];
+
+      final summary = computeWeekSummary(
+        habits: [habit],
+        logs: logs,
+        notes: const [],
+        today: nextMonday,
+        weekStart: mon,
+      );
+
+      expect(summary.completionPct, 100.0);
     });
 
     test('counts mood days and green days', () {

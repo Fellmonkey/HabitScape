@@ -27,7 +27,6 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
   final TextEditingController _controller = TextEditingController();
   bool _saving = false;
   bool _editing = false;
-  bool _answeredThisSession = false;
 
   @override
   void dispose() {
@@ -35,49 +34,48 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _save(DateTime weekStart) async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     setState(() => _saving = true);
     await ref.read(weekIntentionActionsProvider.notifier).save(text);
     if (!mounted) return;
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await prefs.setInt('week_summary_answered_week', weekStartOf(DateTime.now()).unixSeconds);
+    await _markAnswered(weekStart);
     Haptics.tap(ref.read(hapticsEnabledProvider));
+    if (!mounted) return;
     setState(() {
       _saving = false;
       _editing = false;
-      _answeredThisSession = true;
     });
+    ref.invalidate(weekSummaryProvider);
+  }
+
+  Future<void> _skip(DateTime weekStart) async {
+    await _markAnswered(weekStart);
+    if (!mounted) return;
+    ref.invalidate(weekSummaryProvider);
+  }
+
+  Future<void> _markAnswered(DateTime weekStart) async {
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    await prefs.setInt('week_summary_answered_week', weekStart.unixSeconds);
   }
 
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(weekSummaryProvider);
+    final viewAsync = ref.watch(weekSummaryProvider);
     final intentionAsync = ref.watch(currentWeekIntentionProvider);
     final previousIntent = ref.watch(previousWeekIntentionProvider).value;
 
-    return summaryAsync.when(
+    return viewAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
-      data: (summary) {
-        if (!summary.hasMoodData && !summary.hasHabitData) {
-          return const SizedBox.shrink();
-        }
-        final now = DateTime.now();
-        final isWindow = now.weekday == DateTime.sunday || now.weekday == DateTime.monday;
-        if (!isWindow) return const SizedBox.shrink();
-        final prefs = ref.read(sharedPrefsProvider).value;
-        final weekStart = weekStartOf(now).unixSeconds;
-        final answeredWeek = prefs?.getInt('week_summary_answered_week');
-        if (answeredWeek == weekStart && !_answeredThisSession) {
-          return const SizedBox.shrink();
-        }
-        final intention = intentionAsync.value;
+      data: (view) {
+        if (!view.shouldShow) return const SizedBox.shrink();
         return _buildCard(
           context,
-          summary,
-          intention,
+          view,
+          intentionAsync.value,
           previousIntent?.intention,
         );
       },
@@ -86,10 +84,11 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
 
   Widget _buildCard(
     BuildContext context,
-    WeekSummary summary,
+    WeekSummaryView view,
     WeeklyIntention? intention,
     String? previousIntention,
   ) {
+    final summary = view.summary;
     final theme = Theme.of(context);
     final accent = AppColors.sageGreen;
 
@@ -229,25 +228,13 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
                   children: [
                     TextButton(
                       key: K.weekIntentionSkip,
-                      onPressed: () async {
-                        final prefs = await ref.read(sharedPrefsProvider.future);
-                        await prefs.setInt(
-                          'week_summary_answered_week',
-                          weekStartOf(DateTime.now()).unixSeconds,
-                        );
-                        if (mounted) {
-                          setState(() {
-                            _saving = false;
-                            _answeredThisSession = true;
-                          });
-                        }
-                      },
+                      onPressed: () => _skip(view.weekStart),
                       child: const Text('Пропустить'),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       key: K.weekIntentionSave,
-                      onPressed: _saving ? null : _save,
+                      onPressed: _saving ? null : () => _save(view.weekStart),
                       child: const Text('Сохранить'),
                     ),
                   ],

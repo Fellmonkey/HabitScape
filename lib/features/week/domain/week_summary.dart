@@ -39,9 +39,53 @@ class WeekSummary {
   bool get hasHabitData => completionPct != null;
 }
 
+/// The Monday of the week the summary closes.
+///
+/// A Sunday closes the week that is ending today; a Monday closes the week
+/// that just ended, not the fresh one. The rest of the week has no closing
+/// window.
+DateTime closingWeekStart(DateTime today) {
+  final currentWeekStart = weekStartOf(today);
+  return today.weekday == DateTime.monday
+      ? currentWeekStart.subtract(const Duration(days: 7))
+      : currentWeekStart;
+}
+
+/// Whether the weekly summary is due today.
+bool isWeekSummaryWindow(DateTime today) =>
+    today.weekday == DateTime.sunday || today.weekday == DateTime.monday;
+
+/// Everything the summary card needs to decide whether and what to render:
+/// which week is closing, the summary itself, and whether the user already
+/// answered that week.
+class WeekSummaryView {
+  const WeekSummaryView({
+    required this.weekStart,
+    required this.summary,
+    required this.isWindowOpen,
+    required this.isAnswered,
+  });
+
+  /// Monday of the closing week.
+  final DateTime weekStart;
+
+  final WeekSummary summary;
+
+  /// Sunday/Monday window owned by this module, not by the widget.
+  final bool isWindowOpen;
+
+  /// Whether the user saved or skipped this closing week.
+  final bool isAnswered;
+
+  bool get hasData => summary.hasMoodData || summary.hasHabitData;
+
+  bool get shouldShow => isWindowOpen && !isAnswered && hasData;
+}
+
 /// Builds the week summary from raw DAO data.
 ///
-/// Pure: no DB, no clock. [today] is passed in so tests can pin it.
+/// Pure: no DB, no clock. [today] and [weekStart] are passed in so tests can
+/// pin them; [weekStart] lets the card close last week on a Monday.
 ///
 /// Expected days come from the habit's own schedule (`isExpectedToday`), not
 /// from the number of logged rows — so smart frequencies (weekdays,
@@ -52,8 +96,9 @@ WeekSummary computeWeekSummary({
   required List<HabitLog> logs,
   required List<DayNote> notes,
   required DateTime today,
+  DateTime? weekStart,
 }) {
-  final start = weekStartOf(today);
+  final start = (weekStart ?? weekStartOf(today)).toMidnight;
   final end = start.add(const Duration(days: 7));
   final todayTs = today.toMidnight.unixSeconds;
 

@@ -60,11 +60,20 @@ void main() {
     ),
     WeeklyIntention? intention,
     WeeklyIntention? previous,
+    bool isWindowOpen = true,
+    bool isAnswered = false,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          weekSummaryProvider.overrideWith((ref) async => summary),
+          weekSummaryProvider.overrideWith(
+            (ref) async => WeekSummaryView(
+              weekStart: weekStartOf(DateTime.now()),
+              summary: summary,
+              isWindowOpen: isWindowOpen,
+              isAnswered: isAnswered,
+            ),
+          ),
           currentWeekIntentionProvider.overrideWith(
             (ref) => currentController.stream,
           ),
@@ -87,6 +96,42 @@ void main() {
 
   testWidgets('hidden when the week has no data yet', (tester) async {
     await pumpCard(tester);
+
+    expect(find.byKey(K.weekSummaryCard), findsNothing);
+  });
+
+  testWidgets('hidden when the module says the window is closed', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      summary: const WeekSummary(
+        greenDays: 1,
+        totalDays: 1,
+        bestDay: null,
+        completionPct: 50,
+        weakest: null,
+      ),
+      isWindowOpen: false,
+    );
+
+    expect(find.byKey(K.weekSummaryCard), findsNothing);
+  });
+
+  testWidgets('hidden when the closing week was already answered', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      summary: const WeekSummary(
+        greenDays: 1,
+        totalDays: 1,
+        bestDay: null,
+        completionPct: 50,
+        weakest: null,
+      ),
+      isAnswered: true,
+    );
 
     expect(find.byKey(K.weekSummaryCard), findsNothing);
   });

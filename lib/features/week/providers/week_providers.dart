@@ -2,10 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/settings/shared_prefs.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../data/weekly_intentions_dao.dart';
 import '../domain/week_summary.dart';
+
+const _answeredWeekKey = 'week_summary_answered_week';
 
 // ── DAO provider ─────────────────────────────────────────────
 
@@ -34,15 +37,27 @@ final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
       );
 });
 
-/// The auto-summary of the current week.
-final weekSummaryProvider = FutureProvider<WeekSummary>((ref) async {
-  final now = DateTime.now();
-  final snapshot = await ref.watch(historyStoreProvider).week(now);
-  return computeWeekSummary(
+/// The closing week's summary plus the decisions the card must not make:
+/// which week is closing, whether the window is open, and whether the user
+/// already answered it.
+final weekSummaryProvider = FutureProvider<WeekSummaryView>((ref) async {
+  final today = dateFromUnix(ref.watch(todayProvider));
+  final weekStart = closingWeekStart(today);
+  final snapshot = await ref.watch(historyStoreProvider).week(weekStart);
+  final summary = computeWeekSummary(
     habits: snapshot.habits,
     logs: snapshot.logs,
     notes: snapshot.notes,
-    today: now,
+    today: today,
+    weekStart: weekStart,
+  );
+  final prefs = await ref.watch(sharedPrefsProvider.future);
+
+  return WeekSummaryView(
+    weekStart: weekStart,
+    summary: summary,
+    isWindowOpen: isWeekSummaryWindow(today),
+    isAnswered: prefs.getInt(_answeredWeekKey) == weekStart.unixSeconds,
   );
 });
 
