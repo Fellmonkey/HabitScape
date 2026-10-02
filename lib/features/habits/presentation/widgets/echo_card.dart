@@ -3,36 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/shared_prefs.dart';
+import '../../../../core/settings/presence.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../domain/echo.dart';
 import '../../providers/echo_providers.dart';
-
-const _echoLastShownKey = 'echo_last_shown_date';
-const _echoCooldownDays = 2;
 
 /// «Эхо»: one past moment, chosen automatically from the archive.
 ///
 /// No input, one tap to expand, «Ещё» for the next memory. The card hides
 /// itself on a fresh install and shows a single-line promise after the first
-/// note — never a fake or empty card.
-class EchoCard extends ConsumerStatefulWidget {
+/// note — never a fake or empty card. Whether it may appear is a read from
+/// [presenceProvider]; the showing is recorded only once the memory mounts.
+class EchoCard extends ConsumerWidget {
   const EchoCard({super.key});
 
   @override
-  ConsumerState<EchoCard> createState() => _EchoCardState();
-}
-
-class _EchoCardState extends ConsumerState<EchoCard> {
-  int _index = 0;
-  bool _expanded = false;
-  bool _recorded = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(echoFeedProvider);
 
     return feedAsync.when(
@@ -40,32 +28,26 @@ class _EchoCardState extends ConsumerState<EchoCard> {
       error: (_, _) => const SizedBox.shrink(),
       data: (feed) {
         if (!feed.hasAnyNote) return const SizedBox.shrink();
-        if (feed.isEmpty) return _buildHint(context);
-        final prefsAsync = ref.watch(sharedPrefsProvider);
-        return prefsAsync.when(
+        if (feed.isEmpty) return const _EchoHint();
+        final presenceAsync = ref.watch(presenceProvider);
+        return presenceAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => const SizedBox.shrink(),
-          data: (prefs) {
-            final last = prefs.getInt(_echoLastShownKey);
-            final today = DateTime.now().toMidnight.unixSeconds;
-            final cooldown = _echoCooldownDays * 86400;
-            final canShow = _recorded || last == null || (today - last) >= cooldown;
-            if (!canShow) return const SizedBox.shrink();
-            if (!_recorded) {
-              _recorded = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                prefs.setInt(_echoLastShownKey, today);
-              });
-            }
-            final memory = feed.memories[_index % feed.memories.length];
-            return _buildMemory(context, feed.memories.length, memory);
+          data: (presence) {
+            if (!presence.echoCardVisible) return const SizedBox.shrink();
+            return _EchoMemoryCard(feed: feed, today: presence.today);
           },
         );
       },
     );
   }
+}
 
-  Widget _buildHint(BuildContext context) {
+class _EchoHint extends StatelessWidget {
+  const _EchoHint();
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -89,6 +71,41 @@ class _EchoCardState extends ConsumerState<EchoCard> {
         ],
       ),
     );
+  }
+}
+
+/// Mounted only when a memory will actually render, so [initState] is the
+/// one place that records the showing.
+class _EchoMemoryCard extends ConsumerStatefulWidget {
+  const _EchoMemoryCard({required this.feed, required this.today});
+
+  final EchoFeed feed;
+  final DateTime today;
+
+  @override
+  ConsumerState<_EchoMemoryCard> createState() => _EchoMemoryCardState();
+}
+
+class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
+  int _index = 0;
+  bool _expanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordShown();
+  }
+
+  Future<void> _recordShown() async {
+    final presence = await ref.read(presenceProvider.future);
+    await presence.recordEchoCardShown();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final memories = widget.feed.memories;
+    final memory = memories[_index % memories.length];
+    return _buildMemory(context, memories.length, memory);
   }
 
   Widget _buildMemory(BuildContext context, int count, EchoMemory memory) {
@@ -202,7 +219,7 @@ class _EchoCardState extends ConsumerState<EchoCard> {
 
   String _header(EchoMemory memory) {
     final date = memory.date;
-    final today = DateTime.now();
+    final today = widget.today;
     final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
     final dateLabel = date.year == today.year
         ? dayMonth
@@ -224,7 +241,7 @@ class _EchoCardState extends ConsumerState<EchoCard> {
       _expanded = false;
     });
     // Shown once is enough — the next visit starts with another memory.
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await rememberEchoShown(prefs, current.note.date);
+    final presence = await ref.read(presenceProvider.future);
+    await presence.recordEchoSeen(current.note.date);
   }
 }

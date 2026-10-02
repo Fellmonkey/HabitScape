@@ -7,7 +7,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart' as enums;
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/shared_prefs.dart';
+import '../../../../core/settings/presence.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
@@ -16,7 +16,6 @@ import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
-import '../../domain/echo_top.dart';
 import '../../domain/today_board.dart';
 import '../../providers/habit_providers.dart';
 import '../../../onboarding/feature_hints.dart';
@@ -45,26 +44,37 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// Habit ids created in this session — they get a one-shot entrance.
   final Set<int> _enteringIds = <int>{};
 
-  bool _echoTopResolved = false;
   bool _echoAtTop = true;
 
   @override
   String get tourScope => OnboardingTours.greenhouse;
 
   @override
+  void initState() {
+    super.initState();
+    _resolveEchoPlacement();
+  }
+
+  /// Resolves the echo placement once, after mount. The build method only
+  /// renders the decision; recording the showing is a command.
+  Future<void> _resolveEchoPlacement() async {
+    var atTop = true;
+    try {
+      final presence = await ref.read(presenceProvider.future);
+      atTop = presence.echoAtTop;
+      if (atTop) await presence.recordEchoTop();
+    } catch (_) {
+      // Preferences unavailable — keep the default top placement.
+    }
+    if (!mounted) return;
+    setState(() => _echoAtTop = atTop);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(activeHabitsProvider);
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
-    final prefsAsync = ref.watch(sharedPrefsProvider);
-    if (!_echoTopResolved && prefsAsync.hasValue) {
-      final prefs = prefsAsync.value!;
-      final key = echoTopKeyForWeek(DateTime.now());
-      final count = prefs.getInt(key) ?? 0;
-      _echoAtTop = shouldEchoAtTop(count);
-      if (_echoAtTop) prefs.setInt(key, count + 1);
-      _echoTopResolved = true;
-    }
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -166,13 +176,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        if (_echoAtTop)
-          const SliverToBoxAdapter(child: EchoCard()),
+        if (_echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
 
         const SliverToBoxAdapter(child: WeekSummaryCard()),
 
         const SliverToBoxAdapter(child: FeatureHintBanner()),
-
 
         if (habits.isEmpty)
           SliverFillRemaining(
@@ -192,8 +200,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         // -- Reflection block (bottom): goals first --
         const SliverToBoxAdapter(child: MonthGoalsCard()),
         const SliverToBoxAdapter(child: CapsuleCard()),
-        if (!_echoAtTop)
-          const SliverToBoxAdapter(child: EchoCard()),
+        if (!_echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
       ],
     );
   }
@@ -235,11 +242,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                 TextButton.icon(
                   key: K.markAllGroup(label),
                   onPressed: () => _markAllInGroup(items),
-                  icon: Icon(
-                    Icons.done_all_rounded,
-                    size: 16,
-                    color: color,
-                  ),
+                  icon: Icon(Icons.done_all_rounded, size: 16, color: color),
                   label: Text(
                     'Выполнить все',
                     style: theme.textTheme.labelSmall?.copyWith(color: color),
@@ -267,31 +270,33 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 20),
                     color: AppColors.emeraldGlow.withValues(alpha: 0.18),
-                    child: const Icon(Icons.check_rounded, color: AppColors.emeraldGlow),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: AppColors.emeraldGlow,
+                    ),
                   ),
                   secondaryBackground: Container(
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
                     color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
-                    child: const Icon(Icons.pause_rounded, color: AppColors.coolGreyBlue),
+                    child: const Icon(
+                      Icons.pause_rounded,
+                      color: AppColors.coolGreyBlue,
+                    ),
                   ),
                   movementDuration: const Duration(milliseconds: 220),
                   resizeDuration: const Duration(milliseconds: 220),
-                  dismissThresholds: const {
-                    DismissDirection.horizontal: 0.35,
-                  },
+                  dismissThresholds: const {DismissDirection.horizontal: 0.35},
                   confirmDismiss: (direction) async {
                     final actions = ref.read(habitActionsProvider.notifier);
                     if (direction == DismissDirection.startToEnd) {
-                      await actions.logToday(
-                        [habit.id],
-                        status: enums.LogStatus.done,
-                      );
+                      await actions.logToday([
+                        habit.id,
+                      ], status: enums.LogStatus.done);
                     } else {
-                      await actions.logToday(
-                        [habit.id],
-                        status: enums.LogStatus.skip,
-                      );
+                      await actions.logToday([
+                        habit.id,
+                      ], status: enums.LogStatus.skip);
                     }
                     return false;
                   },
@@ -316,10 +321,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   void _markAllInGroup(List<Habit> habits) {
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    ref.read(habitActionsProvider.notifier).logToday(
-      [for (final h in habits) h.id],
-      status: enums.LogStatus.done,
-    );
+    ref.read(habitActionsProvider.notifier).logToday([
+      for (final h in habits) h.id,
+    ], status: enums.LogStatus.done);
   }
 
   /// Presentation mapping for a Today board section — the only place the
@@ -552,5 +556,3 @@ class _EntranceState extends State<_Entrance>
     );
   }
 }
-
-

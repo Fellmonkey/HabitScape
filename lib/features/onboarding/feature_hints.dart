@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/settings/shared_prefs.dart';
+import '../../core/settings/presence.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/date_helpers.dart';
-
-const _firstUseKey = 'first_use_date';
-const _dismissedHintsKey = 'dismissed_feature_hints';
 
 class FeatureHint {
-  const FeatureHint({required this.key, required this.message, required this.minDays});
+  const FeatureHint({
+    required this.key,
+    required this.message,
+    required this.minDays,
+  });
   final String key;
   final String message;
   final int minDays;
@@ -19,7 +18,8 @@ class FeatureHint {
 const featureHints = <FeatureHint>[
   FeatureHint(
     key: 'echo',
-    message: 'Открылось Эхо: прошлые моменты теперь показываются под Моментом дня.',
+    message:
+        'Открылось Эхо: прошлые моменты теперь показываются под Моментом дня.',
     minDays: 3,
   ),
   FeatureHint(
@@ -39,22 +39,12 @@ const featureHints = <FeatureHint>[
   ),
 ];
 
-int _ensureFirstUse(SharedPreferences prefs) {
-  final existing = prefs.getInt(_firstUseKey);
-  if (existing != null) return existing;
-  final now = DateTime.now().toMidnight.unixSeconds;
-  prefs.setInt(_firstUseKey, now);
-  return now;
-}
-
-FeatureHint? activeFeatureHint(SharedPreferences prefs) {
-  final firstUse = _ensureFirstUse(prefs);
-  final today = DateTime.now().toMidnight.unixSeconds;
-  final days = ((today - firstUse) / 86400).floor();
-  final dismissed = prefs.getStringList(_dismissedHintsKey)?.toSet() ?? <String>{};
+/// The newest hint that has matured and is still undismissed. Pure: the
+/// presence snapshot owns first-use and dismissal state.
+FeatureHint? activeFeatureHint(Presence presence) {
   FeatureHint? result;
   for (final hint in featureHints) {
-    if (days >= hint.minDays && !dismissed.contains(hint.key)) {
+    if (presence.hintVisible(key: hint.key, minDays: hint.minDays)) {
       result = hint; // last matching by minDays order
     }
   }
@@ -71,12 +61,12 @@ class FeatureHintBanner extends ConsumerStatefulWidget {
 class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
   @override
   Widget build(BuildContext context) {
-    final prefsAsync = ref.watch(sharedPrefsProvider);
-    return prefsAsync.when(
+    final presenceAsync = ref.watch(presenceProvider);
+    return presenceAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
-      data: (prefs) {
-        final hint = activeFeatureHint(prefs);
+      data: (presence) {
+        final hint = activeFeatureHint(presence);
         if (hint == null) return const SizedBox.shrink();
         final theme = Theme.of(context);
         return Padding(
@@ -89,18 +79,13 @@ class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      hint.message,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    child: Text(hint.message, style: theme.textTheme.bodySmall),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 16),
-                    onPressed: () {
-                      final dismissed = prefs.getStringList(_dismissedHintsKey)?.toList() ?? <String>[];
-                      if (!dismissed.contains(hint.key)) dismissed.add(hint.key);
-                      prefs.setStringList(_dismissedHintsKey, dismissed);
-                      setState(() {});
+                    onPressed: () async {
+                      await presence.dismissHint(hint.key);
+                      if (mounted) setState(() {});
                     },
                   ),
                 ],

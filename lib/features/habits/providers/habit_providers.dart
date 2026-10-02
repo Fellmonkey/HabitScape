@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/database/history_store.dart';
+import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
@@ -16,6 +15,10 @@ import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
+
+// The clock moved to core; kept exported so existing callers can keep
+// importing it from this provider file.
+export '../../../core/settings/today.dart';
 
 // ── DAO providers ────────────────────────────────────────────
 
@@ -63,31 +66,6 @@ final archivedHabitsProvider = StreamProvider.autoDispose<List<Habit>>((ref) {
 final habitProvider = StreamProvider.autoDispose.family<Habit, int>((ref, id) {
   return ref.watch(habitsDaoProvider).watchHabit(id);
 });
-
-// ── Today (reactive) ─────────────────────────────────────────
-
-/// Current calendar day as a unix midnight timestamp. Re-invalidates itself
-/// shortly after midnight so today-scoped providers never go stale overnight.
-final todayProvider = NotifierProvider<TodayNotifier, int>(TodayNotifier.new);
-
-class TodayNotifier extends Notifier<int> {
-  Timer? _midnightTimer;
-
-  @override
-  int build() {
-    final now = DateTime.now();
-    final today = now.toMidnight;
-    // Refresh a moment after midnight (buffer for clock/timer jitter).
-    _midnightTimer?.cancel();
-    _midnightTimer = Timer(
-      today.add(const Duration(days: 1)).difference(now) +
-          const Duration(seconds: 1),
-      ref.invalidateSelf,
-    );
-    ref.onDispose(() => _midnightTimer?.cancel());
-    return today.unixSeconds;
-  }
-}
 
 // ── Today's logs ─────────────────────────────────────────────
 
