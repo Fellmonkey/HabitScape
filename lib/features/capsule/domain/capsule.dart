@@ -31,6 +31,60 @@ CapsuleStatus capsuleStatus(Letter letter, DateTime today) {
   return CapsuleStatus.upcoming;
 }
 
+/// The capsule feed for one day: upcoming / due / opened buckets plus the day
+/// boundary they were computed against.
+///
+/// Both the greenhouse card and the capsule screen read this one feed, so the
+/// status rule and the clock live in exactly one place.
+class CapsuleFeed {
+  const CapsuleFeed({
+    required this.today,
+    required this.upcoming,
+    required this.due,
+    required this.opened,
+  });
+
+  /// Groups a flat list into the three buckets. Upcoming and due are ordered
+  /// by delivery (nearest / oldest waiting first); opened keeps the incoming
+  /// newest-created-first order from the DAO.
+  factory CapsuleFeed.fromLetters(List<Letter> letters, DateTime today) {
+    final day = today.toMidnight;
+    final upcoming = <Letter>[];
+    final due = <Letter>[];
+    final opened = <Letter>[];
+    for (final letter in letters) {
+      switch (capsuleStatus(letter, day)) {
+        case CapsuleStatus.upcoming:
+          upcoming.add(letter);
+        case CapsuleStatus.due:
+          due.add(letter);
+        case CapsuleStatus.opened:
+          opened.add(letter);
+      }
+    }
+    int byDelivery(Letter a, Letter b) => a.deliverAt.compareTo(b.deliverAt);
+    upcoming.sort(byDelivery);
+    due.sort(byDelivery);
+    return CapsuleFeed(
+      today: day,
+      upcoming: List.unmodifiable(upcoming),
+      due: List.unmodifiable(due),
+      opened: List.unmodifiable(opened),
+    );
+  }
+
+  /// The day this feed was computed for — never the wall clock.
+  final DateTime today;
+  final List<Letter> upcoming;
+  final List<Letter> due;
+  final List<Letter> opened;
+
+  bool get isEmpty => upcoming.isEmpty && due.isEmpty && opened.isEmpty;
+
+  Letter? get nextDue => due.isEmpty ? null : due.first;
+  Letter? get nextUpcoming => upcoming.isEmpty ? null : upcoming.first;
+}
+
 /// Whole days until delivery (0 or negative once it is due).
 int daysUntil(Letter letter, DateTime today) {
   return dateFromUnix(letter.deliverAt).difference(today.toMidnight).inDays;
@@ -54,37 +108,6 @@ String wroteAgoLabel(Letter letter) {
   if (days >= 320) return 'год назад';
   if (days >= 150) return 'полгода назад';
   return 'месяц назад';
-}
-
-/// Grouped view of capsules for the capsule screen.
-class CapsuleBuckets {
-  const CapsuleBuckets({
-    required this.upcoming,
-    required this.due,
-    required this.opened,
-  });
-
-  final List<Letter> upcoming;
-  final List<Letter> due;
-  final List<Letter> opened;
-}
-
-/// Groups capsules into upcoming / due / opened relative to [today].
-CapsuleBuckets groupCapsules(List<Letter> letters, DateTime today) {
-  final upcoming = <Letter>[];
-  final due = <Letter>[];
-  final opened = <Letter>[];
-  for (final letter in letters) {
-    switch (capsuleStatus(letter, today)) {
-      case CapsuleStatus.upcoming:
-        upcoming.add(letter);
-      case CapsuleStatus.due:
-        due.add(letter);
-      case CapsuleStatus.opened:
-        opened.add(letter);
-    }
-  }
-  return CapsuleBuckets(upcoming: upcoming, due: due, opened: opened);
 }
 
 /// Russian pluralization for days: 1 день, 2 дня, 5 дней (incl. 21 день).

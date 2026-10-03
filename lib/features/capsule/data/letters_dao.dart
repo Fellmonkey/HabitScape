@@ -10,31 +10,8 @@ part 'letters_dao.g.dart';
 class LettersDao extends DatabaseAccessor<AppDatabase> with _$LettersDaoMixin {
   LettersDao(super.db);
 
-  /// Watches unopened capsules whose delivery date is in the future.
-  Stream<List<Letter>> watchUpcoming(int todayTs) {
-    return (select(letters)
-          ..where(
-            (l) =>
-                l.deliverAt.isBiggerThanValue(todayTs) &
-                l.isOpened.equals(false),
-          )
-          ..orderBy([(l) => OrderingTerm.asc(l.deliverAt)]))
-        .watch();
-  }
-
-  /// Watches unopened capsules whose delivery date has arrived.
-  Stream<List<Letter>> watchDue(int todayTs) {
-    return (select(letters)
-          ..where(
-            (l) =>
-                l.deliverAt.isSmallerOrEqualValue(todayTs) &
-                l.isOpened.equals(false),
-          )
-          ..orderBy([(l) => OrderingTerm.asc(l.deliverAt)]))
-        .watch();
-  }
-
-  /// Watches every capsule, newest first (used by the capsule screen).
+  /// Watches every capsule, newest first. The single stream behind the
+  /// [CapsuleFeed] buckets used by the card and the screen.
   Stream<List<Letter>> watchAllLetters() {
     return (select(
       letters,

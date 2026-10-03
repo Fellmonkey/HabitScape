@@ -88,6 +88,83 @@ void main() {
     });
   });
 
+  group('CapsuleFeed', () {
+    final today = DateTime.utc(2026, 11, 1);
+
+    test('splits letters into upcoming, due and opened for one day', () {
+      final feed = CapsuleFeed.fromLetters([
+        makeLetterSnapshot(
+          id: 1,
+          deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+        ),
+        makeLetterSnapshot(
+          id: 2,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+        ),
+        makeLetterSnapshot(
+          id: 3,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+          isOpened: true,
+        ),
+      ], today);
+
+      expect(feed.today, today);
+      expect(feed.upcoming.map((l) => l.id), [1]);
+      expect(feed.due.map((l) => l.id), [2]);
+      expect(feed.opened.map((l) => l.id), [3]);
+      expect(feed.nextUpcoming?.id, 1);
+      expect(feed.nextDue?.id, 2);
+      expect(feed.isEmpty, isFalse);
+    });
+
+    test('orders upcoming and due by delivery date', () {
+      final feed = CapsuleFeed.fromLetters([
+        makeLetterSnapshot(
+          id: 1,
+          deliverAt: DateTime.utc(2027, 1, 1).unixSeconds,
+        ),
+        makeLetterSnapshot(
+          id: 2,
+          deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+        ),
+        makeLetterSnapshot(
+          id: 3,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+        ),
+        makeLetterSnapshot(
+          id: 4,
+          deliverAt: DateTime.utc(2026, 9, 1).unixSeconds,
+        ),
+      ], today);
+
+      expect(feed.upcoming.map((l) => l.id), [2, 1]);
+      expect(feed.due.map((l) => l.id), [4, 3]);
+    });
+
+    test('the delivery day is due; the day before is upcoming', () {
+      final letter = makeLetterSnapshot(
+        deliverAt: DateTime.utc(2026, 11, 1).unixSeconds,
+      );
+
+      expect(
+        CapsuleFeed.fromLetters([letter], DateTime.utc(2026, 10, 31)).upcoming,
+        hasLength(1),
+      );
+      expect(
+        CapsuleFeed.fromLetters([letter], DateTime.utc(2026, 11, 1)).due,
+        hasLength(1),
+      );
+    });
+
+    test('an empty list is an empty feed', () {
+      final feed = CapsuleFeed.fromLetters(const [], today);
+
+      expect(feed.isEmpty, isTrue);
+      expect(feed.nextDue, isNull);
+      expect(feed.nextUpcoming, isNull);
+    });
+  });
+
   group('wroteAgoLabel', () {
     test('about a month', () {
       final letter = makeLetterSnapshot(

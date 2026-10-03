@@ -76,13 +76,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final letters = ref.watch(allCapsulesProvider).value ?? const <Letter>[];
-    final today = DateTime.now();
-
-    final buckets = groupCapsules(letters, today);
-    final upcoming = buckets.upcoming;
-    final due = buckets.due;
-    final opened = buckets.opened;
+    final feed = ref.watch(capsuleFeedProvider).value;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Капсулы времени')),
@@ -91,36 +85,42 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           _buildComposer(context),
-          if (due.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _SectionHeader(title: 'Готово к прочтению'),
-            const SizedBox(height: 8),
-            for (final letter in due) ...[
-              _CapsuleTile(capsule: letter, due: true),
-              const SizedBox(height: 8),
-            ],
-          ],
-          if (upcoming.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _SectionHeader(title: 'Закрыто'),
-            const SizedBox(height: 8),
-            for (final letter in upcoming) ...[
-              _CapsuleTile(capsule: letter),
-              const SizedBox(height: 8),
-            ],
-          ],
-          if (opened.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _SectionHeader(title: 'Прочитанные'),
-            const SizedBox(height: 8),
-            for (final letter in opened) ...[
-              _CapsuleTile(capsule: letter, opened: true),
-              const SizedBox(height: 8),
-            ],
-          ],
+          if (feed != null) ..._buildSections(feed),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildSections(CapsuleFeed feed) {
+    return [
+      if (feed.due.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _SectionHeader(title: 'Готово к прочтению'),
+        const SizedBox(height: 8),
+        for (final letter in feed.due) ...[
+          _CapsuleTile(capsule: letter, today: feed.today, due: true),
+          const SizedBox(height: 8),
+        ],
+      ],
+      if (feed.upcoming.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _SectionHeader(title: 'Закрыто'),
+        const SizedBox(height: 8),
+        for (final letter in feed.upcoming) ...[
+          _CapsuleTile(capsule: letter, today: feed.today),
+          const SizedBox(height: 8),
+        ],
+      ],
+      if (feed.opened.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _SectionHeader(title: 'Прочитанные'),
+        const SizedBox(height: 8),
+        for (final letter in feed.opened) ...[
+          _CapsuleTile(capsule: letter, today: feed.today, opened: true),
+          const SizedBox(height: 8),
+        ],
+      ],
+    ];
   }
 
   Widget _buildComposer(BuildContext context) {
@@ -245,18 +245,19 @@ class _SectionHeader extends StatelessWidget {
 class _CapsuleTile extends StatelessWidget {
   const _CapsuleTile({
     required this.capsule,
+    required this.today,
     this.due = false,
     this.opened = false,
   });
 
   final Letter capsule;
+  final DateTime today;
   final bool due;
   final bool opened;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final today = DateTime.now();
     final left = daysUntil(capsule, today);
 
     final String subtitle;
@@ -272,7 +273,7 @@ class _CapsuleTile extends StatelessWidget {
       color = theme.colorScheme.onSurface.withValues(alpha: 0.4);
     } else {
       subtitle =
-          'Откроется ${_shortDate(capsule)} · осталось $left ${pluralDays(left)}';
+          'Откроется ${_shortDate(capsule, today)} · осталось $left ${pluralDays(left)}';
       icon = Icons.inventory_2_outlined;
       color = AppColors.softLavender;
     }
@@ -323,8 +324,8 @@ class _CapsuleTile extends StatelessWidget {
   }
 }
 
-String _shortDate(Letter letter) {
+String _shortDate(Letter letter, DateTime today) {
   final date = dateFromUnix(letter.deliverAt);
   final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
-  return date.year == DateTime.now().year ? dayMonth : '$dayMonth ${date.year}';
+  return date.year == today.year ? dayMonth : '$dayMonth ${date.year}';
 }

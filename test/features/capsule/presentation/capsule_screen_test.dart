@@ -8,6 +8,7 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/capsule/domain/capsule.dart';
 import 'package:rythm/features/capsule/presentation/screens/capsule_screen.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +53,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          allCapsulesProvider.overrideWith((ref) => lettersController.stream),
+          capsuleFeedProvider.overrideWith(
+            (ref) => lettersController.stream.map(
+              (letters) => CapsuleFeed.fromLetters(letters, DateTime.now()),
+            ),
+          ),
           letterActionsProvider.overrideWith(() => fakeActions),
           sharedPrefsProvider.overrideWith((_) async => prefs),
         ],

@@ -21,15 +21,16 @@ class CapsuleCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final upcoming = ref.watch(upcomingCapsulesProvider).value ?? const [];
-    final due = ref.watch(dueCapsulesProvider).value ?? const [];
+    final feed = ref.watch(capsuleFeedProvider).value;
+    if (feed == null) return const SizedBox.shrink();
+
     final hasOldNote = ref.watch(hasOldNoteProvider).value ?? false;
 
     final Widget child;
-    if (due.isNotEmpty) {
-      child = _DueCard(capsule: due.first);
-    } else if (upcoming.isNotEmpty) {
-      child = _UpcomingCard(capsules: upcoming);
+    if (feed.due.isNotEmpty) {
+      child = _DueCard(capsule: feed.due.first);
+    } else if (feed.upcoming.isNotEmpty) {
+      child = _UpcomingCard(capsules: feed.upcoming, today: feed.today);
     } else if (hasOldNote) {
       child = _InviteCard();
     } else {
@@ -112,15 +113,15 @@ class _DueCard extends StatelessWidget {
 
 /// A locked capsule: shows the opening date and remaining days.
 class _UpcomingCard extends StatelessWidget {
-  const _UpcomingCard({required this.capsules});
+  const _UpcomingCard({required this.capsules, required this.today});
 
   final List<Letter> capsules;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final first = capsules.first;
-    final today = DateTime.now();
     final left = daysUntil(first, today);
     final extra = capsules.length - 1;
 
@@ -160,7 +161,7 @@ class _UpcomingCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Откроется ${_shortDate(first)} · осталось $left ${pluralDays(left)}'
+                      'Откроется ${_shortDate(first, today)} · осталось $left ${pluralDays(left)}'
                       '${extra > 0 ? ' · и ещё $extra' : ''}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
@@ -248,8 +249,8 @@ class _InviteCard extends StatelessWidget {
   }
 }
 
-String _shortDate(Letter letter) {
+String _shortDate(Letter letter, DateTime today) {
   final date = dateFromUnix(letter.deliverAt);
   final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
-  return date.year == DateTime.now().year ? dayMonth : '$dayMonth ${date.year}';
+  return date.year == today.year ? dayMonth : '$dayMonth ${date.year}';
 }

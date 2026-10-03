@@ -5,6 +5,7 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
 import '../data/letters_dao.dart';
+import '../domain/capsule.dart';
 
 // ── DAO provider ─────────────────────────────────────────────
 
@@ -14,19 +15,16 @@ final lettersDaoProvider = Provider<LettersDao>((ref) {
 
 // ── Streams ──────────────────────────────────────────────────
 
-/// Unopened capsules whose delivery date is still ahead.
-final upcomingCapsulesProvider = StreamProvider<List<Letter>>((ref) {
-  return ref.watch(lettersDaoProvider).watchUpcoming(ref.watch(todayProvider));
-});
-
-/// Unopened capsules whose delivery date has arrived.
-final dueCapsulesProvider = StreamProvider<List<Letter>>((ref) {
-  return ref.watch(lettersDaoProvider).watchDue(ref.watch(todayProvider));
-});
-
-/// Every capsule, newest first — the capsule screen's list.
-final allCapsulesProvider = StreamProvider<List<Letter>>((ref) {
-  return ref.watch(lettersDaoProvider).watchAllLetters();
+/// The single capsule feed: upcoming / due / opened buckets for today.
+///
+/// Both the greenhouse card and the capsule screen watch this provider, so
+/// they share one status rule and one day boundary.
+final capsuleFeedProvider = StreamProvider<CapsuleFeed>((ref) {
+  final today = dateFromUnix(ref.watch(todayProvider));
+  return ref
+      .watch(lettersDaoProvider)
+      .watchAllLetters()
+      .map((letters) => CapsuleFeed.fromLetters(letters, today));
 });
 
 /// A single capsule, kept in sync with the database (for the letter screen).
@@ -40,9 +38,9 @@ final letterProvider = StreamProvider.autoDispose.family<Letter?, int>((
 /// True once a note older than 30 days exists — the signal that the user has
 /// been around long enough to deserve the capsule invitation.
 final hasOldNoteProvider = StreamProvider<bool>((ref) {
-  final cutoff = DateTime.now().toMidnight
-      .subtract(const Duration(days: 30))
-      .unixSeconds;
+  final cutoff = dateFromUnix(
+    ref.watch(todayProvider),
+  ).subtract(const Duration(days: 30)).unixSeconds;
   return ref
       .watch(dayNotesDaoProvider)
       .watchAllNotes()

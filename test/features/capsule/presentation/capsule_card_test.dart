@@ -6,6 +6,7 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/capsule/domain/capsule.dart';
 import 'package:rythm/features/capsule/presentation/widgets/capsule_card.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,13 +27,17 @@ void main() {
     List<Letter> due = const [],
     bool hasOldNote = false,
   }) async {
+    final today = DateTime.now().toMidnight;
+    final feed = CapsuleFeed(
+      today: today,
+      upcoming: upcoming,
+      due: due,
+      opened: const [],
+    );
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          upcomingCapsulesProvider.overrideWith(
-            (ref) => Stream.value(upcoming),
-          ),
-          dueCapsulesProvider.overrideWith((ref) => Stream.value(due)),
+          capsuleFeedProvider.overrideWith((ref) => Stream.value(feed)),
           hasOldNoteProvider.overrideWith((ref) => Stream.value(hasOldNote)),
           sharedPrefsProvider.overrideWith((_) async => prefs),
         ],

@@ -31,47 +31,25 @@ void main() {
       expect(all.first.isOpened, isFalse);
     });
 
-    test('watchUpcoming only returns future, unopened letters', () async {
-      final today = DateTime.utc(2026, 11, 1).unixSeconds;
-      await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 10, 30).unixSeconds, // past
-        body: 'Прошлое',
-      );
-      final futureId = await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 12, 1).unixSeconds, // future
-        body: 'Будущее',
-      );
-      await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 12, 1).unixSeconds, // future, opened
-        body: 'Открытое',
-      );
-      await db.lettersDao.markOpened(futureId, today);
+    test(
+      'watchAllLetters returns every capsule, newest created first',
+      () async {
+        final older = await db.lettersDao.addLetter(
+          deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+          body: 'Старое',
+          createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
+        );
+        final newer = await db.lettersDao.addLetter(
+          deliverAt: DateTime.utc(2026, 12, 2).unixSeconds,
+          body: 'Новое',
+          createdAt: DateTime.utc(2026, 10, 2).unixSeconds,
+        );
 
-      final upcoming = await db.lettersDao.watchUpcoming(today).first;
-      expect(upcoming, hasLength(1));
-      expect(upcoming.single.body, 'Открытое');
-    });
+        final all = await db.lettersDao.watchAllLetters().first;
 
-    test('watchDue only returns arrived, unopened letters', () async {
-      final today = DateTime.utc(2026, 11, 1).unixSeconds;
-      await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 10, 30).unixSeconds, // past
-        body: 'Прошлое',
-      );
-      final openedId = await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 10, 29).unixSeconds, // past, opened
-        body: 'Открытое',
-      );
-      await db.lettersDao.markOpened(openedId, today);
-      await db.lettersDao.addLetter(
-        deliverAt: DateTime.utc(2026, 12, 1).unixSeconds, // future
-        body: 'Будущее',
-      );
-
-      final due = await db.lettersDao.watchDue(today).first;
-      expect(due, hasLength(1));
-      expect(due.single.body, 'Прошлое');
-    });
+        expect(all.map((l) => l.id), [newer, older]);
+      },
+    );
 
     test('markOpened sets isOpened and openedAt', () async {
       final id = await db.lettersDao.addLetter(
