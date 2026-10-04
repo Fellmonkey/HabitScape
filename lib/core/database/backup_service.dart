@@ -10,6 +10,7 @@ import '../../features/habits/data/monthly_goals_dao.dart';
 import '../../features/week/data/weekly_intentions_dao.dart';
 import '../utils/date_helpers.dart';
 import 'app_database.dart';
+import 'database_reset.dart';
 import 'enums.dart';
 
 // Backup format version for forward compatibility.
@@ -67,15 +68,7 @@ class BackupService {
     final lettersList = data['letters'] as List<dynamic>? ?? [];
     final intentionsList = data['weeklyIntentions'] as List<dynamic>? ?? [];
 
-    return _db.transaction(() async {
-      // Clear in foreign-key order: children before parents.
-      await _habitLogsDao.deleteAllLogs();
-      await _dayNotesDao.deleteAllNotes();
-      await _monthlyGoalsDao.deleteAllGoals();
-      await _lettersDao.deleteAllLetters();
-      await _weeklyIntentionsDao.deleteAllIntentions();
-      await _habitsDao.deleteAllHabits();
-
+    return DatabaseReset(_db).replaceWith(() async {
       final habitIdMap = <int, int>{};
       for (var i = 0; i < habitsList.length; i++) {
         final map = habitsList[i] as Map<String, dynamic>;

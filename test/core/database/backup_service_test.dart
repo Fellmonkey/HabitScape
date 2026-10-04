@@ -220,6 +220,10 @@ void main() {
         DateTime.utc(2026, 4, 2).unixSeconds,
         10,
       );
+      await db2.weeklyIntentionsDao.setIntention(
+        weekStartOf(DateTime.utc(2026, 4, 1)).unixSeconds,
+        'Должно исчезнуть',
+      );
 
       await BackupService(db2).importBackup(bytes);
 
@@ -230,6 +234,7 @@ void main() {
       final logs = await db2.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
       expect(logs.single.habitId, habits.single.id);
+      expect(await db2.weeklyIntentionsDao.getAllIntentions(), isEmpty);
 
       await db2.close();
     });

@@ -90,5 +90,21 @@ void main() {
         expect(avgScore(fullDays), greaterThan(avgScore(emptyDays)));
       }
     });
+
+    test('seeding wipes capsules and weekly intentions too', () async {
+      await db.lettersDao.addLetter(
+        deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+        body: 'Старая капсула',
+      );
+      await db.weeklyIntentionsDao.setIntention(
+        weekStartOf(DateTime.now()).unixSeconds,
+        'Старое намерение',
+      );
+
+      await DebugDataSeeder(db).seed(debugScenarios.first);
+
+      expect(await db.lettersDao.getAllLetters(), isEmpty);
+      expect(await db.weeklyIntentionsDao.getAllIntentions(), isEmpty);
+    });
   });
 }

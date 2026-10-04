@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
+import '../database/database_reset.dart';
 import '../database/enums.dart';
 import '../utils/date_helpers.dart';
 import '../../features/habits/domain/scheduling.dart';
@@ -240,11 +241,8 @@ class DebugDataSeeder {
   /// Clears the database and populates it with the given scenario.
   /// Returns the number of habits created.
   Future<int> seed(DebugScenario scenario) async {
-    // 1. Wipe everything
-    await db.habitLogsDao.deleteAllLogs();
-    await db.habitsDao.deleteAllHabits();
-    await db.dayNotesDao.deleteAllNotes();
-    await db.monthlyGoalsDao.deleteAllGoals();
+    // 1. Wipe every collection through the one reset path.
+    await DatabaseReset(db).all();
 
     final rng = Random(scenario.habitCount * 1000 + scenario.months);
     final now = DateTime.now().toMidnight;

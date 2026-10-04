@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/app_sheets.dart';
 import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
+import '../database/database_reset.dart';
 import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
@@ -177,8 +178,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     });
     try {
       final db = ref.read(databaseProvider);
-      await db.habitLogsDao.deleteAllLogs();
-      await db.habitsDao.deleteAllHabits();
+      await DatabaseReset(db).all();
 
       if (!mounted) return;
       setState(() {
@@ -408,10 +408,10 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             onPressed: _seeding
                 ? null
                 : () => _runScenario(
-                      debugScenarios.firstWhere(
-                        (s) => s.name == '5 привычек · 1 мес',
-                      ),
+                    debugScenarios.firstWhere(
+                      (s) => s.name == '5 привычек · 1 мес',
                     ),
+                  ),
             icon: const Icon(Icons.person, size: 18),
             label: const Text('UX: Обычный (5 привычек, 1 мес)'),
             style: OutlinedButton.styleFrom(
@@ -426,10 +426,10 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             onPressed: _seeding
                 ? null
                 : () => _runScenario(
-                      debugScenarios.firstWhere(
-                        (s) => s.name == '30 привычек · 12 мес',
-                      ),
+                    debugScenarios.firstWhere(
+                      (s) => s.name == '30 привычек · 12 мес',
                     ),
+                  ),
             icon: const Icon(Icons.workspace_premium, size: 18),
             label: const Text('UX: Опытный (30 привычек, 12 мес)'),
             style: OutlinedButton.styleFrom(
