@@ -9,14 +9,6 @@ import 'scheduling.dart' as sched;
 class HabitEngine {
   const HabitEngine._();
 
-  /// Required base for a habit in a month, accounting for creation date.
-  ///
-  /// Delegates to the HabitSchedule module so month metrics share one
-  /// definition with the rest of the app.
-  static int calculateRequiredBase(Habit habit, int year, int month) {
-    return sched.calculateRequiredBase(habit, year, month);
-  }
-
   /// Calculates completion metrics for a habit in a month.
   static HabitMetrics calculateMetrics(
     Habit habit,
@@ -24,7 +16,8 @@ class HabitEngine {
     int year,
     int month,
   ) {
-    final rawBase = calculateRequiredBase(habit, year, month);
+    // The schedule module owns "how many times is this habit expected".
+    final rawBase = sched.calculateRequiredBase(habit, year, month);
 
     var doneCount = 0;
     var skipCount = 0;
