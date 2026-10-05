@@ -8,7 +8,7 @@ import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/shell_scaffold.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/features/onboarding/onboarding_flags.dart';
+import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/capsule/presentation/screens/capsule_screen.dart';
 import 'package:rythm/features/capsule/presentation/screens/letter_screen.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
@@ -102,9 +102,9 @@ Future<AppDatabase> pumpApp(
       sharedPrefsValues ??
       {
         'onboarding_seen': [
-          OnboardingTours.greenhouse,
-          OnboardingTours.spread,
-          OnboardingTours.settings,
+          AppTourIds.greenhouse,
+          AppTourIds.spread,
+          AppTourIds.settings,
         ],
       };
   SharedPreferences.setMockInitialValues(prefsValues);

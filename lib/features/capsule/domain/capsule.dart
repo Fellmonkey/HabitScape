@@ -109,15 +109,3 @@ String wroteAgoLabel(Letter letter) {
   if (days >= 150) return 'полгода назад';
   return 'месяц назад';
 }
-
-/// Russian pluralization for days: 1 день, 2 дня, 5 дней (incl. 21 день).
-String pluralDays(int n) {
-  final mod10 = n % 10;
-  final mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return 'дней';
-  return switch (mod10) {
-    1 => 'день',
-    2 || 3 || 4 => 'дня',
-    _ => 'дней',
-  };
-}

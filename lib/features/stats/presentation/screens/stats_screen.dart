@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -91,10 +92,7 @@ class StatsScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: _HeatmapCard(
-                       stats: stats,
-                       onDayTap: showDayDetail,
-                     ),
+                    child: _HeatmapCard(stats: stats, onDayTap: showDayDetail),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -240,11 +238,7 @@ class _WeekRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final pctInt = pct.round();
-    final color = pctInt >= 80
-        ? AppColors.sageGreen
-        : pctInt >= 40
-        ? AppColors.warmAmber
-        : AppColors.dustyRose;
+    final color = progressColor(pctInt);
 
     return Row(
       children: [

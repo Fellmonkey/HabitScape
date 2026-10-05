@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
-import '../../../../core/utils/localized_dates.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';
 
@@ -124,6 +124,10 @@ class _UpcomingCard extends StatelessWidget {
     final first = capsules.first;
     final left = daysUntil(first, today);
     final extra = capsules.length - 1;
+    final opensAt = formatShortDate(
+      dateFromUnix(first.deliverAt),
+      today: today,
+    );
 
     return Material(
       key: K.capsuleCard,
@@ -161,7 +165,7 @@ class _UpcomingCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Откроется ${_shortDate(first, today)} · осталось $left ${pluralDays(left)}'
+                      'Откроется $opensAt · осталось $left ${pluralDays(left)}'
                       '${extra > 0 ? ' · и ещё $extra' : ''}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
@@ -247,10 +251,4 @@ class _InviteCard extends StatelessWidget {
       ),
     );
   }
-}
-
-String _shortDate(Letter letter, DateTime today) {
-  final date = dateFromUnix(letter.deliverAt);
-  final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
-  return date.year == today.year ? dayMonth : '$dayMonth ${date.year}';
 }

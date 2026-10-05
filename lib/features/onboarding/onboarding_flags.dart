@@ -2,14 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings/shared_prefs.dart';
 
-/// Names of the one-time onboarding tours.
-abstract final class OnboardingTours {
-  static const greenhouse = 'greenhouse';
-  static const spread = 'spread';
-  static const settings = 'settings';
-}
-
 /// Tours already shown, persisted in SharedPreferences under `onboarding_seen`.
+/// The ids themselves live in `AppTourIds` (`app_tours.dart`).
 final onboardingFlagsProvider =
     AsyncNotifierProvider<OnboardingFlags, Set<String>>(OnboardingFlags.new);
 

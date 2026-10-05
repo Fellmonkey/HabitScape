@@ -1,4 +1,5 @@
-// Russian date labels — single source of truth used across the app.
+// Russian date vocabulary: month and weekday names.
+// Date formatting rules live in `lib/core/formatting/formatting.dart`.
 
 /// Month names in nominative case, indexed 1–12, [0] unused.
 const monthNames = [
@@ -48,7 +49,3 @@ const weekdayNames = [
   'Суббота',
   'Воскресенье',
 ];
-
-/// Formats a full Russian date, e.g. "Monday, 14 August".
-String formatFullDate(DateTime date) =>
-    '${weekdayNames[date.weekday]}, ${date.day} ${monthNamesGenitive[date.month]}';

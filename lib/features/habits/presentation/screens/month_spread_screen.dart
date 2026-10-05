@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hintful/hintful.dart';
 
 import '../../../../core/database/enums.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -14,7 +15,6 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
-import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../domain/completion.dart';
 import '../../providers/habit_providers.dart';
@@ -43,7 +43,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   int _slideDir = 1;
 
   @override
-  String get tourScope => OnboardingTours.spread;
+  String get tourScope => AppTourIds.spread;
 
   @override
   void initState() {
@@ -348,7 +348,7 @@ class _MonthSummary extends StatelessWidget {
             _MoodCount(mood: DayMood.bad, count: moodCounts[DayMood.bad]!),
             const Spacer(),
             Text(
-              '$moments ${_pluralMoments(moments)}',
+              '$moments ${pluralMoments(moments)}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
@@ -365,7 +365,7 @@ class _MonthSummary extends StatelessWidget {
                 '${progress.round()}%',
                 key: K.monthSpreadProgress,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: _progressColor(progress, theme),
+                  color: progressColor(progress),
                 ),
               ),
             ],
@@ -378,20 +378,12 @@ class _MonthSummary extends StatelessWidget {
               minHeight: 6,
               backgroundColor: theme.colorScheme.surfaceContainerHighest
                   .withValues(alpha: 0.4),
-              valueColor: AlwaysStoppedAnimation(
-                _progressColor(progress, theme),
-              ),
+              valueColor: AlwaysStoppedAnimation(progressColor(progress)),
             ),
           ),
         ],
       ],
     );
-  }
-
-  Color _progressColor(double pct, ThemeData theme) {
-    if (pct >= 80) return AppColors.sageGreen;
-    if (pct >= 40) return AppColors.warmAmber;
-    return AppColors.dustyRose;
   }
 }
 
@@ -402,14 +394,6 @@ Map<DayMood, int> _moodCountsOf(List<MonthSpreadDay> days) {
     if (mood != null) counts[mood] = counts[mood]! + 1;
   }
   return counts;
-}
-
-String _pluralMoments(int n) {
-  if (n % 10 == 1 && n % 100 != 11) return 'момент';
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) {
-    return 'момента';
-  }
-  return 'моментов';
 }
 
 class _MoodCount extends StatelessWidget {

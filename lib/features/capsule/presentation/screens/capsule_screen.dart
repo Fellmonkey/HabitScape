@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
-import '../../../../core/utils/localized_dates.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';
@@ -68,10 +68,10 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
     setState(() => _saving = false);
 
     final open = dateFromUnix(deliverAt);
-    final dayMonth = '${open.day} ${monthNamesGenitive[open.month]}';
+    final opensAt = formatShortDate(open, today: DateTime.now());
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Письмо откроется $dayMonth')));
+    ).showSnackBar(SnackBar(content: Text('Письмо откроется $opensAt')));
   }
 
   @override
@@ -272,8 +272,11 @@ class _CapsuleTile extends StatelessWidget {
       icon = Icons.mark_email_read_outlined;
       color = theme.colorScheme.onSurface.withValues(alpha: 0.4);
     } else {
-      subtitle =
-          'Откроется ${_shortDate(capsule, today)} · осталось $left ${pluralDays(left)}';
+      final opensAt = formatShortDate(
+        dateFromUnix(capsule.deliverAt),
+        today: today,
+      );
+      subtitle = 'Откроется $opensAt · осталось $left ${pluralDays(left)}';
       icon = Icons.inventory_2_outlined;
       color = AppColors.softLavender;
     }
@@ -322,10 +325,4 @@ class _CapsuleTile extends StatelessWidget {
       ),
     );
   }
-}
-
-String _shortDate(Letter letter, DateTime today) {
-  final date = dateFromUnix(letter.deliverAt);
-  final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
-  return date.year == today.year ? dayMonth : '$dayMonth ${date.year}';
 }

@@ -7,7 +7,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
-import '../../../../core/utils/localized_dates.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';

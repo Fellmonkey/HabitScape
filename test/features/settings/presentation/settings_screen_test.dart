@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/features/onboarding/onboarding_flags.dart';
+import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,9 +16,9 @@ void main() {
     // tooltip never blocks pumpAndSettle (see integration helpers).
     SharedPreferences.setMockInitialValues(<String, Object>{
       'onboarding_seen': [
-        OnboardingTours.greenhouse,
-        OnboardingTours.spread,
-        OnboardingTours.settings,
+        AppTourIds.greenhouse,
+        AppTourIds.spread,
+        AppTourIds.settings,
       ],
     });
   });

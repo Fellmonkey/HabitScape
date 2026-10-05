@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
+import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/onboarding/onboarding_flags.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,9 +27,9 @@ void main() {
     expect(await container.read(onboardingFlagsProvider.future), isEmpty);
     final notifier = container.read(onboardingFlagsProvider.notifier);
     const tours = [
-      OnboardingTours.greenhouse,
-      OnboardingTours.spread,
-      OnboardingTours.settings,
+      AppTourIds.greenhouse,
+      AppTourIds.spread,
+      AppTourIds.settings,
     ];
     for (final tour in tours) {
       expect(notifier.isSeen(tour), isFalse);
@@ -38,35 +39,33 @@ void main() {
   test('markSeen persists the flag across containers', () async {
     final notifier = container.read(onboardingFlagsProvider.notifier);
     await container.read(onboardingFlagsProvider.future); // flags loaded
-    await notifier.markSeen(OnboardingTours.greenhouse);
+    await notifier.markSeen(AppTourIds.greenhouse);
     expect(container.read(onboardingFlagsProvider).value, {
-      OnboardingTours.greenhouse,
+      AppTourIds.greenhouse,
     });
-    expect(notifier.isSeen(OnboardingTours.greenhouse), isTrue);
+    expect(notifier.isSeen(AppTourIds.greenhouse), isTrue);
 
     // A fresh container reading the same prefs sees the flag.
     final second = makeContainer();
     addTearDown(second.dispose);
     expect(await second.read(onboardingFlagsProvider.future), {
-      OnboardingTours.greenhouse,
+      AppTourIds.greenhouse,
     });
   });
 
   test('markSeen is idempotent', () async {
     final notifier = container.read(onboardingFlagsProvider.notifier);
     await container.read(onboardingFlagsProvider.future); // flags loaded
-    await notifier.markSeen(OnboardingTours.spread);
-    await notifier.markSeen(OnboardingTours.spread);
-    expect(container.read(onboardingFlagsProvider).value, {
-      OnboardingTours.spread,
-    });
+    await notifier.markSeen(AppTourIds.spread);
+    await notifier.markSeen(AppTourIds.spread);
+    expect(container.read(onboardingFlagsProvider).value, {AppTourIds.spread});
   });
 
   test('resetAll clears every flag and the persisted value', () async {
     final notifier = container.read(onboardingFlagsProvider.notifier);
     await container.read(onboardingFlagsProvider.future); // flags loaded
-    await notifier.markSeen(OnboardingTours.greenhouse);
-    await notifier.markSeen(OnboardingTours.settings);
+    await notifier.markSeen(AppTourIds.greenhouse);
+    await notifier.markSeen(AppTourIds.settings);
 
     await notifier.resetAll();
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -405,11 +406,7 @@ class _CompletionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = pct >= 80
-        ? AppColors.sageGreen
-        : pct >= 40
-        ? AppColors.warmAmber
-        : AppColors.dustyRose;
+    final color = progressColor(pct);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

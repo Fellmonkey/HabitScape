@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
+import '../../../core/formatting/russian_plural.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/localized_dates.dart';
 
@@ -184,7 +185,7 @@ class EveryXDaysFrequency extends HabitFrequency {
   String encode() => jsonEncode({'x': x});
 
   @override
-  String get label => _everyXLabel(x);
+  String get label => everyXDaysLabel(x);
 
   @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) {
@@ -354,15 +355,3 @@ String? getCycleLabelForDate(Habit habit, DateTime date) {
 
 /// Short human-readable frequency description, e.g. "Mon, Wed, Fri", "3×/week".
 String frequencyLabel(Habit habit) => HabitFrequency.fromHabit(habit).label;
-
-String _everyXLabel(int x) {
-  if (x == 1) return 'Каждый день';
-  final mod10 = x % 10;
-  final mod100 = x % 100;
-  if (mod10 == 1 && mod100 != 11) return 'Каждый $x день';
-  if ((mod10 == 2 || mod10 == 3 || mod10 == 4) &&
-      (mod100 < 11 || mod100 > 14)) {
-    return 'Каждые $x дня';
-  }
-  return 'Каждые $x дней';
-}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
@@ -259,7 +260,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
             if (_frequency == FrequencyType.everyXDays)
               ..._buildXStepper(
                 theme,
-                label: 'Каждые $_everyXDays дней',
+                label: everyXDaysLabel(_everyXDays),
                 value: _everyXDays,
                 min: 2,
                 max: 30,

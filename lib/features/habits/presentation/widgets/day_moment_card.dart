@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
+import '../../../onboarding/app_tours.dart';
 import '../../../onboarding/onboarding_flags.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
@@ -92,7 +93,7 @@ class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
     if (!mounted || _controller.text.isNotEmpty) return;
     final seen = await ref.read(onboardingFlagsProvider.future);
     if (!mounted || _controller.text.isNotEmpty || _focusNode.hasFocus) return;
-    if (!seen.contains(OnboardingTours.greenhouse)) return;
+    if (!seen.contains(AppTourIds.greenhouse)) return;
     _focusNode.requestFocus();
   }
 

@@ -3,7 +3,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/onboarding/onboarding_flags.dart';
+import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/onboarding/tour_content.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,7 +71,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(
       prefs.getStringList('onboarding_seen'),
-      contains(OnboardingTours.greenhouse),
+      contains(AppTourIds.greenhouse),
     );
   });
 
@@ -120,9 +120,9 @@ void main() {
       tester,
       sharedPrefsValues: {
         'onboarding_seen': [
-          OnboardingTours.greenhouse,
-          OnboardingTours.spread,
-          OnboardingTours.settings,
+          AppTourIds.greenhouse,
+          AppTourIds.spread,
+          AppTourIds.settings,
         ],
       },
     );

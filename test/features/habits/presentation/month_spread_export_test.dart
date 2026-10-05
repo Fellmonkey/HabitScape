@@ -9,7 +9,7 @@ import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/month_spread_exporter.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
-import 'package:rythm/features/onboarding/onboarding_flags.dart';
+import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/fake_month_spread_exporter.dart';
@@ -26,9 +26,9 @@ void main() {
     // tooltip never blocks pumpAndSettle (see integration helpers).
     SharedPreferences.setMockInitialValues(<String, Object>{
       'onboarding_seen': [
-        OnboardingTours.greenhouse,
-        OnboardingTours.spread,
-        OnboardingTours.settings,
+        AppTourIds.greenhouse,
+        AppTourIds.spread,
+        AppTourIds.settings,
       ],
     });
     db = createTestDatabase();

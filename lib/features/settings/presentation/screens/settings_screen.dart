@@ -28,7 +28,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with OnboardingTourMixin<SettingsScreen> {
   @override
-  String get tourScope => OnboardingTours.settings;
+  String get tourScope => AppTourIds.settings;
 
   @override
   Widget build(BuildContext context) {

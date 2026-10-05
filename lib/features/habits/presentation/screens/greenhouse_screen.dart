@@ -5,14 +5,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart' as enums;
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/presence.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
-import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -47,7 +46,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   bool _echoAtTop = true;
 
   @override
-  String get tourScope => OnboardingTours.greenhouse;
+  String get tourScope => AppTourIds.greenhouse;
 
   @override
   void initState() {

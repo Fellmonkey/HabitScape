@@ -190,15 +190,4 @@ void main() {
       expect(wroteAgoLabel(letter), 'год назад');
     });
   });
-
-  group('pluralDays', () {
-    test('1 день, 2 дня, 5 дней, 21 день, 22 дня', () {
-      expect(pluralDays(1), 'день');
-      expect(pluralDays(2), 'дня');
-      expect(pluralDays(5), 'дней');
-      expect(pluralDays(21), 'день');
-      expect(pluralDays(22), 'дня');
-      expect(pluralDays(28), 'дней');
-    });
-  });
 }

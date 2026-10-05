@@ -86,6 +86,17 @@ void main() {
     });
   });
 
+  // ── labels ──────────────────────────────────────────────────
+
+  group('frequency labels', () {
+    test('everyXDays uses the shared Russian plural rule', () {
+      expect(const EveryXDaysFrequency(1).label, 'Каждый день');
+      expect(const EveryXDaysFrequency(2).label, 'Каждые 2 дня');
+      expect(const EveryXDaysFrequency(5).label, 'Каждые 5 дней');
+      expect(const EveryXDaysFrequency(21).label, 'Каждый 21 день');
+    });
+  });
+
   // ── encode round-trip ───────────────────────────────────────
 
   group('encode round-trip', () {

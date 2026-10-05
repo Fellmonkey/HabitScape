@@ -9,7 +9,7 @@ import 'onboarding_flags.dart';
 /// `tourScope` + `hintTarget(AppHintIds.xxx, child)`.
 mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     on ConsumerState<T> {
-  /// Tour id from [OnboardingTours].
+  /// Tour id from [AppTourIds].
   String get tourScope;
 
   HintTour get hintTour {

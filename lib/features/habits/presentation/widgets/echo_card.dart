@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/presence.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/localized_dates.dart';
 import '../../domain/echo.dart';
 import '../../providers/echo_providers.dart';
 
@@ -218,12 +218,7 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   }
 
   String _header(EchoMemory memory) {
-    final date = memory.date;
-    final today = widget.today;
-    final dayMonth = '${date.day} ${monthNamesGenitive[date.month]}';
-    final dateLabel = date.year == today.year
-        ? dayMonth
-        : '$dayMonth ${date.year}';
+    final dateLabel = formatShortDate(memory.date, today: widget.today);
     final relative = switch (memory.horizon) {
       EchoHorizon.year => 'Год назад',
       EchoHorizon.month => 'Месяц назад',

@@ -12,6 +12,8 @@ abstract final class AppHintIds {
   static const settingsExport = 'settings-export';
 }
 
+/// The one id vocabulary for tours. Screens pass these ids to the tour mixin,
+/// and the onboarding flags persist the same strings.
 abstract final class AppTourIds {
   static const greenhouse = 'greenhouse';
   static const spread = 'spread';
