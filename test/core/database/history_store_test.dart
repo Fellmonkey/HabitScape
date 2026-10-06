@@ -34,8 +34,17 @@ void main() {
     final end = DateTime.utc(2026, 2, 1);
 
     final habitId = (await db.habitsDao.getActiveHabits()).single.id;
-    await db.habitLogsDao.markDone(habitId, start.unixSeconds, 8);
-    await db.habitLogsDao.markDone(habitId, end.unixSeconds, 9); // excluded
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: start.unixSeconds,
+        loggedHour: 8,
+      ),
+    );
+    await db.habitLogsDao.upsertLog(
+      // end-exclusive bound respected
+      makeLogCompanion(habitId: habitId, date: end.unixSeconds, loggedHour: 9),
+    );
     await db.dayNotesDao.upsertNote(start.unixSeconds, mood: DayMood.good);
 
     final snapshot = await store.month(DateTime.utc(2026, 1, 15));
@@ -79,15 +88,19 @@ void main() {
     final otherId = await db.habitsDao.insertHabit(
       makeHabitCompanion(name: 'Чтение'),
     );
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2026, 1, 2).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 1, 2).unixSeconds,
+        loggedHour: 8,
+      ),
     );
-    await db.habitLogsDao.markDone(
-      otherId,
-      DateTime.utc(2026, 1, 3).unixSeconds,
-      9,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: otherId,
+        date: DateTime.utc(2026, 1, 3).unixSeconds,
+        loggedHour: 9,
+      ),
     );
 
     final snapshot = await store.habitMonth(

@@ -210,25 +210,18 @@ class HabitActions extends Notifier<void> {
     );
   }
 
-  /// Logs [status] for [habitIds] on today — one batched write for done,
-  /// one for skip. Owns the "today" policy: the date stamp and (for done)
-  /// the hour are captured here, once.
+  /// Logs [status] for [habitIds] on today — one batched write for every
+  /// status. Owns the "today" policy: the date stamp and (for done) the
+  /// hour are captured here, once.
   Future<void> logToday(List<int> habitIds, {required LogStatus status}) async {
     if (habitIds.isEmpty) return;
     final now = DateTime.now();
-    final ts = now.toMidnight.unixSeconds;
-    if (status == LogStatus.done) {
-      await _logsDao.markAllDone(habitIds, ts, now.hour);
-    } else {
-      await _logsDao.upsertLogs([
-        for (final id in habitIds)
-          HabitLogsCompanion(
-            habitId: Value(id),
-            date: Value(ts),
-            status: const Value(LogStatus.skip),
-          ),
-      ]);
-    }
+    await _logsDao.logAll(
+      habitIds,
+      now.toMidnight.unixSeconds,
+      status,
+      hour: status == LogStatus.done ? now.hour : null,
+    );
   }
 
   /// Saves a day note: moment + mood + time quality (1–5).

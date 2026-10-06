@@ -36,7 +36,14 @@ void main() {
         ),
       );
       final today = DateTime.now().toMidnight;
-      await db.habitLogsDao.markDone(habitId, today.unixSeconds, 8);
+      await db.habitLogsDao.upsertLog(
+        HabitLogsCompanion.insert(
+          habitId: habitId,
+          date: today.unixSeconds,
+          status: const Value(LogStatus.done),
+          loggedHour: const Value(8),
+        ),
+      );
       await db.dayNotesDao.upsertNote(
         today.unixSeconds,
         moment: 'Отличный день',

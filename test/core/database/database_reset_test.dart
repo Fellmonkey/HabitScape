@@ -21,10 +21,12 @@ void main() {
     final habitId = await db.habitsDao.insertHabit(
       makeHabitCompanion(name: 'Бег'),
     );
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2026, 10, 1).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 10, 1).unixSeconds,
+        loggedHour: 8,
+      ),
     );
     await db.dayNotesDao.upsertNote(
       DateTime.utc(2026, 10, 1).unixSeconds,

@@ -70,71 +70,47 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
   /// Upserts a log for (habitId, date) with a single INSERT … ON CONFLICT
   /// UPDATE — no read-before-write.
   Future<void> upsertLog(HabitLogsCompanion entry) {
-    return into(habitLogs).insert(
-      entry,
-      onConflict: DoUpdate(
-        (_) => HabitLogsCompanion(
-          status: entry.status,
-          loggedHour: entry.loggedHour,
-        ),
-        target: [habitLogs.habitId, habitLogs.date],
-      ),
-    );
+    return into(habitLogs).insert(entry, onConflict: _onConflict(entry));
   }
 
-  /// Upserts many logs in one transaction (e.g. "Mark all").
+  /// Upserts many logs in one transaction.
   Future<void> upsertLogs(List<HabitLogsCompanion> entries) {
     if (entries.isEmpty) return Future.value();
     return batch((batch) {
       for (final entry in entries) {
-        batch.insert(
-          habitLogs,
-          entry,
-          onConflict: DoUpdate(
-            (_) => HabitLogsCompanion(
-              status: entry.status,
-              loggedHour: entry.loggedHour,
-            ),
-            target: [habitLogs.habitId, habitLogs.date],
-          ),
-        );
+        batch.insert(habitLogs, entry, onConflict: _onConflict(entry));
       }
     });
   }
 
-  /// Marks a habit as done.
-  Future<void> markDone(int habitId, int dateTimestamp, int hour) {
-    return upsertLog(
-      HabitLogsCompanion(
-        habitId: Value(habitId),
-        date: Value(dateTimestamp),
-        status: const Value(LogStatus.done),
-        loggedHour: Value(hour),
-      ),
-    );
-  }
-
-  /// Marks many habits done for the same date in a single transaction.
-  Future<void> markAllDone(List<int> habitIds, int dateTimestamp, int hour) {
+  /// Writes one [status] for every habit in [habitIds] on [date], in one
+  /// batch. The hour is kept only for completions; a skip has no time.
+  Future<void> logAll(
+    List<int> habitIds,
+    int date,
+    LogStatus status, {
+    int? hour,
+  }) {
     return upsertLogs([
       for (final habitId in habitIds)
         HabitLogsCompanion(
           habitId: Value(habitId),
-          date: Value(dateTimestamp),
-          status: const Value(LogStatus.done),
+          date: Value(date),
+          status: Value(status),
           loggedHour: Value(hour),
         ),
     ]);
   }
 
-  /// Marks a habit as skipped.
-  Future<void> markSkip(int habitId, int dateTimestamp) {
-    return upsertLog(
-      HabitLogsCompanion(
-        habitId: Value(habitId),
-        date: Value(dateTimestamp),
-        status: const Value(LogStatus.skip),
+  /// The single upsert rule: a repeated (habitId, date) rewrites the status
+  /// and the logged hour, never the id or the date.
+  DoUpdate<$HabitLogsTable, HabitLog> _onConflict(HabitLogsCompanion entry) {
+    return DoUpdate(
+      (_) => HabitLogsCompanion(
+        status: entry.status,
+        loggedHour: entry.loggedHour,
       ),
+      target: [habitLogs.habitId, habitLogs.date],
     );
   }
 }

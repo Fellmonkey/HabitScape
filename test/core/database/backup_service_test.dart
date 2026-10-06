@@ -58,7 +58,9 @@ void main() {
       );
 
       final logDate = DateTime.utc(2026, 1, 5).unixSeconds;
-      await db.habitLogsDao.markDone(habitId, logDate, 8);
+      await db.habitLogsDao.upsertLog(
+        makeLogCompanion(habitId: habitId, date: logDate, loggedHour: 8),
+      );
 
       // Day note
       await db.dayNotesDao.upsertNote(
@@ -163,10 +165,12 @@ void main() {
       final habitId = await db.habitsDao.insertHabit(
         makeHabitCompanion(name: 'Бег'),
       );
-      await db.habitLogsDao.markDone(
-        habitId,
-        DateTime.utc(2026, 2, 3).unixSeconds,
-        8,
+      await db.habitLogsDao.upsertLog(
+        makeLogCompanion(
+          habitId: habitId,
+          date: DateTime.utc(2026, 2, 3).unixSeconds,
+          loggedHour: 8,
+        ),
       );
       await db.dayNotesDao.upsertNote(
         DateTime.utc(2026, 2, 3).unixSeconds,
@@ -203,10 +207,12 @@ void main() {
       final oldHabitId = await db.habitsDao.insertHabit(
         makeHabitCompanion(name: 'Imported'),
       );
-      await db.habitLogsDao.markDone(
-        oldHabitId,
-        DateTime.utc(2026, 4, 1).unixSeconds,
-        9,
+      await db.habitLogsDao.upsertLog(
+        makeLogCompanion(
+          habitId: oldHabitId,
+          date: DateTime.utc(2026, 4, 1).unixSeconds,
+          loggedHour: 9,
+        ),
       );
       final bytes = await service.exportBackup();
 
@@ -215,10 +221,12 @@ void main() {
       final usedHabitId = await db2.habitsDao.insertHabit(
         makeHabitCompanion(name: 'Existing'),
       );
-      await db2.habitLogsDao.markDone(
-        usedHabitId,
-        DateTime.utc(2026, 4, 2).unixSeconds,
-        10,
+      await db2.habitLogsDao.upsertLog(
+        makeLogCompanion(
+          habitId: usedHabitId,
+          date: DateTime.utc(2026, 4, 2).unixSeconds,
+          loggedHour: 10,
+        ),
       );
       await db2.weeklyIntentionsDao.setIntention(
         weekStartOf(DateTime.utc(2026, 4, 1)).unixSeconds,
@@ -243,10 +251,12 @@ void main() {
       final existingId = await db.habitsDao.insertHabit(
         makeHabitCompanion(name: 'Keep me'),
       );
-      await db.habitLogsDao.markDone(
-        existingId,
-        DateTime.utc(2026, 4, 1).unixSeconds,
-        9,
+      await db.habitLogsDao.upsertLog(
+        makeLogCompanion(
+          habitId: existingId,
+          date: DateTime.utc(2026, 4, 1).unixSeconds,
+          loggedHour: 9,
+        ),
       );
 
       final badJson = jsonEncode({

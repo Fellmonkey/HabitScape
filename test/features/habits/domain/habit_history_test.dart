@@ -28,15 +28,19 @@ void main() {
   });
 
   test('walks back in chunks and stops at the earliest log', () async {
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2023, 1, 4).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2023, 1, 4).unixSeconds,
+        loggedHour: 8,
+      ),
     );
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2024, 3, 9).unixSeconds,
-      9,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2024, 3, 9).unixSeconds,
+        loggedHour: 9,
+      ),
     );
 
     final history = HabitHistory(
@@ -62,24 +66,33 @@ void main() {
   });
 
   test('groups logs by month with done and skip counts', () async {
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2026, 9, 2).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 9, 2).unixSeconds,
+        loggedHour: 8,
+      ),
     );
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2026, 9, 3).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 9, 3).unixSeconds,
+        loggedHour: 8,
+      ),
     );
-    await db.habitLogsDao.markSkip(
-      habitId,
-      DateTime.utc(2026, 9, 4).unixSeconds,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 9, 4).unixSeconds,
+        status: LogStatus.skip,
+      ),
     );
-    await db.habitLogsDao.markDone(
-      habitId,
-      DateTime.utc(2026, 8, 31).unixSeconds,
-      8,
+    await db.habitLogsDao.upsertLog(
+      makeLogCompanion(
+        habitId: habitId,
+        date: DateTime.utc(2026, 8, 31).unixSeconds,
+        loggedHour: 8,
+      ),
     );
 
     final history = HabitHistory(

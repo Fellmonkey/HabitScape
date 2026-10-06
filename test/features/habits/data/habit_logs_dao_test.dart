@@ -75,10 +75,15 @@ void main() {
       expect(logs.firstWhere((l) => l.date == jan1).status, LogStatus.skip);
     });
 
-    test('markAllDone marks every habit in one batch', () async {
+    test('logAll writes one status for many habits in one batch', () async {
       final id2 = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'B'));
       final id3 = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'C'));
-      await db.habitLogsDao.markAllDone([1, id2, id3], jan1, 14);
+      await db.habitLogsDao.logAll(
+        [1, id2, id3],
+        jan1,
+        LogStatus.done,
+        hour: 14,
+      );
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(3));
@@ -88,13 +93,23 @@ void main() {
       }
     });
 
-    test('markAllDone is idempotent on the same (habit, date)', () async {
-      await db.habitLogsDao.markAllDone([1], jan1, 10);
-      await db.habitLogsDao.markAllDone([1], jan1, 18);
+    test('logAll is idempotent on the same (habit, date)', () async {
+      await db.habitLogsDao.logAll([1], jan1, LogStatus.done, hour: 10);
+      await db.habitLogsDao.logAll([1], jan1, LogStatus.done, hour: 18);
 
       final logs = await db.habitLogsDao.getAllLogs();
       expect(logs, hasLength(1));
       expect(logs.first.loggedHour, 18);
+    });
+
+    test('logAll skip has no hour and clears a previous one', () async {
+      await db.habitLogsDao.logAll([1], jan1, LogStatus.done, hour: 14);
+      await db.habitLogsDao.logAll([1], jan1, LogStatus.skip);
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(1));
+      expect(logs.first.status, LogStatus.skip);
+      expect(logs.first.loggedHour, isNull);
     });
 
     test(
@@ -119,23 +134,6 @@ void main() {
         expect(logs[1].date, jan3);
       },
     );
-
-    test('markDone sets status=done and loggedHour', () async {
-      await db.habitLogsDao.markDone(1, jan1, 14);
-
-      final logs = await db.habitLogsDao.getAllLogs();
-      expect(logs, hasLength(1));
-      expect(logs.first.status, LogStatus.done);
-      expect(logs.first.loggedHour, 14);
-    });
-
-    test('markSkip sets status=skip', () async {
-      await db.habitLogsDao.markSkip(1, jan1);
-
-      final logs = await db.habitLogsDao.getAllLogs();
-      expect(logs, hasLength(1));
-      expect(logs.first.status, LogStatus.skip);
-    });
 
     test('getAllLogs and deleteAllLogs', () async {
       await db.habitLogsDao.upsertLog(
