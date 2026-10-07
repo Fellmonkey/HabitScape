@@ -260,13 +260,12 @@ class HabitActions extends Notifier<void> {
 
   /// Sets the focus flag, enforcing the 5-habit focus cap. Returns false
   /// (without writing) when enabling focus would exceed the cap.
-  Future<bool> setFocus(int habitId, {required bool isFocus}) async {
-    if (isFocus) {
-      final count = await _habitsDao.countFocusHabits();
-      if (count >= AppConstants.maxFocusHabits) return false;
-    }
-    await _habitsDao.toggleFocus(habitId, isFocus: isFocus);
-    return true;
+  Future<bool> setFocus(int habitId, {required bool isFocus}) {
+    return _habitsDao.setFocusWithinLimit(
+      habitId,
+      isFocus: isFocus,
+      cap: AppConstants.maxFocusHabits,
+    );
   }
 
   /// Update a habit's mutable fields (name, icon, frequency, timeOfDay).

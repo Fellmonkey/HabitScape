@@ -52,13 +52,32 @@ void main() {
       expect(await actions.setFocus(id, isFocus: false), isTrue);
       expect((await db.habitsDao.getHabit(id)).isFocus, isFalse);
     });
+
+    test('concurrent requests cannot both take the last focus slot', () async {
+      for (var i = 0; i < AppConstants.maxFocusHabits - 1; i++) {
+        await db.habitsDao.insertHabit(
+          makeHabitCompanion(name: 'F$i', isFocus: true),
+        );
+      }
+      final a = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'A'));
+      final b = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'B'));
+
+      final results = await Future.wait([
+        actions.setFocus(a, isFocus: true),
+        actions.setFocus(b, isFocus: true),
+      ]);
+
+      expect(results.where((accepted) => accepted), hasLength(1));
+      expect(
+        await db.habitsDao.countFocusHabits(),
+        AppConstants.maxFocusHabits,
+      );
+    });
   });
 
   group('logToday', () {
     test('marks done with today timestamp and hour', () async {
-      final id = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'A'),
-      );
+      final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'A'));
       await actions.logToday([id], status: LogStatus.done);
 
       final logs = await db.habitLogsDao.getAllLogs();
@@ -69,9 +88,7 @@ void main() {
     });
 
     test('marks skip without an hour', () async {
-      final id = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'B'),
-      );
+      final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'B'));
       await actions.logToday([id], status: LogStatus.skip);
 
       final logs = await db.habitLogsDao.getAllLogs();
@@ -80,12 +97,8 @@ void main() {
     });
 
     test('batches many ids in one write', () async {
-      final a = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'a'),
-      );
-      final b = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'b'),
-      );
+      final a = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'a'));
+      final b = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'b'));
       await actions.logToday([a, b], status: LogStatus.done);
       expect(await db.habitLogsDao.getAllLogs(), hasLength(2));
     });
@@ -98,9 +111,7 @@ void main() {
 
   group('setLifecycle', () {
     test('archive then restore toggles isArchived', () async {
-      final id = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'C'),
-      );
+      final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'C'));
       await actions.setLifecycle(id, HabitLifecycle.archive);
       expect((await db.habitsDao.getHabit(id)).isArchived, isTrue);
 
@@ -109,9 +120,7 @@ void main() {
     });
 
     test('delete removes the habit', () async {
-      final id = await db.habitsDao.insertHabit(
-        makeHabitCompanion(name: 'D'),
-      );
+      final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'D'));
       await actions.setLifecycle(id, HabitLifecycle.delete);
       expect(db.habitsDao.getHabit(id), throwsStateError);
     });

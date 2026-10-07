@@ -89,6 +89,23 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
     );
   }
 
+  /// Sets the focus flag, checking [cap] and writing in one transaction so
+  /// two concurrent requests cannot both take the last free slot.
+  ///
+  /// Returns false (without writing) when turning focus on would exceed the
+  /// cap.
+  Future<bool> setFocusWithinLimit(
+    int id, {
+    required bool isFocus,
+    required int cap,
+  }) {
+    return transaction(() async {
+      if (isFocus && await countFocusHabits() >= cap) return false;
+      await toggleFocus(id, isFocus: isFocus);
+      return true;
+    });
+  }
+
   /// Counts habits currently marked as focus.
   Future<int> countFocusHabits() async {
     final query = selectOnly(habits)
