@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
+
+import '../../../fixtures/test_db.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +30,12 @@ void main() {
     expect(container.read(todayProvider), first);
   });
 
-  test('today-based providers derive their date from todayProvider', () {
-    final container = ProviderContainer();
+  test('today-based providers derive their date from todayProvider', () async {
+    final db = createTestDatabase();
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWithValue(db)],
+    );
     addTearDown(container.dispose);
 
     final ts = container.read(todayProvider);
@@ -33,7 +43,22 @@ void main() {
 
     // todayLogsProvider/todayDayNoteProvider stay alive (non-autoDispose)
     // and react to the day value without ever needing a manual refresh.
-    expect(container.read(todayLogsProvider), isA<AsyncValue>());
-    expect(container.read(todayDayNoteProvider), isA<AsyncValue>());
+    final logsReady = Completer<List<HabitLog>>();
+    final logsSub = container.listen(todayLogsProvider, (_, next) {
+      if (next case AsyncData(:final value)) {
+        if (!logsReady.isCompleted) logsReady.complete(value);
+      }
+    }, fireImmediately: true);
+    addTearDown(logsSub.close);
+    expect(await logsReady.future, isEmpty);
+
+    final noteReady = Completer<DayNote?>();
+    final noteSub = container.listen(todayDayNoteProvider, (_, next) {
+      if (next case AsyncData(:final value)) {
+        if (!noteReady.isCompleted) noteReady.complete(value);
+      }
+    }, fireImmediately: true);
+    addTearDown(noteSub.close);
+    expect(await noteReady.future, isNull);
   });
 }
