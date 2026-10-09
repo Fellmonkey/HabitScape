@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Fake actions that record the saved intention instead of hitting the DB.
 class _FakeWeekIntentionActions extends WeekIntentionActions {
   String? saved;
+  DateTime? answeredWeekStart;
 
   @override
   Future<void> save(String intention) async {
@@ -25,6 +26,11 @@ class _FakeWeekIntentionActions extends WeekIntentionActions {
   @override
   Future<void> clear() async {
     saved = null;
+  }
+
+  @override
+  Future<void> answerWeek(DateTime weekStart) async {
+    answeredWeekStart = weekStart;
   }
 }
 
@@ -221,5 +227,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fakeActions.saved, 'Ранний подъём');
+    expect(fakeActions.answeredWeekStart, weekStartOf(DateTime.now()));
+  });
+
+  testWidgets('skipping marks the closing week as answered', (tester) async {
+    await pumpCard(
+      tester,
+      summary: const WeekSummary(
+        greenDays: 1,
+        totalDays: 1,
+        bestDay: null,
+        completionPct: null,
+        weakest: null,
+      ),
+    );
+
+    await tester.tap(find.byKey(K.weekIntentionSkip));
+    await tester.pumpAndSettle();
+
+    expect(fakeActions.answeredWeekStart, weekStartOf(DateTime.now()));
   });
 }

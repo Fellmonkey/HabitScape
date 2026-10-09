@@ -20,20 +20,20 @@ final weeklyIntentionsDaoProvider = Provider<WeeklyIntentionsDao>((ref) {
 
 /// The current week's intention (null when not written yet).
 final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
-  final now = DateTime.now();
+  final today = dateFromUnix(ref.watch(todayProvider));
   return ref
       .watch(weeklyIntentionsDaoProvider)
-      .watchForWeek(weekStartOf(now).unixSeconds);
+      .watchForWeek(weekStartOf(today).unixSeconds);
 });
 
 /// The previous week's intention — shown in the next summary as a gentle
 /// reminder of what was carried over.
 final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
-  final now = DateTime.now();
+  final today = dateFromUnix(ref.watch(todayProvider));
   return ref
       .watch(weeklyIntentionsDaoProvider)
       .watchForWeek(
-        weekStartOf(now).subtract(const Duration(days: 7)).unixSeconds,
+        weekStartOf(today).subtract(const Duration(days: 7)).unixSeconds,
       );
 });
 
@@ -67,18 +67,27 @@ class WeekIntentionActions extends Notifier<void> {
   @override
   void build() {}
 
+  DateTime get _today => dateFromUnix(ref.read(todayProvider));
+
   /// Saves the current week's intention.
   Future<void> save(String intention) {
     return ref
         .read(weeklyIntentionsDaoProvider)
-        .setIntention(weekStartOf(DateTime.now()).unixSeconds, intention);
+        .setIntention(weekStartOf(_today).unixSeconds, intention);
   }
 
   /// Clears the current week's intention.
   Future<void> clear() {
     return ref
         .read(weeklyIntentionsDaoProvider)
-        .setIntention(weekStartOf(DateTime.now()).unixSeconds, null);
+        .setIntention(weekStartOf(_today).unixSeconds, null);
+  }
+
+  /// Records that the user answered the closing [weekStart] — saved an
+  /// intention or skipped it. This is the only writer of the answered marker.
+  Future<void> answerWeek(DateTime weekStart) async {
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    await prefs.setInt(_answeredWeekKey, weekStart.unixSeconds);
   }
 }
 

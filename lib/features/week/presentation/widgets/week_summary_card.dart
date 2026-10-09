@@ -7,11 +7,9 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../domain/week_summary.dart';
 import '../../providers/week_providers.dart';
-import '../../../../core/settings/shared_prefs.dart';
 
 /// «Итог недели»: a Sunday card that closes the week and captures one
 /// intention for the next one. The summary is analysis — what happened; the
@@ -38,9 +36,10 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     setState(() => _saving = true);
-    await ref.read(weekIntentionActionsProvider.notifier).save(text);
+    final actions = ref.read(weekIntentionActionsProvider.notifier);
+    await actions.save(text);
+    await actions.answerWeek(weekStart);
     if (!mounted) return;
-    await _markAnswered(weekStart);
     Haptics.tap(ref.read(hapticsEnabledProvider));
     if (!mounted) return;
     setState(() {
@@ -51,14 +50,9 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
   }
 
   Future<void> _skip(DateTime weekStart) async {
-    await _markAnswered(weekStart);
+    await ref.read(weekIntentionActionsProvider.notifier).answerWeek(weekStart);
     if (!mounted) return;
     ref.invalidate(weekSummaryProvider);
-  }
-
-  Future<void> _markAnswered(DateTime weekStart) async {
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await prefs.setInt('week_summary_answered_week', weekStart.unixSeconds);
   }
 
   @override
