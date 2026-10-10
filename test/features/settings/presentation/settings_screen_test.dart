@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
+import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +74,34 @@ void main() {
     await tester.tap(find.byKey(K.settingsAboutAuthor));
     await tester.pumpAndSettle();
     expect(find.text('Не удалось открыть ссылку'), findsOneWidget);
+  });
+
+  testWidgets('last backup tile warns when the export is stale', (
+    tester,
+  ) async {
+    final last = DateTime.now().toMidnight.subtract(const Duration(days: 31));
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'last_backup_date': last.unixSeconds,
+      'onboarding_seen': [
+        AppTourIds.greenhouse,
+        AppTourIds.spread,
+        AppTourIds.settings,
+      ],
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPrefsProvider.overrideWith((_) async => prefs)],
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Давно не было бэкапа'), findsOneWidget);
+    expect(
+      find.text('Последний экспорт: ${last.day}.${last.month}.${last.year}'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('settings screen offers the capsules entry', (tester) async {

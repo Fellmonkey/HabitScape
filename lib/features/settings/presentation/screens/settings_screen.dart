@@ -1,21 +1,20 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/shared_prefs.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/settings/theme_mode.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../domain/backup_flow.dart';
 import '../../providers/settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -121,31 +120,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   // ── Export backup ─────────────────────────────────────────────
 
   Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
-    try {
-      final service = ref.read(backupServiceProvider);
-      final bytes = await service.exportBackup();
+    final flow = await ref.read(backupFlowProvider.future);
+    final outcome = await flow.exportBackup();
+    if (!context.mounted) return;
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(
-              bytes,
-              mimeType: 'application/json',
-              name: 'rythm_backup.json',
-            ),
-          ],
-        ),
-      );
-      final prefs = await ref.read(sharedPrefsProvider.future);
-      await prefs.setInt(
-        'last_backup_date',
-        DateTime.now().toMidnight.unixSeconds,
-      );
-      ref.invalidate(sharedPrefsProvider);
-    } catch (e) {
-      if (context.mounted) {
-        _showSnackBar(context, 'Ошибка экспорта: $e');
-      }
+    switch (outcome) {
+      case BackupExported():
+        ref.invalidate(backupStatusProvider);
+      case BackupExportFailed(:final error):
+        _showSnackBar(context, 'Ошибка экспорта: $error');
     }
   }
 
@@ -175,33 +158,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     if (confirmed != true || !context.mounted) return;
 
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        withData: true,
-      );
+    final flow = await ref.read(backupFlowProvider.future);
+    final outcome = await flow.importBackup();
+    if (!context.mounted) return;
 
-      if (result == null || result.files.isEmpty) return;
-
-      final bytes = result.files.first.bytes;
-      if (bytes == null) {
-        if (context.mounted) {
-          _showSnackBar(context, 'Не удалось прочитать файл');
-        }
-        return;
-      }
-
-      final service = ref.read(backupServiceProvider);
-      final count = await service.importBackup(bytes);
-
-      if (context.mounted) {
-        _showSnackBar(context, 'Импортировано привычек: $count');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showSnackBar(context, 'Ошибка импорта: $e');
-      }
+    switch (outcome) {
+      case BackupImported(:final habitCount):
+        _showSnackBar(context, 'Импортировано привычек: $habitCount');
+      case BackupImportCancelled():
+        break;
+      case BackupImportUnreadable():
+        _showSnackBar(context, 'Не удалось прочитать файл');
+      case BackupImportFailed(:final error):
+        _showSnackBar(context, 'Ошибка импорта: $error');
     }
   }
 
@@ -242,23 +211,21 @@ class _LastBackupTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prefsAsync = ref.watch(sharedPrefsProvider);
-    return prefsAsync.when(
+    final statusAsync = ref.watch(backupStatusProvider);
+    final today = dateFromUnix(ref.watch(todayProvider));
+    return statusAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
-      data: (prefs) {
-        final last = prefs.getInt('last_backup_date');
+      data: (status) {
+        final last = status.lastBackup;
         final theme = Theme.of(context);
         String label;
         if (last == null) {
           label = 'Резервная копия ещё не создавалась';
         } else {
-          final date = dateFromUnix(last);
-          label = 'Последний экспорт: ${date.day}.${date.month}.${date.year}';
+          label = 'Последний экспорт: ${last.day}.${last.month}.${last.year}';
         }
-        final old =
-            last != null &&
-            (DateTime.now().toMidnight.unixSeconds - last) > 30 * 86400;
+        final old = status.isStale(today);
         return GlassCard(
           child: ListTile(
             leading: Icon(
