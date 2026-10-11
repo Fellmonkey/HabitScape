@@ -2,17 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/database_provider.dart';
+import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
+import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/presentation/widgets/day_moment_card.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../fixtures/test_db.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late SharedPreferences prefs;
+  late AppDatabase db;
+
+  setUp(() {
+    db = createTestDatabase();
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
 
   Future<void> pumpCard(
     WidgetTester tester, {
@@ -26,6 +40,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          databaseProvider.overrideWithValue(db),
           todayDayNoteProvider.overrideWith(
             (ref) => Stream<DayNote?>.value(null),
           ),
@@ -88,5 +103,30 @@ void main() {
 
     final field = tester.widget<TextField>(find.byKey(K.dayMomentField));
     expect(field.focusNode?.hasFocus, isTrue);
+  });
+
+  testWidgets('saving a mood and clearing it follows the shared draft policy', (
+    tester,
+  ) async {
+    await pumpCard(tester);
+
+    await tester.tap(find.byKey(K.dayMomentMood('good')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(K.dayMomentSave));
+    await tester.pumpAndSettle();
+
+    final date = todayTimestamp();
+    var note = await db.dayNotesDao.getNoteForDate(date);
+    expect(note?.mood, DayMood.good);
+    expect(note?.moment, isNull);
+
+    // The stored draft can still be saved when emptied — that clears the row.
+    await tester.tap(find.byKey(K.dayMomentMood('good')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(K.dayMomentSave));
+    await tester.pumpAndSettle();
+
+    note = await db.dayNotesDao.getNoteForDate(date);
+    expect(note, isNull);
   });
 }

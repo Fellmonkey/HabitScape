@@ -11,6 +11,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/app_tours.dart';
 import '../../../onboarding/onboarding_flags.dart';
+import '../../domain/day_moment_draft.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
 
@@ -75,14 +76,14 @@ class _DayMomentComposer extends ConsumerStatefulWidget {
 class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
   late final TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
-  DayMood? _mood;
+  late DayMomentDraft _draft;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initial?.moment ?? '');
-    _mood = widget.initial?.mood;
+    _draft = DayMomentDraft.fromNote(widget.initial);
+    _controller = TextEditingController(text: _draft.moment);
     _controller.addListener(_refresh);
     // First launch belongs to the tour. Once it is seen, the field opens
     // itself so the evening ritual starts typing without a tap.
@@ -105,28 +106,25 @@ class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
     super.dispose();
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    setState(() => _draft = _draft.withMoment(_controller.text));
+  }
 
-  bool get _canSave => _controller.text.trim().isNotEmpty || _mood != null;
+  bool get _canSave => _draft.canSave;
 
   Future<void> _save() async {
     if (_saving || !_canSave) return;
     setState(() => _saving = true);
 
-    final moment = _controller.text.trim();
-    await ref
-        .read(habitActionsProvider.notifier)
-        .saveDayNote(
-          moment: moment.isEmpty ? null : moment,
-          mood: _mood,
-          // Legacy value from an older note — keep it, never ask again.
-          timeQuality: widget.initial?.timeQuality,
-        );
+    await ref.read(habitActionsProvider.notifier).saveDayMoment(_draft);
 
     if (!mounted) return;
     Haptics.tap(ref.read(hapticsEnabledProvider));
     _focusNode.unfocus();
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _draft = _draft.markPersisted();
+    });
   }
 
   @override
@@ -225,9 +223,9 @@ class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
                     Expanded(
                       child: _MoodChoice(
                         mood: mood,
-                        selected: _mood == mood,
+                        selected: _draft.mood == mood,
                         onTap: () =>
-                            setState(() => _mood = _mood == mood ? null : mood),
+                            setState(() => _draft = _draft.toggleMood(mood)),
                       ),
                     ),
                   ],

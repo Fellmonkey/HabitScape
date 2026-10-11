@@ -114,4 +114,23 @@ void main() {
     expect(await db.dayNotesDao.getNoteForDate(date), isNull);
     expect(find.text('Момент дня'), findsNothing);
   });
+
+  testWidgets('tapping the selected mood again clears it', (tester) async {
+    await db.dayNotesDao.upsertNote(
+      date,
+      moment: 'Тот день',
+      mood: DayMood.good,
+    );
+    await pumpSheet(tester, dateTimestamp: date);
+
+    await tester.tap(find.text('Хороший день'));
+    await tester.pumpAndSettle();
+    expect(moodChip(tester, 'Хороший день').selected, isFalse);
+
+    await tapSave(tester);
+
+    final note = await db.dayNotesDao.getNoteForDate(date);
+    expect(note?.moment, 'Тот день');
+    expect(note?.mood, isNull);
+  });
 }

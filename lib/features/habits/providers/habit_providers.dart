@@ -13,6 +13,7 @@ import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
 import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
+import '../domain/day_moment_draft.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
 
@@ -224,25 +225,17 @@ class HabitActions extends Notifier<void> {
     );
   }
 
-  /// Saves a day note: moment + mood + time quality (1–5).
-  /// [dateTimestamp] defaults to today.
-  Future<void> saveDayNote({
-    String? moment,
-    DayMood? mood,
-    int? timeQuality,
-    int? dateTimestamp,
-  }) {
+  /// Persists a day note under one policy: an empty draft clears the row;
+  /// anything else upserts. [dateTimestamp] defaults to today.
+  Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) {
+    final ts = dateTimestamp ?? todayTimestamp();
+    if (draft.isEmpty) return _dayNotesDao.clearNote(ts);
     return _dayNotesDao.upsertNote(
-      dateTimestamp ?? todayTimestamp(),
-      moment: moment,
-      mood: mood,
-      timeQuality: timeQuality,
+      ts,
+      moment: draft.momentOrNull,
+      mood: draft.mood,
+      timeQuality: draft.timeQuality,
     );
-  }
-
-  /// Clears a day note entirely. [dateTimestamp] defaults to today.
-  Future<void> clearDayNote([int? dateTimestamp]) {
-    return _dayNotesDao.clearNote(dateTimestamp ?? todayTimestamp());
   }
 
   /// Moves a habit between lifecycle states: archive, restore, or delete.

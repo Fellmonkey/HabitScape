@@ -12,6 +12,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
+import '../../domain/day_moment_draft.dart';
 import '../../providers/habit_providers.dart';
 
 /// Bottom sheet for editing the day moment: the memorable moment of a
@@ -34,20 +35,15 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   late final TextEditingController _momentController;
   late final AnimationController _saveController;
   late final Animation<double> _saveScale;
-  DayMood? _mood;
-
-  /// Legacy 1–5 "time quality" value. No longer asked (it added friction
-  /// without ever being shown), but preserved on edit so old notes don't
-  /// silently lose data.
-  int? _timeQuality;
+  late DayMomentDraft _draft;
 
   @override
   void initState() {
     super.initState();
     final note = widget.initial;
-    _momentController = TextEditingController(text: note?.moment ?? '');
-    _mood = note?.mood;
-    _timeQuality = note?.timeQuality;
+    _draft = DayMomentDraft.fromNote(note);
+    _momentController = TextEditingController(text: _draft.moment);
+    _momentController.addListener(_syncMoment);
 
     // Opened for a specific date — load the existing note for editing.
     if (note == null && widget.dateTimestamp != null) {
@@ -74,9 +70,14 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
 
   @override
   void dispose() {
+    _momentController.removeListener(_syncMoment);
     _momentController.dispose();
     _saveController.dispose();
     super.dispose();
+  }
+
+  void _syncMoment() {
+    setState(() => _draft = _draft.withMoment(_momentController.text));
   }
 
   Future<void> _loadNote() async {
@@ -84,31 +85,15 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     final dao = ref.read(dayNotesDaoProvider);
     final note = await dao.getNoteForDate(widget.dateTimestamp!);
     if (!mounted) return;
-    setState(() {
-      _mood = note?.mood;
-      _timeQuality = note?.timeQuality;
-      final moment = note?.moment;
-      if (moment != null && moment.isNotEmpty) {
-        _momentController.text = moment;
-      }
-    });
+    setState(() => _draft = DayMomentDraft.fromNote(note));
+    _momentController.text = _draft.moment;
   }
 
   Future<void> _save() async {
-    final moment = _momentController.text.trim();
     final actions = ref.read(habitActionsProvider.notifier);
     final ts = widget.dateTimestamp ?? todayTimestamp();
 
-    if (moment.isEmpty && _mood == null && _timeQuality == null) {
-      await actions.clearDayNote(ts); // nothing to remember — clear the note
-    } else {
-      await actions.saveDayNote(
-        dateTimestamp: ts,
-        moment: moment.isEmpty ? null : moment,
-        mood: _mood,
-        timeQuality: _timeQuality,
-      );
-    }
+    await actions.saveDayMoment(_draft, dateTimestamp: ts);
 
     if (mounted) {
       Haptics.tap(ref.read(hapticsEnabledProvider));
@@ -201,7 +186,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
             const SizedBox(height: 8),
             Row(
               children: DayMood.values.map((mood) {
-                final selected = _mood == mood;
+                final selected = _draft.mood == mood;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -212,7 +197,8 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
                       ),
                       label: Text(mood.localizedName),
                       selected: selected,
-                      onSelected: (_) => setState(() => _mood = mood),
+                      onSelected: (_) =>
+                          setState(() => _draft = _draft.toggleMood(mood)),
                     ),
                   ),
                 );
@@ -224,7 +210,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
               child: PressableScale(
                 child: FilledButton(
                   key: K.dayMomentSave,
-                  onPressed: _save,
+                  onPressed: _draft.canSave ? _save : null,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
