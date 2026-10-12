@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/calendar_grid.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../habits/domain/completion.dart';
 
@@ -49,13 +51,12 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
     final theme = Theme.of(context);
     final first = days.first.date;
     final last = days.last.date;
-
-    // Align the first week to Monday so columns line up.
-    final mondayOffset = first.weekday - 1;
-    final gridStart = first.subtract(Duration(days: mondayOffset));
-
-    final totalDays = last.difference(gridStart).inDays + 1;
-    final weekCount = (totalDays / 7).ceil();
+    final grid = CalendarGrid.range(
+      first: first,
+      last: last,
+      today: DateTime.now().toMidnight,
+    );
+    final weekCount = grid.weeks.length;
 
     const labelWidth = 18.0;
     const monthLabelHeight = 14.0;
@@ -85,9 +86,11 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
               final dx = details.localPosition.dx;
               final dy = details.localPosition.dy;
               final week = ((dx - labelWidth) / (cellSize + gap)).floor();
-              final dow = ((dy - monthLabelHeight - labelGap) / (cellSize + gap)).floor();
+              final dow =
+                  ((dy - monthLabelHeight - labelGap) / (cellSize + gap))
+                      .floor();
               if (week < 0 || dow < 0 || dow > 6) return;
-              final date = gridStart.add(Duration(days: week * 7 + dow));
+              final date = grid.start.add(Duration(days: week * 7 + dow));
               for (final d in days) {
                 if (d.date == date) {
                   cb(d);
@@ -96,27 +99,24 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
               }
             },
             child: CustomPaint(
-            size: Size(totalWidth, totalHeight),
-            painter: _HeatmapPainter(
-              days: days,
-              gridStart: gridStart,
-              first: first,
-              last: last,
-              weekCount: weekCount,
-              cellSize: cellSize,
-              gap: gap,
-              labelWidth: labelWidth,
-              monthLabelHeight: monthLabelHeight,
-              labelGap: labelGap,
-              weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 8,
+              size: Size(totalWidth, totalHeight),
+              painter: _HeatmapPainter(
+                days: days,
+                grid: grid,
+                cellSize: cellSize,
+                gap: gap,
+                labelWidth: labelWidth,
+                monthLabelHeight: monthLabelHeight,
+                labelGap: labelGap,
+                weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 8,
+                ),
+                monthLabelStyle: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 9,
+                ),
+                onSurface: theme.colorScheme.onSurface,
               ),
-              monthLabelStyle: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 9,
-              ),
-              onSurface: theme.colorScheme.onSurface,
             ),
-          ),
           ),
         );
       },
@@ -127,10 +127,7 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
 class _HeatmapPainter extends CustomPainter {
   _HeatmapPainter({
     required this.days,
-    required this.gridStart,
-    required this.first,
-    required this.last,
-    required this.weekCount,
+    required this.grid,
     required this.cellSize,
     required this.gap,
     required this.labelWidth,
@@ -142,10 +139,7 @@ class _HeatmapPainter extends CustomPainter {
   });
 
   final List<DayCompletion> days;
-  final DateTime gridStart;
-  final DateTime first;
-  final DateTime last;
-  final int weekCount;
+  final CalendarGrid grid;
   final double cellSize;
   final double gap;
   final double labelWidth;
@@ -164,12 +158,12 @@ class _HeatmapPainter extends CustomPainter {
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     // ── Month labels ──────────────────────────────────────────
-    for (var week = 0; week < weekCount; week++) {
+    for (var week = 0; week < grid.weeks.length; week++) {
       String? label;
-      for (var dow = 0; dow < 7; dow++) {
-        final date = gridStart.add(Duration(days: week * 7 + dow));
-        if (date.day == 1 && !date.isBefore(first) && !date.isAfter(last)) {
-          label = monthNames[date.month].substring(0, 3);
+      for (final cell in grid.weeks[week]) {
+        if (cell == null) continue;
+        if (cell.date.day == 1) {
+          label = monthNames[cell.date.month].substring(0, 3);
           break;
         }
       }
@@ -201,16 +195,13 @@ class _HeatmapPainter extends CustomPainter {
 
     // ── Cells ─────────────────────────────────────────────────
     final paint = Paint();
-    for (var week = 0; week < weekCount; week++) {
+    for (var week = 0; week < grid.weeks.length; week++) {
       for (var dow = 0; dow < 7; dow++) {
-        final date = gridStart.add(Duration(days: week * 7 + dow));
-        final comp = _dayByDate[date];
-        final inRange = !date.isBefore(first) && !date.isAfter(last);
-        final color = inRange && comp != null
-            ? _cellColor(comp.ratio)
-            : Colors.transparent;
-        if (color == Colors.transparent) continue;
-        paint.color = color;
+        final cell = grid.weeks[week][dow];
+        if (cell == null) continue;
+        final comp = _dayByDate[cell.date];
+        if (comp == null) continue;
+        paint.color = _cellColor(comp.ratio);
         final left = labelWidth + week * (cellSize + gap);
         final top = monthLabelHeight + labelGap + dow * (cellSize + gap);
         final rect = Rect.fromLTWH(left, top, cellSize, cellSize);
@@ -235,6 +226,7 @@ class _HeatmapPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HeatmapPainter oldDelegate) {
     return !identical(oldDelegate.days, days) ||
+        !identical(oldDelegate.grid, grid) ||
         oldDelegate.onSurface != onSurface ||
         oldDelegate.weekdayLabelStyle != weekdayLabelStyle ||
         oldDelegate.monthLabelStyle != monthLabelStyle;

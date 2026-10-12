@@ -7,6 +7,7 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../shared/widgets/app_sheets.dart';
@@ -516,9 +517,10 @@ class _HeatmapGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final firstDay = DateTime.utc(year, month, 1);
-    final totalDays = daysInMonth(year, month);
-    final today = DateTime.now();
+    final grid = CalendarGrid.month(
+      month: DateTime.utc(year, month),
+      today: DateTime.now().toMidnight,
+    );
 
     final statusMap = <int, LogStatus>{}; // day → status
     for (final log in logs) {
@@ -547,39 +549,28 @@ class _HeatmapGrid extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         // Calendar grid
-        ...List.generate(_weekCount(firstDay, totalDays), (week) {
-          return Padding(
+        for (final week in grid.weeks)
+          Padding(
             padding: const EdgeInsets.only(bottom: 3),
             child: Row(
-              children: List.generate(7, (weekday) {
-                final day = week * 7 + weekday - (firstDay.weekday - 1) + 1;
-                if (day < 1 || day > totalDays) {
-                  return const Expanded(child: SizedBox(height: 36));
-                }
-                final isToday =
-                    today.year == year &&
-                    today.month == month &&
-                    today.day == day;
-                final status = statusMap[day];
-                return Expanded(
-                  child: _DayCell(
-                    day: day,
-                    status: status,
-                    isToday: isToday,
-                    isFuture: DateTime.utc(year, month, day).isAfter(today),
-                  ),
-                );
-              }),
+              children: [
+                for (final cell in week)
+                  if (cell == null)
+                    const Expanded(child: SizedBox(height: 36))
+                  else
+                    Expanded(
+                      child: _DayCell(
+                        day: cell.date.day,
+                        status: statusMap[cell.date.day],
+                        isToday: cell.isToday,
+                        isFuture: cell.isFuture,
+                      ),
+                    ),
+              ],
             ),
-          );
-        }),
+          ),
       ],
     );
-  }
-
-  int _weekCount(DateTime firstDay, int totalDays) {
-    final offset = firstDay.weekday - 1; // Mon=0
-    return ((offset + totalDays) / 7).ceil();
   }
 }
 

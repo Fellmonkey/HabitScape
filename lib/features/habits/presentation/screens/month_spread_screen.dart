@@ -10,6 +10,7 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -460,13 +461,8 @@ class _CalendarGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final today = DateTime.now().toMidnight;
-    final first = days.first.date;
-    final firstWeekday = first.weekday; // 1 = Mon … 7 = Sun
-    // Leading blanks so day 1 lands on its weekday column.
-    final cells = <MonthSpreadDay?>[
-      for (var i = 1; i < firstWeekday; i++) null,
-      ...days,
-    ];
+    final grid = CalendarGrid.month(month: days.first.date, today: today);
+    final dayByDate = {for (final day in days) day.date: day};
 
     final header = Row(
       children: [
@@ -484,27 +480,24 @@ class _CalendarGrid extends StatelessWidget {
       ],
     );
 
-    final weeks = <Widget>[];
-    for (var i = 0; i < cells.length; i += 7) {
-      final week = cells.sublist(i, (i + 7).clamp(0, cells.length));
-      weeks.add(
+    final weeks = <Widget>[
+      for (final week in grid.weeks)
         Row(
           children: [
-            for (var c = 0; c < 7; c++)
+            for (final cell in week)
               Expanded(
-                child: c < week.length && week[c] != null
-                    ? _wrapDayCell(
+                child: cell == null
+                    ? const SizedBox.shrink()
+                    : _wrapDayCell(
                         context,
-                        cell: week[c]!,
-                        isToday: week[c]!.date == today,
-                        isFuture: week[c]!.date.isAfter(today),
-                      )
-                    : const SizedBox.shrink(),
+                        cell: dayByDate[cell.date]!,
+                        isToday: cell.isToday,
+                        isFuture: cell.isFuture,
+                      ),
               ),
           ],
         ),
-      );
-    }
+    ];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
