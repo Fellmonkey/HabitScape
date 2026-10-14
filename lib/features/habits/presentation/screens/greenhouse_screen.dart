@@ -74,6 +74,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final habitsAsync = ref.watch(activeHabitsProvider);
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
+    final today = ref.watch(todayDateProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -83,7 +84,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           error: (e, _) => Center(child: Text('Ошибка: $e')),
           data: (habits) {
             final logs = logsAsync.value ?? [];
-            return _buildContent(context, theme, habits, logs, dayProgress);
+            return _buildContent(
+              context,
+              theme,
+              habits,
+              logs,
+              dayProgress,
+              today,
+            );
           },
         ),
       ),
@@ -103,10 +111,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<Habit> habits,
     List<HabitLog> logs,
     double dayProgress,
+    DateTime today,
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. Logs are indexed by habit id so per-habit lookup is O(1).
-    final groups = groupToday(habits: habits, today: DateTime.now());
+    final groups = groupToday(habits: habits, today: today);
     final logByHabit = {for (final l in logs) l.habitId: l};
 
     return CustomScrollView(
@@ -125,7 +134,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     children: [
                       Text('Теплица', style: theme.textTheme.headlineLarge),
                       Text(
-                        _formatToday(),
+                        _formatToday(today),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -365,7 +374,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     };
   }
 
-  String _formatToday() => formatFullDate(DateTime.now());
+  String _formatToday(DateTime today) => formatFullDate(today);
 
   Future<void> _showCreateHabitSheet(BuildContext context) async {
     final createdId = await AppSheets.show<int>(

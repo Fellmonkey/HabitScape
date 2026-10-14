@@ -14,7 +14,7 @@ class MonthGoalActions extends Notifier<void> {
   /// Adds a goal to a month ([monthTs] = first-of-month unix timestamp,
   /// defaults to the current month).
   Future<int> addMonthGoal(String title, {int? monthTs}) {
-    final ts = monthTs ?? firstOfMonth(DateTime.now()).unixSeconds;
+    final ts = monthTs ?? firstOfMonth(ref.read(todayDateProvider)).unixSeconds;
     return _goalsDao.addGoal(ts, title);
   }
 

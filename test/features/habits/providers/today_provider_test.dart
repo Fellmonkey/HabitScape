@@ -30,6 +30,16 @@ void main() {
     expect(container.read(todayProvider), first);
   });
 
+  test('todayDateProvider is the calendar view of the same clock', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(todayDateProvider),
+      dateFromUnix(container.read(todayProvider)),
+    );
+  });
+
   test('today-based providers derive their date from todayProvider', () async {
     final db = createTestDatabase();
     addTearDown(db.close);

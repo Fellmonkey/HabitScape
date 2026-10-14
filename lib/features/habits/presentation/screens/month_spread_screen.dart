@@ -41,8 +41,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _month = firstOfMonth(now);
+    _month = firstOfMonth(ref.read(todayDateProvider));
   }
 
   int get _monthTs => _month.unixSeconds;
@@ -71,18 +70,17 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   }
 
   void _goToToday() {
-    final now = DateTime.now();
-    setState(() => _month = firstOfMonth(now));
+    setState(() => _month = firstOfMonth(ref.read(todayDateProvider)));
   }
 
   bool get _isCurrentMonth {
-    final now = DateTime.now();
+    final now = ref.read(todayDateProvider);
     return _month.year == now.year && _month.month == now.month;
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(todayProvider); // keep «today» frame correct across midnight
+    ref.watch(todayDateProvider); // keep «today» frame correct across midnight
     final theme = Theme.of(context);
     final daysAsync = ref.watch(monthSpreadProvider(_monthTs));
 

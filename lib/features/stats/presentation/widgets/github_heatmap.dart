@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/calendar_grid.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../habits/domain/completion.dart';
 
@@ -51,11 +50,7 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
     final theme = Theme.of(context);
     final first = days.first.date;
     final last = days.last.date;
-    final grid = CalendarGrid.range(
-      first: first,
-      last: last,
-      today: DateTime.now().toMidnight,
-    );
+    final grid = CalendarGrid.range(first: first, last: last, today: last);
     final weekCount = grid.weeks.length;
 
     const labelWidth = 18.0;

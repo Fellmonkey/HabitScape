@@ -8,6 +8,14 @@ import '../utils/date_helpers.dart';
 /// shortly after midnight so today-scoped providers never go stale overnight.
 final todayProvider = NotifierProvider<TodayNotifier, int>(TodayNotifier.new);
 
+/// [todayProvider] as a calendar date for presentation code.
+///
+/// Widgets and presentation providers read this instead of calling
+/// `DateTime.now()` so a midnight tick reaches every today-scoped label.
+final todayDateProvider = Provider<DateTime>((ref) {
+  return dateFromUnix(ref.watch(todayProvider));
+});
+
 class TodayNotifier extends Notifier<int> {
   Timer? _midnightTimer;
 

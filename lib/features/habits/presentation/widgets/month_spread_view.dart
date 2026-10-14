@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hintful/hintful.dart';
 
 import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -18,7 +20,7 @@ import 'month_goals_card.dart';
 ///
 /// The screen and the PNG exporter render the same sections; [capture] only
 /// turns off interaction, onboarding targets, test keys, and the goals card.
-class MonthSpreadView extends StatelessWidget {
+class MonthSpreadView extends ConsumerWidget {
   const MonthSpreadView({
     required this.days,
     required this.monthTs,
@@ -33,8 +35,9 @@ class MonthSpreadView extends StatelessWidget {
   final bool capture;
 
   @override
-  Widget build(BuildContext context) {
-    final sections = _sections(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final today = ref.watch(todayDateProvider);
+    final sections = _sections(context, today);
 
     if (capture) {
       final theme = Theme.of(context);
@@ -60,7 +63,7 @@ class MonthSpreadView extends StatelessWidget {
     );
   }
 
-  List<Widget> _sections(BuildContext context) {
+  List<Widget> _sections(BuildContext context, DateTime today) {
     final theme = Theme.of(context);
     final moments = days.where((d) => d.hasMoment).toList();
 
@@ -69,12 +72,13 @@ class MonthSpreadView extends StatelessWidget {
         padding: capture
             ? EdgeInsets.zero
             : const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        child: _MonthSummary(days: days),
+        child: _MonthSummary(days: days, today: today),
       ),
       if (capture) ...[
         const SizedBox(height: 12),
         _CalendarGrid(
           days: days,
+          today: today,
           onDayTap: (_) {},
           gridKey: const Key('month_spread_grid_capture'),
           debugDayKeys: false,
@@ -82,7 +86,7 @@ class MonthSpreadView extends StatelessWidget {
       ] else
         HintTarget(
           id: AppHintIds.spreadGrid,
-          child: _CalendarGrid(days: days, onDayTap: onDayTap),
+          child: _CalendarGrid(days: days, today: today, onDayTap: onDayTap),
         ),
       if (!capture) MonthGoalsCard(monthTs: monthTs),
       if (moments.isNotEmpty) ...[
@@ -120,16 +124,17 @@ class MonthSpreadView extends StatelessWidget {
 /// Mood chips, completion over the month's elapsed days, and the
 /// written-moments counter.
 class _MonthSummary extends StatelessWidget {
-  const _MonthSummary({required this.days});
+  const _MonthSummary({required this.days, required this.today});
 
   final List<MonthSpreadDay> days;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final moodCounts = _moodCountsOf(days);
     final moments = days.where((d) => d.hasMoment).length;
-    final progress = monthCompletionPct(days: days, today: DateTime.now());
+    final progress = monthCompletionPct(days: days, today: today);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,12 +240,14 @@ class _MoodCount extends StatelessWidget {
 class _CalendarGrid extends StatelessWidget {
   const _CalendarGrid({
     required this.days,
+    required this.today,
     required this.onDayTap,
     this.gridKey = K.monthSpreadGrid,
     this.debugDayKeys = true,
   });
 
   final List<MonthSpreadDay> days;
+  final DateTime today;
   final ValueChanged<DateTime> onDayTap;
 
   /// Grid container key; the PNG capture passes a distinct one to avoid
@@ -254,8 +261,8 @@ class _CalendarGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final today = DateTime.now().toMidnight;
-    final grid = CalendarGrid.month(month: days.first.date, today: today);
+    final todayDay = today.toMidnight;
+    final grid = CalendarGrid.month(month: days.first.date, today: todayDay);
     final dayByDate = {for (final day in days) day.date: day};
 
     final header = Row(

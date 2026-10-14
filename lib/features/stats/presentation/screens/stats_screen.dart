@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
@@ -18,6 +19,7 @@ class StatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsOverviewProvider);
+    final today = ref.watch(todayDateProvider);
     void showDayDetail(DayCompletion day) {
       showDialog<void>(
         context: context,
@@ -54,7 +56,7 @@ class StatsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      formatFullDate(DateTime.now()),
+                      formatFullDate(today),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,

@@ -31,9 +31,8 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final ts =
-        widget.monthTs ?? firstOfMonth(now).unixSeconds;
+    final now = ref.watch(todayDateProvider);
+    final ts = widget.monthTs ?? firstOfMonth(now).unixSeconds;
     final async = ref.watch(monthGoalsProvider(ts));
     final theme = Theme.of(context);
     final month = dateFromUnix(ts);

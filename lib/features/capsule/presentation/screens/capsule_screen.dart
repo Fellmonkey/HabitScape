@@ -6,6 +6,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
@@ -56,7 +57,8 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
     setState(() => _saving = true);
 
     final body = _controller.text.trim();
-    final deliverAt = deliveryDate(DateTime.now(), _preset).unixSeconds;
+    final today = ref.read(todayDateProvider);
+    final deliverAt = deliveryDate(today, _preset).unixSeconds;
     await ref
         .read(letterActionsProvider.notifier)
         .create(deliverAt: deliverAt, body: body);
@@ -68,7 +70,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
     setState(() => _saving = false);
 
     final open = dateFromUnix(deliverAt);
-    final opensAt = formatShortDate(open, today: DateTime.now());
+    final opensAt = formatShortDate(open, today: today);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('Письмо откроется $opensAt')));

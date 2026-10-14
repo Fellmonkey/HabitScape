@@ -41,15 +41,12 @@ class _HabitCardState extends ConsumerState<HabitCard>
         type == FrequencyType.cycle;
   }
 
-  String _buildTitle() {
+  String _buildTitle(DateTime today) {
     final name = widget.habit.name;
     final type = FrequencyType.fromString(widget.habit.frequencyType);
     if (type != FrequencyType.cycle) return name;
 
-    final label = getCycleLabelForDate(
-      widget.habit,
-      DateTime.now(),
-    ); // "today" view
+    final label = getCycleLabelForDate(widget.habit, today); // "today" view
     if (label != null && label.isNotEmpty) {
       return '$name: $label';
     }
@@ -96,6 +93,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final status = widget.log?.status;
+    final today = ref.watch(todayDateProvider);
 
     return ScaleTransition(
       scale: _scaleAnim,
@@ -125,7 +123,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _buildTitle(),
+                        _buildTitle(today),
                         style: theme.textTheme.titleMedium?.copyWith(
                           decoration: _isDone
                               ? TextDecoration.lineThrough

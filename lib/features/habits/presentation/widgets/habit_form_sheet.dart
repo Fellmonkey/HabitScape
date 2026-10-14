@@ -457,7 +457,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         onTap: () async {
           final date = await showDatePicker(
             context: context,
-            initialDate: _cycleStartDate ?? DateTime.now(),
+            initialDate: _cycleStartDate ?? ref.read(todayDateProvider),
             firstDate: DateTime(2020),
             lastDate: DateTime(2100),
           );

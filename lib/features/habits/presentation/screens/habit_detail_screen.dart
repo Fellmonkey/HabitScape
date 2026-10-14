@@ -35,10 +35,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(todayProvider); // keep heatmap «today» highlights fresh
     final habitAsync = ref.watch(habitProvider(habitId));
     final theme = Theme.of(context);
-    final now = DateTime.now();
+    final now = ref.watch(todayDateProvider);
 
     return habitAsync.when(
       loading: () =>
@@ -492,6 +491,7 @@ class _MonthHeatmap extends ConsumerWidget {
     final logsAsync = ref.watch(
       habitMonthLogsProvider((habitId: habitId, year: year, month: month)),
     );
+    final today = ref.watch(todayDateProvider);
 
     return logsAsync.when(
       loading: () => const SizedBox(
@@ -499,7 +499,8 @@ class _MonthHeatmap extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (_, _) => const SizedBox(height: 120),
-      data: (logs) => _HeatmapGrid(logs: logs, year: year, month: month),
+      data: (logs) =>
+          _HeatmapGrid(logs: logs, year: year, month: month, today: today),
     );
   }
 }
@@ -509,17 +510,19 @@ class _HeatmapGrid extends StatelessWidget {
     required this.logs,
     required this.year,
     required this.month,
+    required this.today,
   });
 
   final List<HabitLog> logs;
   final int year, month;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final grid = CalendarGrid.month(
       month: DateTime.utc(year, month),
-      today: DateTime.now().toMidnight,
+      today: today,
     );
 
     final statusMap = <int, LogStatus>{}; // day → status
