@@ -16,6 +16,7 @@ import '../../domain/habit_engine.dart';
 import '../../domain/habit_history.dart';
 import '../../domain/scheduling.dart';
 import '../../providers/habit_providers.dart';
+import '../../providers/history_pager_provider.dart';
 import '../widgets/habit_form_sheet.dart';
 
 /// Habit detail screen — stats, heatmap, streak info, time distribution.
@@ -715,91 +716,69 @@ class _TimeBar extends StatelessWidget {
 
 // ── History (lazy, loaded in chunks) ─────────────────────────
 
-/// Renders [HabitHistory]. The cursor, page fetch, month grouping and
-/// exhaustion rule live in the domain module; this widget only draws.
-class _HistorySection extends ConsumerStatefulWidget {
+/// Renders [historyPagerProvider]. The cursor, page fetch, month grouping,
+/// exhaustion rule, and flat row order live in the pager; this widget draws.
+class _HistorySection extends ConsumerWidget {
   const _HistorySection({required this.habitId});
 
   final int habitId;
 
   @override
-  ConsumerState<_HistorySection> createState() => _HistorySectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pager = ref.watch(historyPagerProvider(habitId));
 
-class _HistorySectionState extends ConsumerState<_HistorySection> {
-  late final HabitHistory _history;
-
-  @override
-  void initState() {
-    super.initState();
-    _history = HabitHistory(
-      habitId: widget.habitId,
-      store: ref.read(historyStoreProvider),
-    );
-    _loadMore();
-  }
-
-  Future<void> _loadMore() async {
-    await _history.loadNextPage();
-    if (mounted) setState(() {});
-  }
-
-  /// Total sliver items: one header per month + one row per log + a trailing
-  /// footer while more history may exist.
-  int get _itemCount {
-    var count = _history.months.length;
-    for (final m in _history.months) {
-      count += m.logs.length;
-    }
-    if (!_history.isExhausted) count += 1;
-    return count;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_history.months.isEmpty) {
-      if (_history.isExhausted) {
-        return SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Нет записей',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-            ),
-          ),
-        );
-      }
-      return const SliverToBoxAdapter(
+    return pager.when(
+      loading: () => const SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 24),
           child: Center(child: CircularProgressIndicator()),
         ),
-      );
-    }
-
-    return SliverList.builder(
-      itemCount: _itemCount,
-      itemBuilder: (context, index) {
-        var remaining = index; // map flat index to (month, log) pairs
-        for (final m in _history.months) {
-          if (remaining == 0) {
-            return _MonthHeader(group: m);
+      ),
+      error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+      data: (state) {
+        if (state.isEmpty) {
+          if (state.isExhausted) {
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Нет записей',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+            );
           }
-          remaining--;
-          if (remaining < m.logs.length) {
-            return _LogTile(log: m.logs[remaining]);
-          }
-          remaining -= m.logs.length;
+          return const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
         }
-        // Footer visible at the end — load more on scroll.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!_history.isLoading) _loadMore();
-        });
-        return const SizedBox(height: 40);
+
+        final itemCount = state.rows.length + (state.hasMore ? 1 : 0);
+        return SliverList.builder(
+          itemCount: itemCount,
+          itemBuilder: (context, index) {
+            if (index < state.rows.length) {
+              return switch (state.rows[index]) {
+                HistoryMonthRow(:final month) => _MonthHeader(group: month),
+                HistoryLogRow(:final log) => _LogTile(log: log),
+              };
+            }
+            // Footer visible at the end — ask the pager for the next chunk.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!state.isLoading) {
+                ref.read(historyPagerProvider(habitId).notifier).loadMore();
+              }
+            });
+            return const SizedBox(height: 40);
+          },
+        );
       },
     );
   }
