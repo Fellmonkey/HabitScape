@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
@@ -82,7 +83,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
 
   Future<void> _loadNote() async {
     // One-shot read — a watch stream would only be used for the first event.
-    final dao = ref.read(dayNotesDaoProvider);
+    final dao = ref.read(databaseProvider).dayNotesDao;
     final note = await dao.getNoteForDate(widget.dateTimestamp!);
     if (!mounted) return;
     setState(() => _draft = DayMomentDraft.fromNote(note));

@@ -11,7 +11,6 @@ import '../../../core/utils/date_helpers.dart';
 import '../data/day_notes_dao.dart';
 import '../data/habit_logs_dao.dart';
 import '../data/habits_dao.dart';
-import '../data/monthly_goals_dao.dart';
 import '../domain/completion.dart';
 import '../domain/day_moment_draft.dart';
 import '../domain/habit_engine.dart';
@@ -21,33 +20,16 @@ import '../domain/scheduling.dart';
 // importing it from this provider file.
 export '../../../core/settings/today.dart';
 
-// ── DAO providers ────────────────────────────────────────────
-
-final habitsDaoProvider = Provider<HabitsDao>((ref) {
-  return ref.watch(databaseProvider).habitsDao;
-});
-
-final habitLogsDaoProvider = Provider<HabitLogsDao>((ref) {
-  return ref.watch(databaseProvider).habitLogsDao;
-});
-
-final dayNotesDaoProvider = Provider<DayNotesDao>((ref) {
-  return ref.watch(databaseProvider).dayNotesDao;
-});
-
-final monthlyGoalsDaoProvider = Provider<MonthlyGoalsDao>((ref) {
-  return ref.watch(databaseProvider).monthlyGoalsDao;
-});
-
 // ── History store ────────────────────────────────────────────
 
 /// The single seam for loading windows of history; shared by the month
 /// spread, the week summary and the stats screen.
 final historyStoreProvider = Provider<HistoryStore>((ref) {
+  final db = ref.watch(databaseProvider);
   return HistoryStore(
-    habitsDao: ref.watch(habitsDaoProvider),
-    habitLogsDao: ref.watch(habitLogsDaoProvider),
-    dayNotesDao: ref.watch(dayNotesDaoProvider),
+    habitsDao: db.habitsDao,
+    habitLogsDao: db.habitLogsDao,
+    dayNotesDao: db.dayNotesDao,
   );
 });
 
@@ -55,17 +37,17 @@ final historyStoreProvider = Provider<HistoryStore>((ref) {
 
 /// Stream of all active (non-archived) habits.
 final activeHabitsProvider = StreamProvider<List<Habit>>((ref) {
-  return ref.watch(habitsDaoProvider).watchActiveHabits();
+  return ref.watch(databaseProvider).habitsDao.watchActiveHabits();
 });
 
 /// Stream of all archived habits (auto-disposed with the archive screen).
 final archivedHabitsProvider = StreamProvider.autoDispose<List<Habit>>((ref) {
-  return ref.watch(habitsDaoProvider).watchArchivedHabits();
+  return ref.watch(databaseProvider).habitsDao.watchArchivedHabits();
 });
 
 /// Watch a single habit by id (auto-disposed per habit).
 final habitProvider = StreamProvider.autoDispose.family<Habit, int>((ref, id) {
-  return ref.watch(habitsDaoProvider).watchHabit(id);
+  return ref.watch(databaseProvider).habitsDao.watchHabit(id);
 });
 
 // ── Today's logs ─────────────────────────────────────────────
@@ -73,7 +55,7 @@ final habitProvider = StreamProvider.autoDispose.family<Habit, int>((ref, id) {
 /// Stream of all logs for today's date. Refreshes when the day changes.
 final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
   final ts = ref.watch(todayProvider);
-  return ref.watch(habitLogsDaoProvider).watchLogsForDate(ts);
+  return ref.watch(databaseProvider).habitLogsDao.watchLogsForDate(ts);
 });
 
 // ── Day note ─────────────────────────────────────────────────
@@ -81,7 +63,8 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
 /// Today's day note: the most memorable moment + mood.
 final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
   return ref
-      .watch(dayNotesDaoProvider)
+      .watch(databaseProvider)
+      .dayNotesDao
       .watchNoteForDate(ref.watch(todayProvider));
 });
 
@@ -91,7 +74,10 @@ final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
 /// (auto-disposed per month).
 final monthGoalsProvider = StreamProvider.autoDispose
     .family<List<MonthlyGoal>, int>((ref, monthTs) {
-      return ref.watch(monthlyGoalsDaoProvider).watchGoalsForMonth(monthTs);
+      return ref
+          .watch(databaseProvider)
+          .monthlyGoalsDao
+          .watchGoalsForMonth(monthTs);
     });
 
 /// Per-day data for the month spread of one month, keyed by first-of-month
@@ -183,9 +169,9 @@ class HabitActions extends Notifier<void> {
   @override
   void build() {}
 
-  HabitsDao get _habitsDao => ref.read(habitsDaoProvider);
-  HabitLogsDao get _logsDao => ref.read(habitLogsDaoProvider);
-  DayNotesDao get _dayNotesDao => ref.read(dayNotesDaoProvider);
+  HabitsDao get _habitsDao => ref.read(databaseProvider).habitsDao;
+  HabitLogsDao get _logsDao => ref.read(databaseProvider).habitLogsDao;
+  DayNotesDao get _dayNotesDao => ref.read(databaseProvider).dayNotesDao;
 
   /// Create a new habit.
   Future<int> createHabit({

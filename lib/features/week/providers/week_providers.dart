@@ -5,16 +5,9 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/settings/shared_prefs.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../habits/providers/habit_providers.dart';
-import '../data/weekly_intentions_dao.dart';
 import '../domain/week_summary.dart';
 
 const _answeredWeekKey = 'week_summary_answered_week';
-
-// ── DAO provider ─────────────────────────────────────────────
-
-final weeklyIntentionsDaoProvider = Provider<WeeklyIntentionsDao>((ref) {
-  return ref.watch(databaseProvider).weeklyIntentionsDao;
-});
 
 // ── Streams ──────────────────────────────────────────────────
 
@@ -22,7 +15,8 @@ final weeklyIntentionsDaoProvider = Provider<WeeklyIntentionsDao>((ref) {
 final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
   final today = dateFromUnix(ref.watch(todayProvider));
   return ref
-      .watch(weeklyIntentionsDaoProvider)
+      .watch(databaseProvider)
+      .weeklyIntentionsDao
       .watchForWeek(weekStartOf(today).unixSeconds);
 });
 
@@ -31,7 +25,8 @@ final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
   final today = dateFromUnix(ref.watch(todayProvider));
   return ref
-      .watch(weeklyIntentionsDaoProvider)
+      .watch(databaseProvider)
+      .weeklyIntentionsDao
       .watchForWeek(
         weekStartOf(today).subtract(const Duration(days: 7)).unixSeconds,
       );
@@ -72,14 +67,16 @@ class WeekIntentionActions extends Notifier<void> {
   /// Saves the current week's intention.
   Future<void> save(String intention) {
     return ref
-        .read(weeklyIntentionsDaoProvider)
+        .read(databaseProvider)
+        .weeklyIntentionsDao
         .setIntention(weekStartOf(_today).unixSeconds, intention);
   }
 
   /// Clears the current week's intention.
   Future<void> clear() {
     return ref
-        .read(weeklyIntentionsDaoProvider)
+        .read(databaseProvider)
+        .weeklyIntentionsDao
         .setIntention(weekStartOf(_today).unixSeconds, null);
   }
 

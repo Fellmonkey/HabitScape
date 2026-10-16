@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/database/database_provider.dart';
 import '../../../core/settings/presence.dart';
 import '../domain/echo.dart';
-import 'habit_providers.dart';
 
 /// The echo card's data: past moments ordered for display.
 ///
@@ -10,7 +10,7 @@ import 'habit_providers.dart';
 /// dates the user has already seen via «Ещё». The clock and the seen list come
 /// from the presence module, not from this provider.
 final echoFeedProvider = StreamProvider<EchoFeed>((ref) {
-  final notesStream = ref.watch(dayNotesDaoProvider).watchAllNotes();
+  final notesStream = ref.watch(databaseProvider).dayNotesDao.watchAllNotes();
   final presenceFuture = ref.watch(presenceProvider.future);
 
   return notesStream.asyncMap((notes) async {
