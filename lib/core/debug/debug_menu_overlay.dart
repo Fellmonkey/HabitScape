@@ -6,9 +6,9 @@ import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
 import '../database/database_reset.dart';
 import '../router/app_router.dart';
+import '../settings/exposure.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../../features/onboarding/onboarding_flags.dart';
 import 'debug_data_seeder.dart';
 
 /// Draggable floating button that opens the debug menu (debug builds only).
@@ -197,7 +197,8 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
 
   Future<void> _resetOnboarding() async {
     try {
-      await ref.read(onboardingFlagsProvider.notifier).resetAll();
+      final exposure = await ref.read(exposureProvider.future);
+      await exposure.resetTours();
       if (!mounted) return;
       setState(() {
         _lastResult = '👋 Подсказки появятся снова при открытии экранов';

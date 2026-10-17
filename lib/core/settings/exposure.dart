@@ -8,18 +8,20 @@ import 'today.dart';
 
 /// One policy for everything the app chooses to show, and when.
 ///
-/// Build code only asks questions ([echoAtTop], [echoCardVisible],
-/// [hintVisible]); a command records the exposure after the widget actually
-/// appeared. All cadence lives here, on top of the same preferences store, so
-/// a rebuild is an observation rather than a write.
-class Presence {
-  Presence(this._prefs, {required DateTime today}) : today = today.toMidnight;
+/// Owns every piece of exposure state — tours already seen, hints dismissed,
+/// echo placement and cooldown, and seen memories — on top of one preferences
+/// store. Feature code asks questions ([hasSeenTour], [hintVisible],
+/// [echoAtTop], [echoCardVisible]) and records exposure only after the thing
+/// actually appeared; it never invents its own keys or cadence.
+class Exposure {
+  Exposure(this._prefs, {required DateTime today}) : today = today.toMidnight;
 
   final SharedPreferences _prefs;
 
   /// The day this snapshot is for.
   final DateTime today;
 
+  static const tourSeenKey = 'onboarding_seen';
   static const echoSeenDatesKey = 'echo_seen_dates';
   static const echoLastShownKey = 'echo_last_shown_date';
   static const firstUseKey = 'first_use_date';
@@ -30,6 +32,40 @@ class Presence {
 
   /// How many times per week the echo may sit at the top of the board.
   static const maxEchoAtTopPerWeek = 2;
+
+  // ── One-time exposure (tours and hints) ────────────────────
+
+  Set<String> _stringSet(String key) =>
+      (_prefs.getStringList(key) ?? const []).toSet();
+
+  Future<void> _addToStringSet(String key, String value) async {
+    final current = _prefs.getStringList(key)?.toList() ?? [];
+    if (current.contains(value)) return;
+    current.add(value);
+    await _prefs.setStringList(key, current);
+  }
+
+  /// Tours already shown. The ids live in `AppTourIds`.
+  Set<String> get seenTours => _stringSet(tourSeenKey);
+
+  bool hasSeenTour(String tour) => seenTours.contains(tour);
+
+  /// Marks [tour] as seen. Repeated calls keep one entry.
+  Future<void> markTourSeen(String tour) => _addToStringSet(tourSeenKey, tour);
+
+  /// Clears every tour flag — Settings and the debug menu.
+  Future<void> resetTours() => _prefs.remove(tourSeenKey);
+
+  /// Hint keys the user closed for good.
+  Set<String> get dismissedHints => _stringSet(dismissedHintsKey);
+
+  /// Whether a feature hint has matured and has not been dismissed yet.
+  bool hintVisible({required String key, required int minDays}) =>
+      daysSinceFirstUse >= minDays && !dismissedHints.contains(key);
+
+  /// Hides [key] for good. Repeated calls keep one entry.
+  Future<void> dismissHint(String key) =>
+      _addToStringSet(dismissedHintsKey, key);
 
   // ── Echo placement ─────────────────────────────────────────
 
@@ -87,7 +123,7 @@ class Presence {
     );
   }
 
-  // ── First use and hints ────────────────────────────────────
+  // ── First use ──────────────────────────────────────────────
 
   /// The day the app was first used; falls back to [today] until the first
   /// command records it.
@@ -101,30 +137,15 @@ class Presence {
     if (_prefs.getInt(firstUseKey) != null) return;
     await _prefs.setInt(firstUseKey, today.unixSeconds);
   }
-
-  Set<String> get dismissedHints =>
-      (_prefs.getStringList(dismissedHintsKey) ?? const []).toSet();
-
-  /// Whether a feature hint has matured and has not been dismissed yet.
-  bool hintVisible({required String key, required int minDays}) =>
-      daysSinceFirstUse >= minDays && !dismissedHints.contains(key);
-
-  /// Hides [key] for good.
-  Future<void> dismissHint(String key) async {
-    final dismissed = _prefs.getStringList(dismissedHintsKey)?.toList() ?? [];
-    if (dismissed.contains(key)) return;
-    dismissed.add(key);
-    await _prefs.setStringList(dismissedHintsKey, dismissed);
-  }
 }
 
-/// A [Presence] snapshot for today, with the first-use date recorded once.
-final presenceProvider = FutureProvider<Presence>((ref) async {
+/// An [Exposure] snapshot for today, with the first-use date recorded once.
+final exposureProvider = FutureProvider<Exposure>((ref) async {
   final prefs = await ref.watch(sharedPrefsProvider.future);
-  final presence = Presence(
+  final exposure = Exposure(
     prefs,
     today: dateFromUnix(ref.watch(todayProvider)),
   );
-  await presence.recordFirstUse();
-  return presence;
+  await exposure.recordFirstUse();
+  return exposure;
 });

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
-import 'package:rythm/core/settings/presence.dart';
+import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
@@ -130,7 +130,7 @@ void main() {
     expect(find.text('«Второй»'), findsOneWidget);
     expect(find.text('«Первый»'), findsNothing);
     expect(
-      prefs.getStringList(Presence.echoSeenDatesKey),
+      prefs.getStringList(Exposure.echoSeenDatesKey),
       contains(yesterday.unixSeconds.toString()),
     );
   });

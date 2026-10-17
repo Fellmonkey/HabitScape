@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/presence.dart';
+import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/echo.dart';
@@ -15,7 +15,7 @@ import '../../providers/echo_providers.dart';
 /// No input, one tap to expand, «Ещё» for the next memory. The card hides
 /// itself on a fresh install and shows a single-line promise after the first
 /// note — never a fake or empty card. Whether it may appear is a read from
-/// [presenceProvider]; the showing is recorded only once the memory mounts.
+/// [exposureProvider]; the showing is recorded only once the memory mounts.
 class EchoCard extends ConsumerWidget {
   const EchoCard({super.key});
 
@@ -29,13 +29,13 @@ class EchoCard extends ConsumerWidget {
       data: (feed) {
         if (!feed.hasAnyNote) return const SizedBox.shrink();
         if (feed.isEmpty) return const _EchoHint();
-        final presenceAsync = ref.watch(presenceProvider);
-        return presenceAsync.when(
+        final exposureAsync = ref.watch(exposureProvider);
+        return exposureAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => const SizedBox.shrink(),
-          data: (presence) {
-            if (!presence.echoCardVisible) return const SizedBox.shrink();
-            return _EchoMemoryCard(feed: feed, today: presence.today);
+          data: (exposure) {
+            if (!exposure.echoCardVisible) return const SizedBox.shrink();
+            return _EchoMemoryCard(feed: feed, today: exposure.today);
           },
         );
       },
@@ -97,8 +97,8 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   }
 
   Future<void> _recordShown() async {
-    final presence = await ref.read(presenceProvider.future);
-    await presence.recordEchoCardShown();
+    final exposure = await ref.read(exposureProvider.future);
+    await exposure.recordEchoCardShown();
   }
 
   @override
@@ -236,7 +236,7 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
       _expanded = false;
     });
     // Shown once is enough — the next visit starts with another memory.
-    final presence = await ref.read(presenceProvider.future);
-    await presence.recordEchoSeen(current.note.date);
+    final exposure = await ref.read(exposureProvider.future);
+    await exposure.recordEchoSeen(current.note.date);
   }
 }

@@ -5,12 +5,12 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/app_tours.dart';
-import '../../../onboarding/onboarding_flags.dart';
 import '../../domain/day_moment_draft.dart';
 import '../../providers/habit_providers.dart';
 import 'day_moment_sheet.dart';
@@ -92,9 +92,9 @@ class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
 
   Future<void> _autofocusIfReady() async {
     if (!mounted || _controller.text.isNotEmpty) return;
-    final seen = await ref.read(onboardingFlagsProvider.future);
+    final exposure = await ref.read(exposureProvider.future);
     if (!mounted || _controller.text.isNotEmpty || _focusNode.hasFocus) return;
-    if (!seen.contains(AppTourIds.greenhouse)) return;
+    if (!exposure.hasSeenTour(AppTourIds.greenhouse)) return;
     _focusNode.requestFocus();
   }
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
+import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/settings/theme_mode.dart';
@@ -12,7 +13,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
-import '../../../../features/onboarding/onboarding_flags.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/backup_flow.dart';
 import '../../providers/settings_providers.dart';
@@ -175,7 +175,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _resetOnboarding(WidgetRef ref) async {
-    await ref.read(onboardingFlagsProvider.notifier).resetAll();
+    final exposure = await ref.read(exposureProvider.future);
+    await exposure.resetTours();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/settings/presence.dart';
+import '../../core/settings/exposure.dart';
 import '../../core/theme/app_theme.dart';
 
 class FeatureHint {
@@ -40,11 +40,11 @@ const featureHints = <FeatureHint>[
 ];
 
 /// The newest hint that has matured and is still undismissed. Pure: the
-/// presence snapshot owns first-use and dismissal state.
-FeatureHint? activeFeatureHint(Presence presence) {
+/// exposure snapshot owns first-use and dismissal state.
+FeatureHint? activeFeatureHint(Exposure exposure) {
   FeatureHint? result;
   for (final hint in featureHints) {
-    if (presence.hintVisible(key: hint.key, minDays: hint.minDays)) {
+    if (exposure.hintVisible(key: hint.key, minDays: hint.minDays)) {
       result = hint; // last matching by minDays order
     }
   }
@@ -61,12 +61,12 @@ class FeatureHintBanner extends ConsumerStatefulWidget {
 class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
   @override
   Widget build(BuildContext context) {
-    final presenceAsync = ref.watch(presenceProvider);
-    return presenceAsync.when(
+    final exposureAsync = ref.watch(exposureProvider);
+    return exposureAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
-      data: (presence) {
-        final hint = activeFeatureHint(presence);
+      data: (exposure) {
+        final hint = activeFeatureHint(exposure);
         if (hint == null) return const SizedBox.shrink();
         final theme = Theme.of(context);
         return Padding(
@@ -84,7 +84,7 @@ class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
                   IconButton(
                     icon: const Icon(Icons.close, size: 16),
                     onPressed: () async {
-                      await presence.dismissHint(hint.key);
+                      await exposure.dismissHint(hint.key);
                       if (mounted) setState(() {});
                     },
                   ),
