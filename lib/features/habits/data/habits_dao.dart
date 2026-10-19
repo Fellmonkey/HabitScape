@@ -50,9 +50,11 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
     return into(habits).insert(entry);
   }
 
-  /// Updates a habit.
-  Future<bool> updateHabit(HabitsCompanion entry) {
-    return update(habits).replace(entry);
+  /// Updates a habit — only the explicitly set columns are written.
+  Future<int> updateHabit(HabitsCompanion entry) {
+    return (update(
+      habits,
+    )..where((h) => h.id.equals(entry.id.value))).write(entry);
   }
 
   /// Archives a habit (soft delete).

@@ -5,6 +5,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/habits/domain/scheduling.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 
@@ -124,6 +125,36 @@ void main() {
       await actions.setLifecycle(id, HabitLifecycle.delete);
       expect(db.habitsDao.getHabit(id), throwsStateError);
     });
+  });
+
+  group('updateHabit', () {
+    test(
+      'edits only the mutable fields, keeping focus and archive flags',
+      () async {
+        final id = await db.habitsDao.insertHabit(
+          makeHabitCompanion(
+            name: 'Старое имя',
+            isFocus: true,
+            isArchived: true,
+          ),
+        );
+
+        await actions.updateHabit(
+          habitId: id,
+          name: 'Новое имя',
+          icon: HabitIcon.book,
+          frequency: HabitFrequency.decode('daily', '{}'),
+          timeOfDay: TimeOfDay.evening,
+        );
+
+        final habit = await db.habitsDao.getHabit(id);
+        expect(habit.name, 'Новое имя');
+        expect(habit.icon, HabitIcon.book.name);
+        expect(habit.timeOfDay, TimeOfDay.evening.name);
+        expect(habit.isFocus, isTrue); // untouched by the edit
+        expect(habit.isArchived, isTrue); // untouched by the edit
+      },
+    );
   });
 
   group('MonthGoalActions', () {

@@ -248,6 +248,8 @@ class HabitActions extends Notifier<void> {
   }
 
   /// Update a habit's mutable fields (name, icon, frequency, timeOfDay).
+  /// Only edited fields are written — focus/archive flags set by a
+  /// concurrent action are never clobbered.
   Future<void> updateHabit({
     required int habitId,
     required String name,
@@ -255,19 +257,14 @@ class HabitActions extends Notifier<void> {
     required HabitFrequency frequency,
     required TimeOfDay timeOfDay,
   }) async {
-    final existing = await _habitsDao.getHabit(habitId);
     await _habitsDao.updateHabit(
       HabitsCompanion(
         id: Value(habitId),
         name: Value(name),
-        category: Value(existing.category),
         icon: Value(icon.name),
         frequencyType: Value(frequency.type.name),
         frequencyValue: Value(frequency.encode()),
         timeOfDay: Value(timeOfDay.name),
-        isFocus: Value(existing.isFocus),
-        isArchived: Value(existing.isArchived),
-        createdAt: Value(existing.createdAt),
       ),
     );
   }
