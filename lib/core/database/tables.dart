@@ -68,8 +68,9 @@ class WeeklyIntentions extends Table {
 )
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get habitId =>
-      integer().references(Habits, #id, onDelete: KeyAction.cascade)();
+  IntColumn get habitId => integer().customConstraint(
+    'REFERENCES habits (id) ON DELETE CASCADE',
+  )();
   IntColumn get date => integer()();
   TextColumn get status => text()
       .withDefault(const Constant('pending'))

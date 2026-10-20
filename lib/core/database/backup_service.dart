@@ -2,15 +2,16 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
-import '../../features/capsule/data/letters_dao.dart';
-import '../../features/habits/data/day_notes_dao.dart';
-import '../../features/habits/data/habit_logs_dao.dart';
-import '../../features/habits/data/habits_dao.dart';
-import '../../features/habits/data/monthly_goals_dao.dart';
-import '../../features/week/data/weekly_intentions_dao.dart';
+import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 import 'app_database.dart';
 import 'database_reset.dart';
+import 'daos/day_notes_dao.dart';
+import 'daos/habit_logs_dao.dart';
+import 'daos/habits_dao.dart';
+import 'daos/letters_dao.dart';
+import 'daos/monthly_goals_dao.dart';
+import 'daos/weekly_intentions_dao.dart';
 import 'enums.dart';
 
 // Backup format version for forward compatibility.
@@ -23,9 +24,13 @@ const _backupVersion = 2;
 /// old→new habit-id map, and the all-or-nothing import transaction. Callers
 /// only choose a file and report the result.
 class BackupService {
-  BackupService(this._db);
+  BackupService(this._db, {Clock? clock}) : _clock = clock ?? const SystemClock();
 
   final AppDatabase _db;
+
+  /// The clock seam — used for export/import timestamps so tests can pin
+  /// them instead of silently using the wall clock.
+  final Clock _clock;
 
   HabitsDao get _habitsDao => _db.habitsDao;
   HabitLogsDao get _habitLogsDao => _db.habitLogsDao;
@@ -45,7 +50,7 @@ class BackupService {
 
     final data = {
       'version': _backupVersion,
-      'exportedAt': DateTime.now().toIso8601String(),
+      'exportedAt': _clock.now().toIso8601String(),
       'habits': habits.map(_habitToMap).toList(),
       'habitLogs': logs.map(_logToMap).toList(),
       'dayNotes': notes.map(_noteToMap).toList(),
@@ -144,12 +149,13 @@ class BackupService {
         final id = await _lettersDao.addLetter(
           deliverAt: map['deliverAt'] as int,
           body: map['body'] as String,
-          createdAt: map['createdAt'] as int?,
+          createdAt: map['createdAt'] as int? ??
+              _clock.now().toMidnight.unixSeconds,
         );
         if (map['isOpened'] == true) {
           await _lettersDao.markOpened(
             id,
-            map['openedAt'] as int? ?? DateTime.now().toMidnight.unixSeconds,
+            map['openedAt'] as int? ?? _clock.now().toMidnight.unixSeconds,
           );
         }
         final reaction = map['reaction'] as String?;

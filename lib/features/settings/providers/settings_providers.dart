@@ -12,7 +12,10 @@ import '../domain/backup_status.dart';
 // ── Backup service ─────────────────────────────────────────────
 
 final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(ref.watch(databaseProvider));
+  return BackupService(
+    ref.watch(databaseProvider),
+    clock: ref.watch(clockProvider),
+  );
 });
 
 // ── Backup flow ────────────────────────────────────────────────

@@ -188,7 +188,7 @@ void main() {
       expect(m.eveningRatio, closeTo(0.2, 0.01));
     });
 
-    test('no loggedHour defaults to 0.33/0.33/0.34', () {
+    test('no loggedHour defaults to 0.25 across four buckets', () {
       final habit = makeHabit(createdAt: jan1);
       // Done logs without loggedHour
       final logs = List.generate(
@@ -203,12 +203,13 @@ void main() {
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
 
-      expect(m.morningRatio, closeTo(0.33, 0.01));
-      expect(m.afternoonRatio, closeTo(0.33, 0.01));
-      expect(m.eveningRatio, closeTo(0.34, 0.01));
+      expect(m.morningRatio, closeTo(0.25, 0.01));
+      expect(m.afternoonRatio, closeTo(0.25, 0.01));
+      expect(m.eveningRatio, closeTo(0.25, 0.01));
+      expect(m.nightRatio, closeTo(0.25, 0.01));
     });
 
-    test('boundary: h=12 is afternoon, h=18 is evening, h=4 is evening', () {
+    test('boundary: h=12 is day, h=18 is evening, h=4 is night', () {
       final habit = makeHabit(createdAt: jan1);
       final logs = [
         makeLog(id: 1, date: janDay(1), status: LogStatus.done, loggedHour: 12),
@@ -218,13 +219,45 @@ void main() {
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
 
-      // h=12: >=12 && <18 → afternoon (1)
-      // h=18: not morning, not afternoon → evening (1)
-      // h=4:  not morning (4 < 5), not afternoon → evening (1)
-      // total=3, afternoon=1, evening=2
+      // h=12: day (1), h=18: evening (1), h=4: night (1) — three separate
+      // buckets, matching the stats rhythm rule for the same hours.
       expect(m.afternoonRatio, closeTo(1 / 3, 0.01));
-      expect(m.eveningRatio, closeTo(2 / 3, 0.01));
+      expect(m.eveningRatio, closeTo(1 / 3, 0.01));
+      expect(m.nightRatio, closeTo(1 / 3, 0.01));
       expect(m.morningRatio, closeTo(0.0, 0.01));
+    });
+
+    test('off-schedule done logs do not count toward completion', () {
+      final habit = makeHabit(
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,2,3,4,5]}',
+        createdAt: jan1,
+      );
+      final logs = [
+        // Saturday 2026-01-03 — the habit is not scheduled, yet marked done.
+        makeLog(
+          id: 1,
+          date: janDay(3),
+          status: LogStatus.done,
+          loggedHour: 9,
+        ),
+        // Monday 2026-01-05 — scheduled and done.
+        makeLog(
+          id: 2,
+          date: janDay(5),
+          status: LogStatus.done,
+          loggedHour: 9,
+        ),
+      ];
+
+      final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
+
+      // Only the on-schedule done counts; the off-schedule one must not
+      // inflate the numerator (the old behavior diverged from the month
+      // spread and the week summary here).
+      expect(m.absoluteCompletions, 1);
+      expect(m.requiredBase, 22); // weekdays in Jan 2026
+      expect(m.completionPct, closeTo(100 / 22, 0.01));
     });
   });
 }

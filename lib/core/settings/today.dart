@@ -4,6 +4,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/date_helpers.dart';
 
+/// The single clock seam of the app: every "what time is it" — reads and
+/// writes alike — goes through [clockProvider] so tests can pin the date and
+/// the hour together. The wall clock lives in exactly one adapter.
+abstract interface class Clock {
+  DateTime now();
+}
+
+/// The production clock: the real wall clock.
+class SystemClock implements Clock {
+  const SystemClock();
+
+  @override
+  DateTime now() => DateTime.now();
+}
+
+/// The one seam for the current instant. Presentation code reads this instead
+/// of calling `DateTime.now()` directly.
+final clockProvider = Provider<Clock>((ref) => const SystemClock());
+
 /// Current calendar day as a unix midnight timestamp. Re-invalidates itself
 /// shortly after midnight so today-scoped providers never go stale overnight.
 final todayProvider = NotifierProvider<TodayNotifier, int>(TodayNotifier.new);
@@ -21,7 +40,7 @@ class TodayNotifier extends Notifier<int> {
 
   @override
   int build() {
-    final now = DateTime.now();
+    final now = ref.read(clockProvider).now();
     final today = now.toMidnight;
     // Refresh a moment after midnight (buffer for clock/timer jitter).
     _midnightTimer?.cancel();

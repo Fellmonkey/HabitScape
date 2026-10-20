@@ -17,9 +17,11 @@ void main() {
 
   group('LettersDao', () {
     test('addLetter returns an id and persists the row', () async {
+      final createdAt = DateTime.utc(2026, 10, 1).unixSeconds;
       final id = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Привет из октября',
+        createdAt: createdAt,
       );
 
       expect(id, greaterThan(0));
@@ -27,7 +29,7 @@ void main() {
       expect(all, hasLength(1));
       expect(all.first.body, 'Привет из октября');
       expect(all.first.deliverAt, DateTime.utc(2026, 12, 1).unixSeconds);
-      expect(all.first.createdAt, todayTimestamp());
+      expect(all.first.createdAt, createdAt);
       expect(all.first.isOpened, isFalse);
     });
 
@@ -55,6 +57,7 @@ void main() {
       final id = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Что-то',
+        createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
       );
       final openedAt = DateTime.utc(2026, 12, 1).unixSeconds;
 
@@ -69,6 +72,7 @@ void main() {
       final id = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Что-то',
+        createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
       );
 
       await db.lettersDao.setReply(id, 'Я справился!');
@@ -83,10 +87,12 @@ void main() {
       final a = await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'A',
+        createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
       );
       await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 2).unixSeconds,
         body: 'B',
+        createdAt: DateTime.utc(2026, 10, 2).unixSeconds,
       );
 
       await db.lettersDao.deleteLetter(a);

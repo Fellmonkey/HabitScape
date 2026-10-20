@@ -6,9 +6,9 @@ import '../../../../core/database/database_provider.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -92,7 +92,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
 
   Future<void> _save() async {
     final actions = ref.read(habitActionsProvider.notifier);
-    final ts = widget.dateTimestamp ?? todayTimestamp();
+    final ts = widget.dateTimestamp ?? ref.read(todayProvider);
 
     await actions.saveDayMoment(_draft, dateTimestamp: ts);
 

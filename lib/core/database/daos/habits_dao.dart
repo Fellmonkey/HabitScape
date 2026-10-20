@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/tables.dart';
+import '../app_database.dart';
+import '../tables.dart';
 
 part 'habits_dao.g.dart';
 

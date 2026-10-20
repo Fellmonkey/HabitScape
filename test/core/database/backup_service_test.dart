@@ -179,6 +179,7 @@ void main() {
       await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 3, 1).unixSeconds,
         body: 'Ты справился',
+        createdAt: DateTime.utc(2026, 2, 1).unixSeconds,
       );
 
       final bytes = await service.exportBackup();
@@ -337,6 +338,7 @@ void main() {
       await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 3, 1).unixSeconds,
         body: 'Старая капсула',
+        createdAt: DateTime.utc(2026, 2, 1).unixSeconds,
       );
 
       // Import new data (v2 with letters)

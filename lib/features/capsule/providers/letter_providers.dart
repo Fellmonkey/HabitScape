@@ -48,20 +48,20 @@ class LetterActions extends Notifier<void> {
   @override
   void build() {}
 
-  /// Creates a capsule that opens on [deliverAt] and returns its id.
+  /// Creates a capsule that opens on [deliverAt] and returns its id. The
+  /// creation stamp comes from the clock seam, like every other write.
   Future<int> create({required int deliverAt, required String body}) {
+    final createdAt = ref.read(clockProvider).now().toMidnight.unixSeconds;
     return ref
         .read(databaseProvider)
         .lettersDao
-        .addLetter(deliverAt: deliverAt, body: body);
+        .addLetter(deliverAt: deliverAt, body: body, createdAt: createdAt);
   }
 
   /// Marks a capsule as opened right now.
   Future<void> markOpened(int id) {
-    return ref
-        .read(databaseProvider)
-        .lettersDao
-        .markOpened(id, todayTimestamp());
+    final openedAt = ref.read(clockProvider).now().toMidnight.unixSeconds;
+    return ref.read(databaseProvider).lettersDao.markOpened(id, openedAt);
   }
 
   /// Stores a free-form reply to an opened capsule.

@@ -185,6 +185,48 @@ LogStatus? _statusFor(List<HabitLog>? dayLogs, int habitId) {
   return null;
 }
 
+/// Completion measure of one habit over [start, end) — [end] exclusive.
+///
+/// Owns the per-habit expectation rule: a habit only counts on days after it
+/// was created and where its schedule expects it ([isExpectedToday]). Logs on
+/// off-schedule days never inflate the numerator. Screens and engines consume
+/// this instead of re-implementing the loop.
+///
+/// Pure — no DB access.
+Completion habitCompletion({
+  required Habit habit,
+  required List<HabitLog> logs,
+  required DateTime start,
+  required DateTime end,
+}) {
+  final logsByDay = <int, List<HabitLog>>{}; // keyed by unix midnight
+  for (final log in logs) {
+    logsByDay.putIfAbsent(log.date, () => []).add(log);
+  }
+
+  var expected = 0;
+  var done = 0;
+  var skipped = 0;
+  var day = start.toMidnight;
+  final endMidnight = end.toMidnight;
+  while (day.isBefore(endMidnight)) {
+    // Never expect a habit before it was created.
+    if (!day.isBefore(dateFromUnix(habit.createdAt).toMidnight) &&
+        isExpectedToday(habit, day)) {
+      expected++;
+      final status = _statusFor(logsByDay[day.unixSeconds], habit.id);
+      if (status == LogStatus.done) {
+        done++;
+      } else if (status == LogStatus.skip) {
+        skipped++;
+      }
+    }
+    day = day.add(const Duration(days: 1));
+  }
+
+  return Completion.fromCounts(done: done, expected: expected, skipped: skipped);
+}
+
 /// One day of the month spread: completion + mood + time quality
 /// + the day-moment line.
 class MonthSpreadDay {

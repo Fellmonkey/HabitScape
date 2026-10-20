@@ -29,9 +29,9 @@ class HabitHistory {
   HabitHistory({
     required this.habitId,
     required this.store,
-    DateTime? now,
+    required DateTime now,
     this.pageMonths = 12,
-  }) : _cursor = nextMonthStart(firstOfMonth(now ?? DateTime.now()));
+  }) : _cursor = nextMonthStart(firstOfMonth(now));
 
   final int habitId;
   final HistoryStore store;

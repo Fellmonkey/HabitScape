@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_provider.dart';
+import '../../../core/database/daos/monthly_goals_dao.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../data/monthly_goals_dao.dart';
 
 /// Commands for monthly goals — a small surface over the goals DAO.
 class MonthGoalActions extends Notifier<void> {

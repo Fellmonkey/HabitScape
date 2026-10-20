@@ -1,8 +1,7 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/tables.dart';
-import '../../../core/utils/date_helpers.dart';
+import '../app_database.dart';
+import '../tables.dart';
 
 part 'letters_dao.g.dart';
 
@@ -23,15 +22,16 @@ class LettersDao extends DatabaseAccessor<AppDatabase> with _$LettersDaoMixin {
     return (select(letters)..where((l) => l.id.equals(id))).watchSingleOrNull();
   }
 
-  /// Adds a capsule and returns its id.
+  /// Adds a capsule and returns its id. The caller owns the creation stamp,
+  /// so the date comes from the clock seam, never from a hidden `DateTime.now()`.
   Future<int> addLetter({
     required int deliverAt,
     required String body,
-    int? createdAt,
+    required int createdAt,
   }) {
     return into(letters).insert(
       LettersCompanion.insert(
-        createdAt: createdAt ?? todayTimestamp(),
+        createdAt: createdAt,
         deliverAt: deliverAt,
         body: body,
       ),

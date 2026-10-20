@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/history_store_provider.dart';
+import '../../../core/settings/today.dart';
 import '../domain/habit_history.dart';
-import 'habit_providers.dart';
 
 /// One rendered row in a habit's history: a month header followed by that
 /// month's logs. Flattening lives here so the widget does no index math.

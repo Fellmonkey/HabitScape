@@ -2,12 +2,12 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../features/habits/data/day_notes_dao.dart';
-import '../../features/habits/data/habit_logs_dao.dart';
-import '../../features/habits/data/habits_dao.dart';
-import '../../features/habits/data/monthly_goals_dao.dart';
-import '../../features/capsule/data/letters_dao.dart';
-import '../../features/week/data/weekly_intentions_dao.dart';
+import 'daos/day_notes_dao.dart';
+import 'daos/habit_logs_dao.dart';
+import 'daos/habits_dao.dart';
+import 'daos/letters_dao.dart';
+import 'daos/monthly_goals_dao.dart';
+import 'daos/weekly_intentions_dao.dart';
 import 'enums.dart';
 import 'tables.dart';
 

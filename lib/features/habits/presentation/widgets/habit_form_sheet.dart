@@ -10,6 +10,7 @@ import '../../../../shared/widgets/sheet_handle.dart';
 import 'icon_picker.dart';
 import '../../domain/habit_templates.dart';
 import '../../domain/scheduling.dart';
+import '../../../../core/settings/today.dart';
 import '../../providers/habit_providers.dart';
 
 class HabitFormSheet extends ConsumerStatefulWidget {

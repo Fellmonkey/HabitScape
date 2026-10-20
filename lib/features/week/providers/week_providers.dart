@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/shared_prefs.dart';
+import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../../habits/providers/habit_providers.dart';
 import '../domain/week_summary.dart';
 
 const _answeredWeekKey = 'week_summary_answered_week';

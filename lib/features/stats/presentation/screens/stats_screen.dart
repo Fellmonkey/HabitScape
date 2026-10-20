@@ -7,6 +7,7 @@ import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../core/utils/time_bucket.dart';
 import '../../domain/stats_engine.dart';
 import '../../../habits/domain/completion.dart';
 import '../../providers/stats_providers.dart';
@@ -358,11 +359,11 @@ class _RhythmCard extends StatelessWidget {
 
   /// Russian label for the typed bucket — the only place the bucket becomes
   /// human text.
-  static String _timeLabel(RhythmBucket bucket) => switch (bucket) {
-    RhythmBucket.morning => 'утром',
-    RhythmBucket.day => 'днём',
-    RhythmBucket.evening => 'вечером',
-    RhythmBucket.night => 'ночью',
+  static String _timeLabel(TimeBucket bucket) => switch (bucket) {
+    TimeBucket.morning => 'утром',
+    TimeBucket.day => 'днём',
+    TimeBucket.evening => 'вечером',
+    TimeBucket.night => 'ночью',
   };
 
   @override

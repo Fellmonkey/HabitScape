@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/database/history_store_provider.dart';
+import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../../habits/providers/habit_providers.dart';
 import '../domain/stats_engine.dart';
 
 /// Aggregated statistics for the stats screen. Auto-disposed so each visit

@@ -111,21 +111,6 @@ WeekSummary computeWeekSummary({
   }).toList();
   final greenDays = moodDays.where((n) => n.mood == DayMood.good).length;
 
-  // Logs by (date, habitId) → status.
-  final logByDayHabit = <int, Map<int, LogStatus>>{};
-  for (final log in logs) {
-    if (log.date >= start.unixSeconds && log.date < end.unixSeconds) {
-      logByDayHabit.putIfAbsent(log.date, () => {})[log.habitId] = log.status;
-    }
-  }
-
-  final elapsedDays = <DateTime>[];
-  for (var i = 0; i < 7; i++) {
-    final day = start.add(Duration(days: i));
-    if (day.isAfter(today.toMidnight)) break;
-    elapsedDays.add(day);
-  }
-
   final activeHabits = habits.where((h) => !h.isArchived).toList();
 
   // Day-level completion comes from the shared completion module so the
@@ -143,28 +128,24 @@ WeekSummary computeWeekSummary({
   // A week with zero interactions (no logs at all) is not a failed week —
   // it's an unused one. The card stays hidden until there is something to
   // summarize, so a fresh install never reads as "0%".
-  final hasAnyLogThisWeek = logByDayHabit.isNotEmpty;
+  final hasAnyLogThisWeek =
+      logs.any((l) => l.date >= start.unixSeconds && l.date < end.unixSeconds);
 
-  // ── Per-habit completion over scheduled days ───────────────
+  // ── Per-habit completion over elapsed scheduled days ───────
+  // One rule, one owner: the completion module decides which days count and
+  // which statuses fill the numerator, so the weakest habit and the pooled
+  // week always agree with the heatmap and the month spread. The window is
+  // capped at today — future days of a closing week never count as missed.
   final measures = <int, Completion>{};
+  final weekEnd = today.toMidnight.add(const Duration(days: 1));
+  final cappedEnd = weekEnd.isAfter(end) ? end : weekEnd;
 
   for (final habit in activeHabits) {
-    var habitExpected = 0;
-    var habitDone = 0;
-    var habitSkipped = 0;
-    for (final day in elapsedDays) {
-      // Never count a habit before it was created.
-      if (day.isBefore(dateFromUnix(habit.createdAt).toMidnight)) continue;
-      if (!isExpectedToday(habit, day)) continue;
-      habitExpected++;
-      final status = logByDayHabit[day.unixSeconds]?[habit.id];
-      if (status == LogStatus.done) habitDone++;
-      if (status == LogStatus.skip) habitSkipped++;
-    }
-    final measure = Completion.fromCounts(
-      done: habitDone,
-      expected: habitExpected,
-      skipped: habitSkipped,
+    final measure = habitCompletion(
+      habit: habit,
+      logs: logs,
+      start: start,
+      end: cappedEnd,
     );
     if (measure.hasExpectation) measures[habit.id] = measure;
   }

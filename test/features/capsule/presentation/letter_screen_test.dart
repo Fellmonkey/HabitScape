@@ -65,6 +65,7 @@ void main() {
     await db.lettersDao.addLetter(
       deliverAt: deliverAt.unixSeconds,
       body: 'Помни: ты сильнее, чем кажется',
+      createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
     return (await db.lettersDao.getAllLetters()).single;
   }

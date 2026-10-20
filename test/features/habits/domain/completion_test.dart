@@ -56,6 +56,78 @@ void main() {
     });
   });
 
+  group('habitCompletion', () {
+    test('counts only expected days after creation', () {
+      final habit = makeHabit(
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,2,3,4,5]}',
+        createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+      );
+      final logs = [
+        // Saturday 2026-01-03 — off-schedule done.
+        makeLog(
+          date: DateTime.utc(2026, 1, 3).unixSeconds,
+          status: LogStatus.done,
+        ),
+        // Monday 2026-01-05 — scheduled done.
+        makeLog(
+          date: DateTime.utc(2026, 1, 5).unixSeconds,
+          status: LogStatus.done,
+        ),
+      ];
+
+      final measure = habitCompletion(
+        habit: habit,
+        logs: logs,
+        start: DateTime.utc(2026, 1, 1),
+        end: DateTime.utc(2026, 1, 8),
+      );
+
+      // Jan 1 (Thu), 2 (Fri), 5 (Mon), 6 (Tue), 7 (Wed) are expected.
+      expect(measure.expected, 5);
+      // The Saturday done is ignored — only Monday counts.
+      expect(measure.numerator, 1);
+      expect(measure.denominator, 5);
+    });
+
+    test('skips excuse one expectation each', () {
+      final habit = makeHabit(createdAt: DateTime.utc(2026, 1, 1).unixSeconds);
+      final logs = [
+        makeLog(
+          date: DateTime.utc(2026, 1, 2).unixSeconds,
+          status: LogStatus.skip,
+        ),
+      ];
+
+      final measure = habitCompletion(
+        habit: habit,
+        logs: logs,
+        start: DateTime.utc(2026, 1, 1),
+        end: DateTime.utc(2026, 1, 4),
+      );
+
+      expect(measure.expected, 3);
+      expect(measure.skipped, 1);
+      expect(measure.denominator, 2);
+    });
+
+    test('never expects a habit before its creation date', () {
+      final habit = makeHabit(
+        createdAt: DateTime.utc(2026, 1, 3).unixSeconds,
+      );
+
+      final measure = habitCompletion(
+        habit: habit,
+        logs: const [],
+        start: DateTime.utc(2026, 1, 1),
+        end: DateTime.utc(2026, 1, 5),
+      );
+
+      expect(measure.expected, 2); // Jan 3 and Jan 4 only
+      expect(measure.numerator, 0);
+    });
+  });
+
   group('computeDailyCompletion', () {
     test('a skip removes the habit from that day denominator', () {
       final habit = makeHabit(createdAt: DateTime.utc(2026, 1, 1).unixSeconds);

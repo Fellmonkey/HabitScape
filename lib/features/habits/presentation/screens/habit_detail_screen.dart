@@ -15,6 +15,7 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../domain/habit_engine.dart';
 import '../../domain/habit_history.dart';
 import '../../domain/scheduling.dart';
+import '../../../../core/settings/today.dart';
 import '../../providers/habit_providers.dart';
 import '../../providers/history_pager_provider.dart';
 import '../widgets/habit_form_sheet.dart';
@@ -298,6 +299,7 @@ class _MetricsDetailSection extends StatelessWidget {
         Text('Утро: ${(metrics.morningRatio * 100).round()}%'),
         Text('День: ${(metrics.afternoonRatio * 100).round()}%'),
         Text('Вечер: ${(metrics.eveningRatio * 100).round()}%'),
+        Text('Ночь: ${(metrics.nightRatio * 100).round()}%'),
       ],
     );
   }
@@ -665,6 +667,12 @@ class _TimeDistributionSection extends StatelessWidget {
               label: 'Вечер',
               ratio: metrics.eveningRatio,
               color: AppColors.softLavender,
+            ),
+            const SizedBox(width: 8),
+            _TimeBar(
+              label: 'Ночь',
+              ratio: metrics.nightRatio,
+              color: AppColors.fadedPlum,
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/features/habits/domain/completion.dart';
 import 'package:rythm/features/stats/domain/stats_engine.dart';
 
@@ -93,7 +94,7 @@ void main() {
         createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
       );
 
-      // 3 done in Jan 2026, 2 in Feb 2026.
+      // 3 done in the window [2025-02-01, 2026-02-01).
       final yearLogs = [
         makeLog(
           habitId: habit.id,
@@ -107,7 +108,7 @@ void main() {
         ),
         makeLog(
           habitId: habit.id,
-          date: DateTime.utc(2026, 2, 1).unixSeconds,
+          date: DateTime.utc(2026, 1, 31).unixSeconds,
           status: LogStatus.done,
         ),
       ];
@@ -407,15 +408,15 @@ void main() {
   });
 
   group('computeRhythmStats', () {
-    test('rhythmBucketForHour classifies every hour window', () {
-      expect(rhythmBucketForHour(0), RhythmBucket.night);
-      expect(rhythmBucketForHour(4), RhythmBucket.night);
-      expect(rhythmBucketForHour(5), RhythmBucket.morning);
-      expect(rhythmBucketForHour(11), RhythmBucket.morning);
-      expect(rhythmBucketForHour(12), RhythmBucket.day);
-      expect(rhythmBucketForHour(17), RhythmBucket.day);
-      expect(rhythmBucketForHour(18), RhythmBucket.evening);
-      expect(rhythmBucketForHour(23), RhythmBucket.evening);
+    test('timeBucketForHour classifies every hour window', () {
+      expect(timeBucketForHour(0), TimeBucket.night);
+      expect(timeBucketForHour(4), TimeBucket.night);
+      expect(timeBucketForHour(5), TimeBucket.morning);
+      expect(timeBucketForHour(11), TimeBucket.morning);
+      expect(timeBucketForHour(12), TimeBucket.day);
+      expect(timeBucketForHour(17), TimeBucket.day);
+      expect(timeBucketForHour(18), TimeBucket.evening);
+      expect(timeBucketForHour(23), TimeBucket.evening);
     });
 
     test('finds best/worst weekday and top time bucket', () {
@@ -459,7 +460,7 @@ void main() {
       // Mon/Tue/Wed at 100%, Thu–Sun at 0%.
       expect(rhythm.bestWeekday, DateTime.monday);
       expect(rhythm.worstWeekday, DateTime.thursday);
-      expect(rhythm.timeBucket, RhythmBucket.evening);
+      expect(rhythm.timeBucket, TimeBucket.evening);
       expect(rhythm.timeShare.round(), 67);
     });
 

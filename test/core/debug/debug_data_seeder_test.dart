@@ -95,6 +95,7 @@ void main() {
       await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Старая капсула',
+        createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
       );
       await db.weeklyIntentionsDao.setIntention(
         weekStartOf(DateTime.now()).unixSeconds,

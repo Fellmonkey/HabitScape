@@ -39,6 +39,7 @@ void main() {
     await db.lettersDao.addLetter(
       deliverAt: DateTime.utc(2026, 11, 1).unixSeconds,
       body: 'Письмо',
+      createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
     await db.weeklyIntentionsDao.setIntention(
       weekStartOf(DateTime.utc(2026, 10, 1)).unixSeconds,
@@ -59,12 +60,14 @@ void main() {
     await db.lettersDao.addLetter(
       deliverAt: DateTime.utc(2026, 11, 1).unixSeconds,
       body: 'Старая',
+      createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
 
     final count = await DatabaseReset(db).replaceWith(() async {
       await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'Новая',
+        createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
       );
       return 1;
     });
@@ -78,6 +81,7 @@ void main() {
     await db.lettersDao.addLetter(
       deliverAt: DateTime.utc(2026, 11, 1).unixSeconds,
       body: 'Старая',
+      createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
 
     await expectLater(

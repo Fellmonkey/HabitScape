@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
-import '../../../core/database/tables.dart';
+import '../app_database.dart';
+import '../enums.dart';
+import '../tables.dart';
 
 part 'day_notes_dao.g.dart';
 

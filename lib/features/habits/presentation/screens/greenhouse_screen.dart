@@ -16,6 +16,7 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../domain/today_board.dart';
+import '../../../../core/settings/today.dart';
 import '../../providers/habit_providers.dart';
 import '../../../onboarding/feature_hints.dart';
 

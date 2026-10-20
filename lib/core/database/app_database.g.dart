@@ -633,9 +633,7 @@ class $HabitLogsTable extends HabitLogs
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES habits (id) ON DELETE CASCADE',
-    ),
+    $customConstraints: 'REFERENCES habits (id) ON DELETE CASCADE',
   );
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
   @override
@@ -2403,6 +2401,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     weeklyIntentions,
     idxHabitLogsHabitDate,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'habits',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('habit_logs', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $$HabitsTableCreateCompanionBuilder =
@@ -2431,6 +2439,29 @@ typedef $$HabitsTableUpdateCompanionBuilder =
       Value<bool> isArchived,
       Value<int> createdAt,
     });
+
+final class $$HabitsTableReferences
+    extends BaseReferences<_$AppDatabase, $HabitsTable, Habit> {
+  $$HabitsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$HabitLogsTable, List<HabitLog>>
+  _habitLogsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.habitLogs,
+    aliasName: $_aliasNameGenerator(db.habits.id, db.habitLogs.habitId),
+  );
+
+  $$HabitLogsTableProcessedTableManager get habitLogsRefs {
+    final manager = $$HabitLogsTableTableManager(
+      $_db,
+      $_db.habitLogs,
+    ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_habitLogsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$HabitsTableFilterComposer
     extends Composer<_$AppDatabase, $HabitsTable> {
@@ -2490,6 +2521,31 @@ class $$HabitsTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> habitLogsRefs(
+    Expression<bool> Function($$HabitLogsTableFilterComposer f) f,
+  ) {
+    final $$HabitLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.habitLogs,
+      getReferencedColumn: (t) => t.habitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.habitLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$HabitsTableOrderingComposer
@@ -2596,6 +2652,31 @@ class $$HabitsTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> habitLogsRefs<T extends Object>(
+    Expression<T> Function($$HabitLogsTableAnnotationComposer a) f,
+  ) {
+    final $$HabitLogsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.habitLogs,
+      getReferencedColumn: (t) => t.habitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitLogsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.habitLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$HabitsTableTableManager
@@ -2609,9 +2690,9 @@ class $$HabitsTableTableManager
           $$HabitsTableAnnotationComposer,
           $$HabitsTableCreateCompanionBuilder,
           $$HabitsTableUpdateCompanionBuilder,
-          (Habit, BaseReferences<_$AppDatabase, $HabitsTable, Habit>),
+          (Habit, $$HabitsTableReferences),
           Habit,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool habitLogsRefs})
         > {
   $$HabitsTableTableManager(_$AppDatabase db, $HabitsTable table)
     : super(
@@ -2673,9 +2754,33 @@ class $$HabitsTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) =>
+                    (e.readTable(table), $$HabitsTableReferences(db, table, e)),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({habitLogsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (habitLogsRefs) db.habitLogs],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (habitLogsRefs)
+                    await $_getPrefetchedData<Habit, $HabitsTable, HabitLog>(
+                      currentTable: table,
+                      referencedTable: $$HabitsTableReferences
+                          ._habitLogsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$HabitsTableReferences(db, table, p0).habitLogsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.habitId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -2690,9 +2795,9 @@ typedef $$HabitsTableProcessedTableManager =
       $$HabitsTableAnnotationComposer,
       $$HabitsTableCreateCompanionBuilder,
       $$HabitsTableUpdateCompanionBuilder,
-      (Habit, BaseReferences<_$AppDatabase, $HabitsTable, Habit>),
+      (Habit, $$HabitsTableReferences),
       Habit,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool habitLogsRefs})
     >;
 typedef $$HabitLogsTableCreateCompanionBuilder =
     HabitLogsCompanion Function({
@@ -2711,6 +2816,29 @@ typedef $$HabitLogsTableUpdateCompanionBuilder =
       Value<int?> loggedHour,
     });
 
+final class $$HabitLogsTableReferences
+    extends BaseReferences<_$AppDatabase, $HabitLogsTable, HabitLog> {
+  $$HabitLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $HabitsTable _habitIdTable(_$AppDatabase db) => db.habits.createAlias(
+    $_aliasNameGenerator(db.habitLogs.habitId, db.habits.id),
+  );
+
+  $$HabitsTableProcessedTableManager get habitId {
+    final $_column = $_itemColumn<int>('habit_id')!;
+
+    final manager = $$HabitsTableTableManager(
+      $_db,
+      $_db.habits,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_habitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$HabitLogsTableFilterComposer
     extends Composer<_$AppDatabase, $HabitLogsTable> {
   $$HabitLogsTableFilterComposer({
@@ -2722,11 +2850,6 @@ class $$HabitLogsTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get habitId => $composableBuilder(
-    column: $table.habitId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2745,6 +2868,29 @@ class $$HabitLogsTableFilterComposer
     column: $table.loggedHour,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$HabitsTableFilterComposer get habitId {
+    final $$HabitsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableFilterComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HabitLogsTableOrderingComposer
@@ -2758,11 +2904,6 @@ class $$HabitLogsTableOrderingComposer
   });
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get habitId => $composableBuilder(
-    column: $table.habitId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2780,6 +2921,29 @@ class $$HabitLogsTableOrderingComposer
     column: $table.loggedHour,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$HabitsTableOrderingComposer get habitId {
+    final $$HabitsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableOrderingComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HabitLogsTableAnnotationComposer
@@ -2794,9 +2958,6 @@ class $$HabitLogsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get habitId =>
-      $composableBuilder(column: $table.habitId, builder: (column) => column);
-
   GeneratedColumn<int> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
@@ -2807,6 +2968,29 @@ class $$HabitLogsTableAnnotationComposer
     column: $table.loggedHour,
     builder: (column) => column,
   );
+
+  $$HabitsTableAnnotationComposer get habitId {
+    final $$HabitsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$HabitLogsTableTableManager
@@ -2820,9 +3004,9 @@ class $$HabitLogsTableTableManager
           $$HabitLogsTableAnnotationComposer,
           $$HabitLogsTableCreateCompanionBuilder,
           $$HabitLogsTableUpdateCompanionBuilder,
-          (HabitLog, BaseReferences<_$AppDatabase, $HabitLogsTable, HabitLog>),
+          (HabitLog, $$HabitLogsTableReferences),
           HabitLog,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool habitId})
         > {
   $$HabitLogsTableTableManager(_$AppDatabase db, $HabitLogsTable table)
     : super(
@@ -2864,9 +3048,54 @@ class $$HabitLogsTableTableManager
                 loggedHour: loggedHour,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$HabitLogsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({habitId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (habitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.habitId,
+                                referencedTable: $$HabitLogsTableReferences
+                                    ._habitIdTable(db),
+                                referencedColumn: $$HabitLogsTableReferences
+                                    ._habitIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -2881,9 +3110,9 @@ typedef $$HabitLogsTableProcessedTableManager =
       $$HabitLogsTableAnnotationComposer,
       $$HabitLogsTableCreateCompanionBuilder,
       $$HabitLogsTableUpdateCompanionBuilder,
-      (HabitLog, BaseReferences<_$AppDatabase, $HabitLogsTable, HabitLog>),
+      (HabitLog, $$HabitLogsTableReferences),
       HabitLog,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool habitId})
     >;
 typedef $$DayNotesTableCreateCompanionBuilder =
     DayNotesCompanion Function({

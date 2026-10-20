@@ -598,11 +598,13 @@ class DebugDataSeeder {
     }
   }
 
-  /// Generates pending logs for today so the Greenhouse shows habits.
+  /// Generates pending logs for today so the Greenhouse shows habits. Only
+  /// habits the schedule actually expects today get a pending row — the same
+  /// rule the board uses, so seeded states are always reachable.
   Future<void> _generateTodayLogs(List<_HabitMeta> metas, DateTime now) async {
     await db.habitLogsDao.upsertLogs([
       for (final meta in metas)
-        if (!meta.createdAt.isAfter(now))
+        if (!meta.createdAt.isAfter(now) && _shouldLogDay(meta, now))
           HabitLogsCompanion.insert(
             habitId: meta.id,
             date: now.unixSeconds,

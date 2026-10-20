@@ -1,6 +1,7 @@
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/core/utils/time_bucket.dart';
 
 import '../../habits/domain/completion.dart';
 
@@ -180,19 +181,6 @@ class WeekdayStat {
   double get ratio => completion.ratioOrZero;
 }
 
-/// The most active time-of-day bucket. Typed so presentation never
-/// re-maps strings to labels.
-enum RhythmBucket { morning, day, evening, night }
-
-/// Classifies an hour (0..23) into a [RhythmBucket]:
-/// morning (5-11), day (12-17), evening (18-23), night (0-4).
-RhythmBucket rhythmBucketForHour(int hour) {
-  if (hour >= 5 && hour < 12) return RhythmBucket.morning;
-  if (hour >= 12 && hour < 18) return RhythmBucket.day;
-  if (hour >= 18) return RhythmBucket.evening;
-  return RhythmBucket.night;
-}
-
 /// Weekly rhythm insights: best/worst weekday and peak activity time.
 class RhythmStats {
   const RhythmStats({
@@ -213,7 +201,7 @@ class RhythmStats {
   final int? worstWeekday;
 
   /// Most active time bucket, if any timed done-log exists.
-  final RhythmBucket? timeBucket;
+  final TimeBucket? timeBucket;
 
   /// Share (0..100) of all timed done-logs that fell in [timeBucket].
   final double timeShare;
@@ -261,17 +249,17 @@ RhythmStats computeRhythmStats({
     }
   }
 
-  const buckets = RhythmBucket.values;
-  final counts = <RhythmBucket, int>{for (final b in buckets) b: 0};
+  const buckets = TimeBucket.values;
+  final counts = <TimeBucket, int>{for (final b in buckets) b: 0};
   for (final log in logs) {
     if (log.status != LogStatus.done) continue;
     final hour = log.loggedHour;
     if (hour == null) continue;
-    final bucket = rhythmBucketForHour(hour);
+    final bucket = timeBucketForHour(hour);
     counts[bucket] = counts[bucket]! + 1;
   }
   var totalTimed = 0;
-  var topBucket = RhythmBucket.morning;
+  var topBucket = TimeBucket.morning;
   var topCount = 0;
   for (final b in buckets) {
     totalTimed += counts[b]!;
@@ -328,9 +316,18 @@ StatsOverview buildStatsOverview({
     end: end,
   );
 
+  // The year total counts the same population as the heatmap: done on
+  // expected days of active habits. A raw all-logs count would silently
+  // include archived habits and off-schedule rows, splitting one screen's
+  // numbers in two.
+  final yearTotalDone = days.fold(
+    0,
+    (sum, day) => sum + day.done,
+  );
+
   return StatsOverview(
     days: days,
-    yearTotalDone: yearLogs.where((l) => l.status == LogStatus.done).length,
+    yearTotalDone: yearTotalDone,
     moodCorrelation: computeMoodCorrelation(days: days, notes: yearNotes),
     weekTrend: computeWeekTrend(habits: habits, logs: yearLogs, now: now),
     rhythm: computeRhythmStats(days: days, logs: yearLogs),

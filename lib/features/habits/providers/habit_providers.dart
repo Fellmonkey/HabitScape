@@ -4,34 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/database/daos/day_notes_dao.dart';
+import '../../../core/database/daos/habit_logs_dao.dart';
+import '../../../core/database/daos/habits_dao.dart';
 import '../../../core/database/enums.dart';
-import '../../../core/database/history_store.dart';
+import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../data/day_notes_dao.dart';
-import '../data/habit_logs_dao.dart';
-import '../data/habits_dao.dart';
 import '../domain/completion.dart';
 import '../domain/day_moment_draft.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
-
-// The clock moved to core; kept exported so existing callers can keep
-// importing it from this provider file.
-export '../../../core/settings/today.dart';
-
-// ── History store ────────────────────────────────────────────
-
-/// The single seam for loading windows of history; shared by the month
-/// spread, the week summary and the stats screen.
-final historyStoreProvider = Provider<HistoryStore>((ref) {
-  final db = ref.watch(databaseProvider);
-  return HistoryStore(
-    habitsDao: db.habitsDao,
-    habitLogsDao: db.habitLogsDao,
-    dayNotesDao: db.dayNotesDao,
-  );
-});
 
 // ── Habit streams ────────────────────────────────────────────
 
@@ -182,7 +165,7 @@ class HabitActions extends Notifier<void> {
     required TimeOfDay timeOfDay,
     bool isFocus = false,
   }) async {
-    final now = DateTime.now().toMidnight;
+    final now = ref.read(clockProvider).now().toMidnight;
     return _habitsDao.insertHabit(
       HabitsCompanion(
         name: Value(name),
@@ -202,7 +185,7 @@ class HabitActions extends Notifier<void> {
   /// hour are captured here, once.
   Future<void> logToday(List<int> habitIds, {required LogStatus status}) async {
     if (habitIds.isEmpty) return;
-    final now = DateTime.now();
+    final now = ref.read(clockProvider).now();
     await _logsDao.logAll(
       habitIds,
       now.toMidnight.unixSeconds,
@@ -214,7 +197,8 @@ class HabitActions extends Notifier<void> {
   /// Persists a day note under one policy: an empty draft clears the row;
   /// anything else upserts. [dateTimestamp] defaults to today.
   Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) {
-    final ts = dateTimestamp ?? todayTimestamp();
+    final ts =
+        dateTimestamp ?? ref.read(clockProvider).now().toMidnight.unixSeconds;
     if (draft.isEmpty) return _dayNotesDao.clearNote(ts);
     return _dayNotesDao.upsertNote(
       ts,
