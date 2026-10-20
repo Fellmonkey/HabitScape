@@ -407,6 +407,17 @@ void main() {
   });
 
   group('computeRhythmStats', () {
+    test('rhythmBucketForHour classifies every hour window', () {
+      expect(rhythmBucketForHour(0), RhythmBucket.night);
+      expect(rhythmBucketForHour(4), RhythmBucket.night);
+      expect(rhythmBucketForHour(5), RhythmBucket.morning);
+      expect(rhythmBucketForHour(11), RhythmBucket.morning);
+      expect(rhythmBucketForHour(12), RhythmBucket.day);
+      expect(rhythmBucketForHour(17), RhythmBucket.day);
+      expect(rhythmBucketForHour(18), RhythmBucket.evening);
+      expect(rhythmBucketForHour(23), RhythmBucket.evening);
+    });
+
     test('finds best/worst weekday and top time bucket', () {
       final habit = makeHabit(
         name: 'Чтение',
@@ -448,7 +459,7 @@ void main() {
       // Mon/Tue/Wed at 100%, Thu–Sun at 0%.
       expect(rhythm.bestWeekday, DateTime.monday);
       expect(rhythm.worstWeekday, DateTime.thursday);
-      expect(rhythm.timeBucket, 'evening');
+      expect(rhythm.timeBucket, RhythmBucket.evening);
       expect(rhythm.timeShare.round(), 67);
     });
 

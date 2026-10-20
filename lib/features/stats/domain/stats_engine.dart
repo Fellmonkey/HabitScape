@@ -180,6 +180,19 @@ class WeekdayStat {
   double get ratio => completion.ratioOrZero;
 }
 
+/// The most active time-of-day bucket. Typed so presentation never
+/// re-maps strings to labels.
+enum RhythmBucket { morning, day, evening, night }
+
+/// Classifies an hour (0..23) into a [RhythmBucket]:
+/// morning (5-11), day (12-17), evening (18-23), night (0-4).
+RhythmBucket rhythmBucketForHour(int hour) {
+  if (hour >= 5 && hour < 12) return RhythmBucket.morning;
+  if (hour >= 12 && hour < 18) return RhythmBucket.day;
+  if (hour >= 18) return RhythmBucket.evening;
+  return RhythmBucket.night;
+}
+
 /// Weekly rhythm insights: best/worst weekday and peak activity time.
 class RhythmStats {
   const RhythmStats({
@@ -199,8 +212,8 @@ class RhythmStats {
   /// Weekday (1..7) with the lowest completion ratio, if any data.
   final int? worstWeekday;
 
-  /// Most active time bucket: `morning` | `day` | `evening` | `night`.
-  final String? timeBucket;
+  /// Most active time bucket, if any timed done-log exists.
+  final RhythmBucket? timeBucket;
 
   /// Share (0..100) of all timed done-logs that fell in [timeBucket].
   final double timeShare;
@@ -248,17 +261,17 @@ RhythmStats computeRhythmStats({
     }
   }
 
-  const buckets = ['morning', 'day', 'evening', 'night']; // from loggedHour
-  final counts = <String, int>{for (final b in buckets) b: 0};
+  const buckets = RhythmBucket.values;
+  final counts = <RhythmBucket, int>{for (final b in buckets) b: 0};
   for (final log in logs) {
     if (log.status != LogStatus.done) continue;
     final hour = log.loggedHour;
     if (hour == null) continue;
-    final bucket = timeBucket(hour);
+    final bucket = rhythmBucketForHour(hour);
     counts[bucket] = counts[bucket]! + 1;
   }
   var totalTimed = 0;
-  var topBucket = 'morning';
+  var topBucket = RhythmBucket.morning;
   var topCount = 0;
   for (final b in buckets) {
     totalTimed += counts[b]!;

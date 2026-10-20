@@ -356,11 +356,13 @@ class _RhythmCard extends StatelessWidget {
 
   final RhythmStats rhythm;
 
-  static const _timeLabels = {
-    'morning': 'утром',
-    'day': 'днём',
-    'evening': 'вечером',
-    'night': 'ночью',
+  /// Russian label for the typed bucket — the only place the bucket becomes
+  /// human text.
+  static String _timeLabel(RhythmBucket bucket) => switch (bucket) {
+    RhythmBucket.morning => 'утром',
+    RhythmBucket.day => 'днём',
+    RhythmBucket.evening => 'вечером',
+    RhythmBucket.night => 'ночью',
   };
 
   @override
@@ -414,7 +416,7 @@ class _RhythmCard extends StatelessWidget {
               icon: Icons.schedule_rounded,
               color: AppColors.warmAmber,
               text:
-                  'Пик активности: ${_timeLabels[timeBucket]} — ${rhythm.timeShare.round()}%',
+                  'Пик активности: ${_timeLabel(timeBucket)} — ${rhythm.timeShare.round()}%',
             ),
         ],
       ),

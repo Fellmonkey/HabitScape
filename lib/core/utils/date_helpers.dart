@@ -73,6 +73,8 @@ DateTime weekStartOf(DateTime date) {
 
 /// Classifies an hour (0..23) into a time-of-day bucket:
 /// `morning` (5-11), `day` (12-17), `evening` (18-23), `night` (0-4).
+/// The stats domain exposes the same split as a typed [RhythmBucket]; this
+/// string helper stays for engine-side counting.
 String timeBucket(int hour) {
   if (hour >= 5 && hour < 12) return 'morning';
   if (hour >= 12 && hour < 18) return 'day';
