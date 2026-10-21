@@ -84,28 +84,12 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
     return (delete(habits)..where((h) => h.id.equals(id))).go();
   }
 
-  /// Sets the focus flag on a habit.
+  /// Sets the focus flag on a habit — a thin write. The cap rule lives in
+  /// the domain (`FocusPolicy`); the caller runs it inside a transaction.
   Future<void> toggleFocus(int id, {required bool isFocus}) {
     return (update(habits)..where((h) => h.id.equals(id))).write(
       HabitsCompanion(isFocus: Value(isFocus)),
     );
-  }
-
-  /// Sets the focus flag, checking [cap] and writing in one transaction so
-  /// two concurrent requests cannot both take the last free slot.
-  ///
-  /// Returns false (without writing) when turning focus on would exceed the
-  /// cap.
-  Future<bool> setFocusWithinLimit(
-    int id, {
-    required bool isFocus,
-    required int cap,
-  }) {
-    return transaction(() async {
-      if (isFocus && await countFocusHabits() >= cap) return false;
-      await toggleFocus(id, isFocus: isFocus);
-      return true;
-    });
   }
 
   /// Counts habits currently marked as focus.

@@ -6,6 +6,7 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import 'icon_picker.dart';
 import '../../domain/habit_templates.dart';
@@ -216,7 +217,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
                 runSpacing: 8,
                 children: habitTemplates.map((t) {
                   return ActionChip(
-                    avatar: Icon(t.icon.icon, size: 16),
+                    avatar: Icon(t.icon.visual.icon, size: 16),
                     label: Text(t.name),
                     onPressed: () => _applyTemplate(t),
                   );
@@ -283,7 +284,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
               collapsedShape: const Border(),
               title: Text('Настроить', style: theme.textTheme.labelLarge),
               subtitle: Text(
-                '${_timeOfDay.localizedName} · ${_icon.label}',
+                '${_timeOfDay.localizedName} · ${_icon.visual.label}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),

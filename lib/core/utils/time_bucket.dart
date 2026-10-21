@@ -11,3 +11,16 @@ TimeBucket timeBucketForHour(int hour) => switch (hour) {
   >= 18 => TimeBucket.evening,
   _ => TimeBucket.night,
 };
+
+/// Accumulates [TimeBucket] counts over logged hours (nulls skipped).
+/// Both engines that describe *when* habits were done share this aggregation,
+/// so a bucket-boundary change can never desynchronize them.
+Map<TimeBucket, int> bucketCountsForHours(Iterable<int?> hours) {
+  final counts = <TimeBucket, int>{for (final b in TimeBucket.values) b: 0};
+  for (final hour in hours) {
+    if (hour == null) continue;
+    final bucket = timeBucketForHour(hour);
+    counts[bucket] = counts[bucket]! + 1;
+  }
+  return counts;
+}

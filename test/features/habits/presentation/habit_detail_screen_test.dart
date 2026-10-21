@@ -8,7 +8,6 @@ import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -169,6 +168,20 @@ void main() {
     expect(await db.habitsDao.getAllHabits(), isEmpty);
     expect(find.text('Удаляемая привычка'), findsNothing);
     expect(find.text('open'), findsOneWidget);
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('history tab shows its empty state when no logs exist', (
+    tester,
+  ) async {
+    final id = await insertHabit('Без истории');
+    await pumpDetail(tester, id);
+
+    await tester.tap(find.text('История'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Нет записей'), findsOneWidget);
 
     await disposeTree(tester);
   });

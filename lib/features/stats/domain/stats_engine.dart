@@ -250,14 +250,9 @@ RhythmStats computeRhythmStats({
   }
 
   const buckets = TimeBucket.values;
-  final counts = <TimeBucket, int>{for (final b in buckets) b: 0};
-  for (final log in logs) {
-    if (log.status != LogStatus.done) continue;
-    final hour = log.loggedHour;
-    if (hour == null) continue;
-    final bucket = timeBucketForHour(hour);
-    counts[bucket] = counts[bucket]! + 1;
-  }
+  final counts = bucketCountsForHours(
+    logs.map((log) => log.status == LogStatus.done ? log.loggedHour : null),
+  );
   var totalTimed = 0;
   var topBucket = TimeBucket.morning;
   var topCount = 0;
@@ -320,10 +315,7 @@ StatsOverview buildStatsOverview({
   // expected days of active habits. A raw all-logs count would silently
   // include archived habits and off-schedule rows, splitting one screen's
   // numbers in two.
-  final yearTotalDone = days.fold(
-    0,
-    (sum, day) => sum + day.done,
-  );
+  final yearTotalDone = days.fold(0, (sum, day) => sum + day.done);
 
   return StatsOverview(
     days: days,

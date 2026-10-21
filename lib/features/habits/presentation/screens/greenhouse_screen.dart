@@ -10,6 +10,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../shared/widgets/app_sheets.dart';
@@ -56,13 +57,13 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   }
 
   /// Resolves the echo placement once, after mount. The build method only
-  /// renders the decision; recording the showing is a command.
+  /// renders the decision; charging the weekly top quota happens at render —
+  /// in the top card's own mount callback (see [EchoCard.onMemoryShown]).
   Future<void> _resolveEchoPlacement() async {
     var atTop = true;
     try {
       final exposure = await ref.read(exposureProvider.future);
       atTop = exposure.echoAtTop;
-      if (atTop) await exposure.recordEchoTop();
     } catch (_) {
       // Preferences unavailable — keep the default top placement.
     }
@@ -185,7 +186,19 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        if (_echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
+        if (_echoAtTop)
+          SliverToBoxAdapter(
+            child: EchoCard(
+              onMemoryShown: () async {
+                try {
+                  final exposure = await ref.read(exposureProvider.future);
+                  await exposure.recordEchoTop();
+                } catch (_) {
+                  // Preferences unavailable — skip the quota charge.
+                }
+              },
+            ),
+          ),
 
         const SliverToBoxAdapter(child: WeekSummaryCard()),
 

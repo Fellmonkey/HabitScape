@@ -7,6 +7,7 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../domain/echo.dart';
 import '../../providers/echo_providers.dart';
 
@@ -17,7 +18,12 @@ import '../../providers/echo_providers.dart';
 /// note — never a fake or empty card. Whether it may appear is a read from
 /// [exposureProvider]; the showing is recorded only once the memory mounts.
 class EchoCard extends ConsumerWidget {
-  const EchoCard({super.key});
+  const EchoCard({this.onMemoryShown, super.key});
+
+  /// Called once when a memory card at this position actually mounts. The
+  /// Greenhouse passes it for the top placement, so the weekly top quota is
+  /// charged only for real renderings — never for a hidden or empty card.
+  final VoidCallback? onMemoryShown;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +41,11 @@ class EchoCard extends ConsumerWidget {
           error: (_, _) => const SizedBox.shrink(),
           data: (exposure) {
             if (!exposure.echoCardVisible) return const SizedBox.shrink();
-            return _EchoMemoryCard(feed: feed, today: exposure.today);
+            return _EchoMemoryCard(
+              feed: feed,
+              today: exposure.today,
+              onMemoryShown: onMemoryShown,
+            );
           },
         );
       },
@@ -77,10 +87,15 @@ class _EchoHint extends StatelessWidget {
 /// Mounted only when a memory will actually render, so [initState] is the
 /// one place that records the showing.
 class _EchoMemoryCard extends ConsumerStatefulWidget {
-  const _EchoMemoryCard({required this.feed, required this.today});
+  const _EchoMemoryCard({
+    required this.feed,
+    required this.today,
+    this.onMemoryShown,
+  });
 
   final EchoFeed feed;
   final DateTime today;
+  final VoidCallback? onMemoryShown;
 
   @override
   ConsumerState<_EchoMemoryCard> createState() => _EchoMemoryCardState();
@@ -93,6 +108,9 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   @override
   void initState() {
     super.initState();
+    // The placement callback fires only here — i.e. a memory really did
+    // mount at this position.
+    widget.onMemoryShown?.call();
     _recordShown();
   }
 

@@ -24,7 +24,8 @@ const _backupVersion = 2;
 /// old→new habit-id map, and the all-or-nothing import transaction. Callers
 /// only choose a file and report the result.
 class BackupService {
-  BackupService(this._db, {Clock? clock}) : _clock = clock ?? const SystemClock();
+  BackupService(this._db, {Clock? clock})
+    : _clock = clock ?? const SystemClock();
 
   final AppDatabase _db;
 
@@ -149,8 +150,8 @@ class BackupService {
         final id = await _lettersDao.addLetter(
           deliverAt: map['deliverAt'] as int,
           body: map['body'] as String,
-          createdAt: map['createdAt'] as int? ??
-              _clock.now().toMidnight.unixSeconds,
+          createdAt:
+              map['createdAt'] as int? ?? _clock.now().toMidnight.unixSeconds,
         );
         if (map['isOpened'] == true) {
           await _lettersDao.markOpened(

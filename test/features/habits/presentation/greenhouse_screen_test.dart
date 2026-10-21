@@ -44,6 +44,7 @@ void main() {
     WidgetTester tester, {
     required List<Habit> habits,
     List<HabitLog> logs = const [],
+    EchoFeed? echoFeed,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
@@ -57,8 +58,9 @@ void main() {
             (ref) => Stream<DayNote?>.value(null),
           ),
           echoFeedProvider.overrideWith(
-            (ref) =>
-                Stream.value(const EchoFeed(memories: [], hasAnyNote: false)),
+            (ref) => Stream.value(
+              echoFeed ?? const EchoFeed(memories: [], hasAnyNote: false),
+            ),
           ),
           weekSummaryProvider.overrideWith(
             (ref) => Future.value(
@@ -192,6 +194,36 @@ void main() {
       expect(log.loggedHour, isNotNull);
     }
 
+    await disposeTree(tester);
+  });
+
+  testWidgets('echo top quota charges only when a memory really renders', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now().toMidnight;
+    String echoTopKey() => 'echo_top_count_${weekStartOf(today).unixSeconds}';
+
+    // No notes at all → the card hides → no weekly top quota is charged.
+    await pumpGreenhouse(tester, habits: const []);
+    expect(prefs.getInt(echoTopKey()), isNull);
+    await disposeTree(tester);
+
+    // A memory exists → the top card mounts and charges exactly once.
+    await pumpGreenhouse(
+      tester,
+      habits: const [],
+      echoFeed: const EchoFeed(
+        memories: [
+          EchoMemory(
+            note: DayNote(id: 1, date: 0, moment: 'Память'),
+            horizon: EchoHorizon.yesterday,
+          ),
+        ],
+        hasAnyNote: true,
+      ),
+    );
+    expect(prefs.getInt(echoTopKey()), 1);
     await disposeTree(tester);
   });
 }

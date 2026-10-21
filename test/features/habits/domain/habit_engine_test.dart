@@ -235,19 +235,9 @@ void main() {
       );
       final logs = [
         // Saturday 2026-01-03 — the habit is not scheduled, yet marked done.
-        makeLog(
-          id: 1,
-          date: janDay(3),
-          status: LogStatus.done,
-          loggedHour: 9,
-        ),
+        makeLog(id: 1, date: janDay(3), status: LogStatus.done, loggedHour: 9),
         // Monday 2026-01-05 — scheduled and done.
-        makeLog(
-          id: 2,
-          date: janDay(5),
-          status: LogStatus.done,
-          loggedHour: 9,
-        ),
+        makeLog(id: 2, date: janDay(5), status: LogStatus.done, loggedHour: 9),
       ];
 
       final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);

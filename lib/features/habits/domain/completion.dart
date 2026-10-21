@@ -224,7 +224,11 @@ Completion habitCompletion({
     day = day.add(const Duration(days: 1));
   }
 
-  return Completion.fromCounts(done: done, expected: expected, skipped: skipped);
+  return Completion.fromCounts(
+    done: done,
+    expected: expected,
+    skipped: skipped,
+  );
 }
 
 /// One day of the month spread: completion + mood + time quality

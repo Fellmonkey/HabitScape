@@ -62,14 +62,34 @@ List<TodayGroup> groupToday({
     if (focus.isNotEmpty)
       TodayGroup(kind: TodayGroupKind.focus, habits: focus, canMarkAll: false),
     if (morning.isNotEmpty)
-      TodayGroup(kind: TodayGroupKind.morning, habits: morning, canMarkAll: true),
+      TodayGroup(
+        kind: TodayGroupKind.morning,
+        habits: morning,
+        canMarkAll: true,
+      ),
     if (afternoon.isNotEmpty)
-      TodayGroup(kind: TodayGroupKind.afternoon, habits: afternoon, canMarkAll: true),
+      TodayGroup(
+        kind: TodayGroupKind.afternoon,
+        habits: afternoon,
+        canMarkAll: true,
+      ),
     if (evening.isNotEmpty)
-      TodayGroup(kind: TodayGroupKind.evening, habits: evening, canMarkAll: true),
+      TodayGroup(
+        kind: TodayGroupKind.evening,
+        habits: evening,
+        canMarkAll: true,
+      ),
     if (anytime.isNotEmpty)
-      TodayGroup(kind: TodayGroupKind.anytime, habits: anytime, canMarkAll: true),
+      TodayGroup(
+        kind: TodayGroupKind.anytime,
+        habits: anytime,
+        canMarkAll: true,
+      ),
     if (notToday.isNotEmpty)
-      TodayGroup(kind: TodayGroupKind.notToday, habits: notToday, canMarkAll: false),
+      TodayGroup(
+        kind: TodayGroupKind.notToday,
+        habits: notToday,
+        canMarkAll: false,
+      ),
   ];
 }

@@ -13,6 +13,7 @@ import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../domain/completion.dart';
 import '../domain/day_moment_draft.dart';
+import '../domain/focus_policy.dart';
 import '../domain/habit_engine.dart';
 import '../domain/scheduling.dart';
 
@@ -49,6 +50,15 @@ final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
       .watch(databaseProvider)
       .dayNotesDao
       .watchNoteForDate(ref.watch(todayProvider));
+});
+
+/// One day's note for a specific date — the single seam screens use to read
+/// a note (e.g. the day-moment sheet editing a past day).
+final dayNoteProvider = FutureProvider.autoDispose.family<DayNote?, int>((
+  ref,
+  dateTs,
+) {
+  return ref.watch(databaseProvider).dayNotesDao.getNoteForDate(dateTs);
 });
 
 // ── Monthly goals ────────────────────────────────────────────
@@ -214,21 +224,35 @@ class HabitActions extends Notifier<void> {
     switch (action) {
       case HabitLifecycle.archive:
         await _habitsDao.archiveHabit(habitId);
+        return;
       case HabitLifecycle.restore:
         await _habitsDao.unarchiveHabit(habitId);
+        return;
       case HabitLifecycle.delete:
         await _habitsDao.deleteHabit(habitId);
+        return;
     }
   }
 
   /// Sets the focus flag, enforcing the 5-habit focus cap. Returns false
-  /// (without writing) when enabling focus would exceed the cap.
+  /// (without writing) when enabling focus would exceed the cap. The cap
+  /// rule lives in `FocusPolicy`; the count and the write share one
+  /// transaction so concurrent taps cannot take the same last slot.
   Future<bool> setFocus(int habitId, {required bool isFocus}) {
-    return _habitsDao.setFocusWithinLimit(
-      habitId,
-      isFocus: isFocus,
-      cap: AppConstants.maxFocusHabits,
-    );
+    final db = ref.read(databaseProvider);
+    return db.transaction(() async {
+      if (isFocus) {
+        final current = await _habitsDao.countFocusHabits();
+        if (!FocusPolicy.mayEnableFocus(
+          current,
+          cap: AppConstants.maxFocusHabits,
+        )) {
+          return false;
+        }
+      }
+      await _habitsDao.toggleFocus(habitId, isFocus: isFocus);
+      return true;
+    });
   }
 
   /// Update a habit's mutable fields (name, icon, frequency, timeOfDay).

@@ -32,29 +32,13 @@ class HabitEngine {
 
     // Time-of-day distribution over the habit's done logs — a description of
     // when the user records, not an expectation count.
-    var morningCount = 0;
-    var afternoonCount = 0;
-    var eveningCount = 0;
-    var nightCount = 0;
-
-    final sorted = List<HabitLog>.from(logs)
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    for (final log in sorted) {
-      if (log.status != LogStatus.done) continue;
-      final hour = log.loggedHour;
-      if (hour == null) continue;
-      switch (timeBucketForHour(hour)) {
-        case TimeBucket.morning:
-          morningCount++;
-        case TimeBucket.day:
-          afternoonCount++;
-        case TimeBucket.evening:
-          eveningCount++;
-        case TimeBucket.night:
-          nightCount++;
-      }
-    }
+    final counts = bucketCountsForHours(
+      logs.map((log) => log.status == LogStatus.done ? log.loggedHour : null),
+    );
+    final morningCount = counts[TimeBucket.morning]!;
+    final afternoonCount = counts[TimeBucket.day]!;
+    final eveningCount = counts[TimeBucket.evening]!;
+    final nightCount = counts[TimeBucket.night]!;
 
     // One measure, one denominator: skips excuse their expectation, so they
     // are removed from the base instead of raising the result.
@@ -64,7 +48,8 @@ class HabitEngine {
       skipped: measure.skipped,
     );
 
-    final totalTimed = morningCount + afternoonCount + eveningCount + nightCount;
+    final totalTimed =
+        morningCount + afternoonCount + eveningCount + nightCount;
     final mRatio = totalTimed > 0 ? morningCount / totalTimed : 0.25;
     final aRatio = totalTimed > 0 ? afternoonCount / totalTimed : 0.25;
     final eRatio = totalTimed > 0 ? eveningCount / totalTimed : 0.25;

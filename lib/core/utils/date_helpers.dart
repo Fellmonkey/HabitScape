@@ -12,9 +12,6 @@ extension DateTimeHelpers on DateTime {
 DateTime dateFromUnix(int unixSeconds) =>
     DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000, isUtc: true);
 
-/// Unix timestamp for midnight of today.
-int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;
-
 /// First day (midnight UTC) of [date]'s month.
 DateTime firstOfMonth(DateTime date) => DateTime.utc(date.year, date.month, 1);
 

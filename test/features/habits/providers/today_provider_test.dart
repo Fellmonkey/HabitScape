@@ -9,6 +9,7 @@ import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
 
 import '../../../fixtures/test_db.dart';
+import '../../../fixtures/test_factories.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

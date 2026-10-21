@@ -174,3 +174,8 @@ List<HabitLog> makeDoneLogs({
   }
   return logs;
 }
+
+/// Today's midnight timestamp (unix seconds) — the test-side oracle for the
+/// production clock. Production code reads `todayProvider`/`clockProvider`;
+/// tests only compare against the real wall clock.
+int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;

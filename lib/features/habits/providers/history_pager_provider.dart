@@ -57,7 +57,9 @@ class HistoryPager extends AsyncNotifier<HistoryPagerState> {
     final history = HabitHistory(
       habitId: habitId,
       store: ref.watch(historyStoreProvider),
-      now: ref.watch(todayDateProvider),
+      // Read once at build: the pager must not reset its cursor when the
+      // today provider ticks past midnight.
+      now: ref.read(todayDateProvider),
     );
     _history = history;
     await history.loadNextPage();

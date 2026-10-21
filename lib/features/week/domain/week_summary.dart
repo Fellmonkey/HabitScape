@@ -128,8 +128,9 @@ WeekSummary computeWeekSummary({
   // A week with zero interactions (no logs at all) is not a failed week —
   // it's an unused one. The card stays hidden until there is something to
   // summarize, so a fresh install never reads as "0%".
-  final hasAnyLogThisWeek =
-      logs.any((l) => l.date >= start.unixSeconds && l.date < end.unixSeconds);
+  final hasAnyLogThisWeek = logs.any(
+    (l) => l.date >= start.unixSeconds && l.date < end.unixSeconds,
+  );
 
   // ── Per-habit completion over elapsed scheduled days ───────
   // One rule, one owner: the completion module decides which days count and

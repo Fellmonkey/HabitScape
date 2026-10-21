@@ -8,6 +8,7 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/app_tours.dart';

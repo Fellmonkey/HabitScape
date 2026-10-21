@@ -8,6 +8,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/scheduling.dart';
@@ -84,9 +85,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
     if (_isDone) return;
     Haptics.medium(ref.read(hapticsEnabledProvider));
     if (!AppMotion.mayDisable(context)) _bounceController.forward(from: 0);
-    ref
-        .read(habitActionsProvider.notifier)
-        .logToday([widget.habit.id], status: LogStatus.done);
+    ref.read(habitActionsProvider.notifier).logToday([
+      widget.habit.id,
+    ], status: LogStatus.done);
   }
 
   @override
@@ -327,7 +328,7 @@ class _HabitIcon extends StatelessWidget {
     final type = HabitIcon.fromString(icon);
 
     return Icon(
-      type.icon,
+      type.visual.icon,
       size: 20,
       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
     );

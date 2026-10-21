@@ -112,9 +112,7 @@ void main() {
     });
 
     test('never expects a habit before its creation date', () {
-      final habit = makeHabit(
-        createdAt: DateTime.utc(2026, 1, 3).unixSeconds,
-      );
+      final habit = makeHabit(createdAt: DateTime.utc(2026, 1, 3).unixSeconds);
 
       final measure = habitCompletion(
         habit: habit,

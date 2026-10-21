@@ -9,6 +9,10 @@ import 'package:rythm/core/utils/date_helpers.dart';
 
 import 'helpers/pump_app.dart';
 
+/// Local wall-clock oracle for integration assertions (mirrors the test
+/// fixture helper; production code reads `todayProvider`).
+int todayTimestamp() => DateTime.now().toMidnight.unixSeconds;
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 

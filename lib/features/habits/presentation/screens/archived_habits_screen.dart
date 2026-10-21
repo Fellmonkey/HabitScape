@@ -5,6 +5,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../providers/habit_providers.dart';
 
 /// Lists archived habits; users can restore or permanently delete them.
@@ -185,7 +186,7 @@ class _HabitIcon extends StatelessWidget {
         color: primary.withValues(alpha: 0.15),
         borderRadius: AppRadius.borderS,
       ),
-      child: Center(child: Icon(icon.icon, color: primary)),
+      child: Center(child: Icon(icon.visual.icon, color: primary)),
     );
   }
 }

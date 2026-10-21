@@ -12,8 +12,7 @@ void main() {
   Future<Exposure> exposureOnDay(int day) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       if (day > 0)
-        Exposure.firstUseKey:
-            today.subtract(Duration(days: day)).unixSeconds,
+        Exposure.firstUseKey: today.subtract(Duration(days: day)).unixSeconds,
     });
     final prefs = await SharedPreferences.getInstance();
     return Exposure(prefs, today: today);
@@ -34,7 +33,8 @@ void main() {
         expect(
           featureHints[i].minDays >= featureHints[i - 1].minDays,
           isTrue,
-          reason: '${featureHints[i].key} must not mature before '
+          reason:
+              '${featureHints[i].key} must not mature before '
               '${featureHints[i - 1].key}',
         );
       }

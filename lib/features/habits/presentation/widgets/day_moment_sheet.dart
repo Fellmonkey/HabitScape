@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
-import '../../../../core/database/database_provider.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -38,6 +38,9 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   late final Animation<double> _saveScale;
   late DayMomentDraft _draft;
 
+  /// The stream-provided note was already applied to the draft once.
+  bool _noteApplied = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,11 +48,6 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     _draft = DayMomentDraft.fromNote(note);
     _momentController = TextEditingController(text: _draft.moment);
     _momentController.addListener(_syncMoment);
-
-    // Opened for a specific date — load the existing note for editing.
-    if (note == null && widget.dateTimestamp != null) {
-      _loadNote();
-    }
 
     // "Juicy" save animation: a quick squash-and-stretch of the button.
     _saveController = AnimationController(
@@ -81,13 +79,14 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     setState(() => _draft = _draft.withMoment(_momentController.text));
   }
 
-  Future<void> _loadNote() async {
-    // One-shot read — a watch stream would only be used for the first event.
-    final dao = ref.read(databaseProvider).dayNotesDao;
-    final note = await dao.getNoteForDate(widget.dateTimestamp!);
-    if (!mounted) return;
-    setState(() => _draft = DayMomentDraft.fromNote(note));
-    _momentController.text = _draft.moment;
+  /// Applies the provider-loaded note once, on the first resolution. The
+  /// provider is the sheet's only read path — no direct DAO access.
+  void _applyLoadedNote(DayNote? note) {
+    if (_noteApplied) return;
+    _noteApplied = true;
+    final draft = DayMomentDraft.fromNote(note);
+    _draft = draft;
+    _momentController.text = draft.moment;
   }
 
   Future<void> _save() async {
@@ -116,6 +115,14 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Opened for a specific date — load the existing note through the
+    // provider seam (never a direct DAO read).
+    if (widget.initial == null && widget.dateTimestamp != null) {
+      ref
+          .watch(dayNoteProvider(widget.dateTimestamp!))
+          .whenData(_applyLoadedNote);
+    }
 
     return Padding(
       padding: EdgeInsets.only(

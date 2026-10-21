@@ -60,7 +60,10 @@ void main() {
         today: today,
       );
 
-      expect(groups.map((g) => g.kind), isNot(contains(TodayGroupKind.notToday)));
+      expect(
+        groups.map((g) => g.kind),
+        isNot(contains(TodayGroupKind.notToday)),
+      );
     });
   });
 }

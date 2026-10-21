@@ -8,9 +8,8 @@ void main() {
   testWidgets('squashes on press and springs back on release', (tester) async {
     await tester.pumpWidget(wrap(const PressableScale(child: Text('x'))));
 
-    AnimatedScale scale() => tester.widget<AnimatedScale>(
-      find.byType(AnimatedScale),
-    );
+    AnimatedScale scale() =>
+        tester.widget<AnimatedScale>(find.byType(AnimatedScale));
 
     expect(scale().scale, 1.0);
 
@@ -23,8 +22,9 @@ void main() {
     expect(scale().scale, 1.0);
   });
 
-  testWidgets('reduced motion renders the child raw with no animation',
-      (tester) async {
+  testWidgets('reduced motion renders the child raw with no animation', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: MediaQuery(

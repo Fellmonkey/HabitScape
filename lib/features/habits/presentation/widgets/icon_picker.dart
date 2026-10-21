@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
@@ -124,7 +125,7 @@ class _IconChip extends StatelessWidget {
           ),
         ),
         child: Icon(
-          icon.icon,
+          icon.visual.icon,
           size: 20,
           color: selected
               ? theme.colorScheme.primary
@@ -230,7 +231,7 @@ class _IconGridTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              icon.icon,
+              icon.visual.icon,
               size: 24,
               color: selected
                   ? theme.colorScheme.primary
@@ -238,7 +239,7 @@ class _IconGridTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              icon.label,
+              icon.visual.label,
               style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
