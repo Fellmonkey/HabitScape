@@ -18,12 +18,12 @@ import '../../providers/echo_providers.dart';
 /// note — never a fake or empty card. Whether it may appear is a read from
 /// [exposureProvider]; the showing is recorded only once the memory mounts.
 class EchoCard extends ConsumerWidget {
-  const EchoCard({this.onMemoryShown, super.key});
+  const EchoCard({this.atTop = false, super.key});
 
-  /// Called once when a memory card at this position actually mounts. The
-  /// Greenhouse passes it for the top placement, so the weekly top quota is
-  /// charged only for real renderings — never for a hidden or empty card.
-  final VoidCallback? onMemoryShown;
+  /// Whether this card sits at the top of the board. A top placement charges
+  /// the weekly top quota on mount; any other placement only charges the
+  /// card-wide cooldown. One place records both — the card's own mount.
+  final bool atTop;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,7 +44,7 @@ class EchoCard extends ConsumerWidget {
             return _EchoMemoryCard(
               feed: feed,
               today: exposure.today,
-              onMemoryShown: onMemoryShown,
+              atTop: atTop,
             );
           },
         );
@@ -90,12 +90,12 @@ class _EchoMemoryCard extends ConsumerStatefulWidget {
   const _EchoMemoryCard({
     required this.feed,
     required this.today,
-    this.onMemoryShown,
+    required this.atTop,
   });
 
   final EchoFeed feed;
   final DateTime today;
-  final VoidCallback? onMemoryShown;
+  final bool atTop;
 
   @override
   ConsumerState<_EchoMemoryCard> createState() => _EchoMemoryCardState();
@@ -108,15 +108,12 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   @override
   void initState() {
     super.initState();
-    // The placement callback fires only here — i.e. a memory really did
-    // mount at this position.
-    widget.onMemoryShown?.call();
     _recordShown();
   }
 
   Future<void> _recordShown() async {
     final exposure = await ref.read(exposureProvider.future);
-    await exposure.recordEchoCardShown();
+    await exposure.recordEchoShown(atTop: widget.atTop);
   }
 
   @override

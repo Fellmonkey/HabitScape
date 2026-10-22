@@ -5,7 +5,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/domain/scheduling.dart';
+import 'package:rythm/core/domain/scheduling.dart';
 import 'package:rythm/features/habits/providers/habit_providers.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 

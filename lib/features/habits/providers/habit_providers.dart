@@ -11,11 +11,10 @@ import '../../../core/database/enums.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../domain/completion.dart';
+import '../../../core/domain/completion.dart';
 import '../domain/day_moment_draft.dart';
-import '../domain/focus_policy.dart';
 import '../domain/habit_engine.dart';
-import '../domain/scheduling.dart';
+import '../../../core/domain/scheduling.dart';
 
 // ── Habit streams ────────────────────────────────────────────
 
@@ -169,7 +168,6 @@ class HabitActions extends Notifier<void> {
   /// Create a new habit.
   Future<int> createHabit({
     required String name,
-    required String category,
     required HabitIcon icon,
     required HabitFrequency frequency,
     required TimeOfDay timeOfDay,
@@ -179,7 +177,8 @@ class HabitActions extends Notifier<void> {
     return _habitsDao.insertHabit(
       HabitsCompanion(
         name: Value(name),
-        category: Value(category),
+        // The category field is a stored placeholder with no picker yet.
+        category: const Value('general'),
         icon: Value(icon.name),
         frequencyType: Value(frequency.type.name),
         frequencyValue: Value(frequency.encode()),
@@ -235,18 +234,15 @@ class HabitActions extends Notifier<void> {
   }
 
   /// Sets the focus flag, enforcing the 5-habit focus cap. Returns false
-  /// (without writing) when enabling focus would exceed the cap. The cap
-  /// rule lives in `FocusPolicy`; the count and the write share one
-  /// transaction so concurrent taps cannot take the same last slot.
+  /// (without writing) when enabling focus would exceed the cap. The count
+  /// and the write share one transaction so concurrent taps cannot take the
+  /// same last slot.
   Future<bool> setFocus(int habitId, {required bool isFocus}) {
     final db = ref.read(databaseProvider);
     return db.transaction(() async {
       if (isFocus) {
         final current = await _habitsDao.countFocusHabits();
-        if (!FocusPolicy.mayEnableFocus(
-          current,
-          cap: AppConstants.maxFocusHabits,
-        )) {
+        if (current >= AppConstants.maxFocusHabits) {
           return false;
         }
       }

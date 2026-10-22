@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/domain/scheduling.dart';
+import 'package:rythm/core/domain/scheduling.dart';
 
 import '../../../fixtures/test_factories.dart';
 
@@ -388,6 +388,64 @@ void main() {
         createdAt: jan1,
       );
       expect(calculateRequiredBase(habit, 2026, 1), 5);
+    });
+  });
+
+  group('CycleFrequency start-date serialization', () {
+    test('encode stores the chosen calendar day as UTC midnight', () {
+      // A local afternoon on 2026-01-05 must not become 2026-01-04 21:00Z.
+      final local = DateTime(2026, 1, 5, 14, 30);
+      final encoded = CycleFrequency.encodeStartDate(local);
+
+      expect(encoded, DateTime.utc(2026, 1, 5).unixSeconds);
+      expect(
+        DateTime.fromMillisecondsSinceEpoch(encoded! * 1000, isUtc: true),
+        DateTime.utc(2026, 1, 5),
+      );
+    });
+
+    test('decode returns the exact stored instant — never zone-shifted', () {
+      final stored = DateTime.utc(2026, 1, 5).unixSeconds;
+      expect(CycleFrequency.decodeStartDate(stored), DateTime.utc(2026, 1, 5));
+    });
+
+    test('null passes through both directions', () {
+      expect(CycleFrequency.encodeStartDate(null), isNull);
+      expect(CycleFrequency.decodeStartDate(null), isNull);
+    });
+
+    test('round-trip preserves the calendar day', () {
+      final local = DateTime(2026, 3, 31, 23, 59);
+      final decoded = CycleFrequency.decodeStartDate(
+        CycleFrequency.encodeStartDate(local),
+      );
+
+      expect(decoded, local.toMidnight);
+    });
+
+    test('the stored value drives the cycle phase from the right day', () {
+      final frequency = CycleFrequency(
+        length: 5,
+        days: const [1],
+        startDate: CycleFrequency.encodeStartDate(DateTime(2026, 1, 5)),
+      );
+
+      // Reference day is Jan 5 — so Jan 5 itself is cycle day 1.
+      expect(
+        frequency.isExpectedOn(
+          createdAt: DateTime.utc(2026, 1, 1),
+          today: DateTime.utc(2026, 1, 5),
+        ),
+        isTrue,
+      );
+      // Jan 6 is day 2 — not in the {1} cycle.
+      expect(
+        frequency.isExpectedOn(
+          createdAt: DateTime.utc(2026, 1, 1),
+          today: DateTime.utc(2026, 1, 6),
+        ),
+        isFalse,
+      );
     });
   });
 }

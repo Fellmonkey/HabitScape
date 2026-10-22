@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
-import '../../../core/formatting/russian_plural.dart';
-import '../../../core/utils/date_helpers.dart';
-import '../../../core/utils/localized_dates.dart';
+import '../database/app_database.dart';
+import '../database/enums.dart';
+import '../formatting/russian_plural.dart';
+import '../utils/date_helpers.dart';
+import '../utils/localized_dates.dart';
 
 // ── Frequency value object ───────────────────────────────────
 //
@@ -244,6 +244,18 @@ class CycleFrequency extends HabitFrequency {
   final List<int> days;
   final Map<int, String> labels;
   final int? startDate;
+
+  /// Canonical stored form of a cycle start chosen on [localDay]: unix
+  /// seconds at UTC midnight of that same calendar day — the one convention
+  /// every other stored date follows. Never the local-midnight epoch.
+  static int? encodeStartDate(DateTime? localDay) =>
+      localDay?.toMidnight.unixSeconds;
+
+  /// The calendar view of a stored [startDate]: UTC midnight of the day it
+  /// represents. Locale/zone rendering is a presentation concern; the value
+  /// itself never shifts.
+  static DateTime? decodeStartDate(int? startDate) =>
+      startDate == null ? null : dateFromUnix(startDate);
 
   @override
   FrequencyType get type => FrequencyType.cycle;

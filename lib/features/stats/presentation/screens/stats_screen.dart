@@ -9,7 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/utils/time_bucket.dart';
 import '../../domain/stats_engine.dart';
-import '../../../habits/domain/completion.dart';
+import '../../../../core/domain/completion.dart';
 import '../../providers/stats_providers.dart';
 import '../widgets/github_heatmap.dart';
 

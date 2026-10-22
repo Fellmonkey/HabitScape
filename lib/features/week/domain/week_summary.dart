@@ -1,8 +1,8 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../../habits/domain/completion.dart';
-import '../../habits/domain/scheduling.dart';
+import '../../../core/domain/completion.dart';
+import '../../../core/domain/scheduling.dart';
 
 /// The auto-summary of a finished/ending week, computed on the fly.
 class WeekSummary {
@@ -113,17 +113,21 @@ WeekSummary computeWeekSummary({
 
   final activeHabits = habits.where((h) => !h.isArchived).toList();
 
+  // One window rule: the week closes at today, so future days of a closing
+  // week never count as missed. The same capped window feeds both the
+  // day-level matrix and the per-habit measures below, so the summary can
+  // never disagree with its parts.
+  final weekEnd = today.toMidnight.add(const Duration(days: 1));
+  final cappedEnd = weekEnd.isAfter(end) ? end : weekEnd;
+
   // Day-level completion comes from the shared completion module so the
   // week summary's day counts agree with the heatmap and month spread.
   final weekDays = computeDailyCompletion(
     habits: activeHabits,
     logs: logs,
     start: start,
-    end: start.add(const Duration(days: 7)),
+    end: cappedEnd,
   );
-  final elapsedDayCompletions = weekDays
-      .where((d) => !d.date.isAfter(today.toMidnight))
-      .toList();
 
   // A week with zero interactions (no logs at all) is not a failed week —
   // it's an unused one. The card stays hidden until there is something to
@@ -136,10 +140,8 @@ WeekSummary computeWeekSummary({
   // One rule, one owner: the completion module decides which days count and
   // which statuses fill the numerator, so the weakest habit and the pooled
   // week always agree with the heatmap and the month spread. The window is
-  // capped at today — future days of a closing week never count as missed.
+  // capped at today — the same [cappedEnd] as the day-level matrix above.
   final measures = <int, Completion>{};
-  final weekEnd = today.toMidnight.add(const Duration(days: 1));
-  final cappedEnd = weekEnd.isAfter(end) ? end : weekEnd;
 
   for (final habit in activeHabits) {
     final measure = habitCompletion(
@@ -177,7 +179,7 @@ WeekSummary computeWeekSummary({
   // scheduled are skipped, so a quiet Sunday never reads as "best".
   DateTime? bestDay;
   double bestRatio = -1;
-  for (final dayCompletion in elapsedDayCompletions) {
+  for (final dayCompletion in weekDays) {
     if (!dayCompletion.hasExpectation) continue;
     final ratio = dayCompletion.ratio;
     if (ratio > bestRatio) {

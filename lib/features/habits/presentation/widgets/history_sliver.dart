@@ -65,8 +65,10 @@ class HistorySection extends ConsumerWidget {
               };
             }
             // Footer visible at the end — ask the pager for the next chunk.
+            // The pager itself guards the in-flight state; the widget only
+            // avoids touching the provider after it is gone.
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!state.isLoading) {
+              if (context.mounted && !state.isLoading) {
                 ref.read(historyPagerProvider(habitId).notifier).loadMore();
               }
             });

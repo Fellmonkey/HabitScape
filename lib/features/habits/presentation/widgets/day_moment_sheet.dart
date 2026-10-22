@@ -18,11 +18,11 @@ import '../../providers/habit_providers.dart';
 
 /// Bottom sheet for editing the day moment: the memorable moment of a
 /// day + the day mood (🟢 good / 🟡 so-so / 🔴 bad).
+///
+/// The single source for the existing note is the [dayNoteProvider] seam —
+/// never a direct DAO read and never a caller-passed copy.
 class DayMomentSheet extends ConsumerStatefulWidget {
-  const DayMomentSheet({super.key, this.initial, this.dateTimestamp});
-
-  /// Existing note to prefill (when editing an existing note).
-  final DayNote? initial;
+  const DayMomentSheet({super.key, this.dateTimestamp});
 
   /// The date (unix midnight) this note belongs to. Defaults to today.
   final int? dateTimestamp;
@@ -44,8 +44,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   @override
   void initState() {
     super.initState();
-    final note = widget.initial;
-    _draft = DayMomentDraft.fromNote(note);
+    _draft = DayMomentDraft.fromNote(null);
     _momentController = TextEditingController(text: _draft.moment);
     _momentController.addListener(_syncMoment);
 
@@ -116,9 +115,9 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Opened for a specific date — load the existing note through the
-    // provider seam (never a direct DAO read).
-    if (widget.initial == null && widget.dateTimestamp != null) {
+    // Load the existing note through the provider seam (never a direct DAO
+    // read). Today's sheet defaults to today and loads the same way.
+    if (widget.dateTimestamp != null) {
       ref
           .watch(dayNoteProvider(widget.dateTimestamp!))
           .whenData(_applyLoadedNote);

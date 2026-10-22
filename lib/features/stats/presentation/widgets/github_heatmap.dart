@@ -3,7 +3,68 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../../habits/domain/completion.dart';
+import '../../../../core/domain/completion.dart';
+
+/// One geometry authority for the heatmap: the painter, the hit-test and
+/// the scroll-size math all derive from this object instead of re-deriving
+/// the same constants in three places.
+class HeatmapLayout {
+  const HeatmapLayout({
+    this.cellSize = 12,
+    this.gap = 3,
+    this.labelWidth = 18,
+    this.monthLabelHeight = 14,
+    this.labelGap = 2,
+  });
+
+  final double cellSize;
+  final double gap;
+  final double labelWidth;
+  final double monthLabelHeight;
+  final double labelGap;
+
+  /// One week column or one weekday row, including the gap.
+  double get stride => cellSize + gap;
+
+  /// Top-left of the cell at [week] × [dow] (0 = Monday).
+  Offset cellOffset(int week, int dow) => Offset(
+    labelWidth + week * stride,
+    monthLabelHeight + labelGap + dow * stride,
+  );
+
+  /// Week column hit by [dx], or null when the tap lands in the label gutter.
+  int? weekHit(double dx) {
+    final week = ((dx - labelWidth) / stride).floor();
+    return week < 0 ? null : week;
+  }
+
+  /// Weekday row hit by [dy], or null outside the 7 rows.
+  int? dowHit(double dy) {
+    final dow = ((dy - monthLabelHeight - labelGap) / stride).floor();
+    return (dow < 0 || dow > 6) ? null : dow;
+  }
+
+  /// Full canvas size for [weekCount] week columns.
+  Size sizeFor(int weekCount) => Size(
+    labelWidth + weekCount * stride,
+    monthLabelHeight + labelGap + 7 * stride,
+  );
+}
+
+/// The five heatmap intensity tiers — the single source for both the painter
+/// and the legend, so they can never disagree about how many steps exist.
+const heatmapIntensityTiers = <double>[0.08, 0.35, 0.6, 0.85, 1.0];
+
+/// Cell color for a day's completion [ratio].
+Color heatmapCellColor(double ratio, {required Color onSurface}) {
+  if (ratio <= 0.0) {
+    return onSurface.withValues(alpha: 0.08);
+  }
+  if (ratio < 0.25) return AppColors.sageGreen.withValues(alpha: 0.35);
+  if (ratio < 0.5) return AppColors.sageGreen.withValues(alpha: 0.6);
+  if (ratio < 0.75) return AppColors.sageGreen.withValues(alpha: 0.85);
+  return AppColors.emeraldGlow;
+}
 
 /// GitHub-style heatmap: 7 weekday rows × N week columns, each cell colored
 /// by the day's completion ratio. One [CustomPainter] paints the whole grid
@@ -53,19 +114,16 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
     final grid = CalendarGrid.range(first: first, last: last, today: last);
     final weekCount = grid.weeks.length;
 
-    const labelWidth = 18.0;
-    const monthLabelHeight = 14.0;
-    const labelGap = 2.0;
-
-    final gridWidth = weekCount * (cellSize + gap);
-    final totalWidth = labelWidth + gridWidth;
-    final totalHeight = monthLabelHeight + labelGap + 7 * (cellSize + gap);
+    // One geometry authority: the painter, the hit-test below and the
+    // scroll math all derive from the same layout.
+    final layout = HeatmapLayout(cellSize: cellSize, gap: gap);
+    final totalSize = layout.sizeFor(weekCount);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewport = constraints.maxWidth;
-        final endOffset = viewport.isFinite && viewport < totalWidth
-            ? totalWidth - viewport
+        final endOffset = viewport.isFinite && viewport < totalSize.width
+            ? totalSize.width - viewport
             : 0.0;
         final controller = _controller ??= ScrollController(
           initialScrollOffset: endOffset,
@@ -78,13 +136,9 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
             onTapDown: (details) {
               final cb = widget.onDayTap;
               if (cb == null) return;
-              final dx = details.localPosition.dx;
-              final dy = details.localPosition.dy;
-              final week = ((dx - labelWidth) / (cellSize + gap)).floor();
-              final dow =
-                  ((dy - monthLabelHeight - labelGap) / (cellSize + gap))
-                      .floor();
-              if (week < 0 || dow < 0 || dow > 6) return;
+              final week = layout.weekHit(details.localPosition.dx);
+              final dow = layout.dowHit(details.localPosition.dy);
+              if (week == null || dow == null) return;
               final date = grid.start.add(Duration(days: week * 7 + dow));
               for (final d in days) {
                 if (d.date == date) {
@@ -94,15 +148,11 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
               }
             },
             child: CustomPaint(
-              size: Size(totalWidth, totalHeight),
+              size: totalSize,
               painter: _HeatmapPainter(
                 days: days,
                 grid: grid,
-                cellSize: cellSize,
-                gap: gap,
-                labelWidth: labelWidth,
-                monthLabelHeight: monthLabelHeight,
-                labelGap: labelGap,
+                layout: layout,
                 weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 8,
                 ),
@@ -123,11 +173,7 @@ class _HeatmapPainter extends CustomPainter {
   _HeatmapPainter({
     required this.days,
     required this.grid,
-    required this.cellSize,
-    required this.gap,
-    required this.labelWidth,
-    required this.monthLabelHeight,
-    required this.labelGap,
+    required this.layout,
     required this.weekdayLabelStyle,
     required this.monthLabelStyle,
     required this.onSurface,
@@ -135,11 +181,7 @@ class _HeatmapPainter extends CustomPainter {
 
   final List<DayCompletion> days;
   final CalendarGrid grid;
-  final double cellSize;
-  final double gap;
-  final double labelWidth;
-  final double monthLabelHeight;
-  final double labelGap;
+  final HeatmapLayout layout;
   final TextStyle? weekdayLabelStyle;
   final TextStyle? monthLabelStyle;
   final Color onSurface;
@@ -165,10 +207,7 @@ class _HeatmapPainter extends CustomPainter {
       if (label == null) continue;
       textPainter.text = TextSpan(text: label, style: monthLabelStyle);
       textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(labelWidth + week * (cellSize + gap), 0),
-      );
+      textPainter.paint(canvas, Offset(layout.cellOffset(week, 0).dx, 0));
     }
 
     // ── Weekday labels ────────────────────────────────────────
@@ -182,10 +221,7 @@ class _HeatmapPainter extends CustomPainter {
       if (label.isEmpty) continue;
       textPainter.text = TextSpan(text: label, style: weekdayLabelStyle);
       textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(0, monthLabelHeight + labelGap + dow * (cellSize + gap)),
-      );
+      textPainter.paint(canvas, Offset(0, layout.cellOffset(0, dow).dy));
     }
 
     // ── Cells ─────────────────────────────────────────────────
@@ -196,10 +232,14 @@ class _HeatmapPainter extends CustomPainter {
         if (cell == null) continue;
         final comp = _dayByDate[cell.date];
         if (comp == null) continue;
-        paint.color = _cellColor(comp.ratio);
-        final left = labelWidth + week * (cellSize + gap);
-        final top = monthLabelHeight + labelGap + dow * (cellSize + gap);
-        final rect = Rect.fromLTWH(left, top, cellSize, cellSize);
+        paint.color = heatmapCellColor(comp.ratio, onSurface: onSurface);
+        final origin = layout.cellOffset(week, dow);
+        final rect = Rect.fromLTWH(
+          origin.dx,
+          origin.dy,
+          layout.cellSize,
+          layout.cellSize,
+        );
         canvas.drawRRect(
           RRect.fromRectAndRadius(rect, const Radius.circular(2.5)),
           paint,
@@ -208,20 +248,11 @@ class _HeatmapPainter extends CustomPainter {
     }
   }
 
-  Color _cellColor(double ratio) {
-    if (ratio <= 0.0) {
-      return onSurface.withValues(alpha: 0.08);
-    }
-    if (ratio < 0.25) return AppColors.sageGreen.withValues(alpha: 0.35);
-    if (ratio < 0.5) return AppColors.sageGreen.withValues(alpha: 0.6);
-    if (ratio < 0.75) return AppColors.sageGreen.withValues(alpha: 0.85);
-    return AppColors.emeraldGlow;
-  }
-
   @override
   bool shouldRepaint(_HeatmapPainter oldDelegate) {
     return !identical(oldDelegate.days, days) ||
         !identical(oldDelegate.grid, grid) ||
+        !identical(oldDelegate.layout, layout) ||
         oldDelegate.onSurface != onSurface ||
         oldDelegate.weekdayLabelStyle != weekdayLabelStyle ||
         oldDelegate.monthLabelStyle != monthLabelStyle;
@@ -240,7 +271,7 @@ class HeatmapLegend extends StatelessWidget {
       children: [
         Text('Меньше', style: theme.textTheme.labelSmall),
         const SizedBox(width: 6),
-        for (final alpha in const [0.08, 0.35, 0.6, 0.85, 1.0]) ...[
+        for (final alpha in heatmapIntensityTiers) ...[
           Container(
             width: 10,
             height: 10,

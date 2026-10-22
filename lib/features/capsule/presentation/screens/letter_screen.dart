@@ -42,10 +42,9 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
   }
 
   Future<void> _markOpened() async {
-    if (widget.capsule.isOpened) return;
-    await ref
-        .read(letterActionsProvider.notifier)
-        .markOpened(widget.capsule.id);
+    if (!mounted || widget.capsule.isOpened) return;
+    final actions = ref.read(letterActionsProvider.notifier);
+    await actions.markOpened(widget.capsule.id);
   }
 
   Future<void> _saveReply() async {

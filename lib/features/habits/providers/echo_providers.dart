@@ -15,15 +15,6 @@ final echoFeedProvider = StreamProvider<EchoFeed>((ref) {
 
   return notesStream.asyncMap((notes) async {
     final exposure = await exposureFuture;
-    final seen = exposure.seenEchoDates;
-
-    var memories = selectEchoMemories(notes, exposure.today, exclude: seen);
-    // A tiny archive would go blank once every date is seen — show a familiar
-    // memory instead of nothing.
-    if (memories.isEmpty && seen.isNotEmpty) {
-      memories = selectEchoMemories(notes, exposure.today);
-    }
-
-    return EchoFeed(memories: memories, hasAnyNote: notes.isNotEmpty);
+    return selectEchoFeed(notes, exposure.today, seen: exposure.seenEchoDates);
   });
 });

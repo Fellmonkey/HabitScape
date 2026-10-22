@@ -73,12 +73,17 @@ class WeekIntentionActions extends Notifier<void> {
         .setIntention(weekStartOf(_today).unixSeconds, intention);
   }
 
-  /// Clears the current week's intention.
-  Future<void> clear() {
-    return ref
-        .read(databaseProvider)
-        .weeklyIntentionsDao
-        .setIntention(weekStartOf(_today).unixSeconds, null);
+  /// Aggregates the two-step save invariant: persisting [intention] under
+  /// the current week AND marking the closing [weekStart] as answered.
+  /// Screens call this one command instead of orchestrating a two-store
+  /// transaction themselves — a failure mid-way surfaces here, not in a
+  /// widget's stuck state.
+  Future<void> saveIntentionAndAnswer({
+    required DateTime weekStart,
+    required String intention,
+  }) async {
+    await save(intention);
+    await answerWeek(weekStart);
   }
 
   /// Records that the user answered the closing [weekStart] — saved an

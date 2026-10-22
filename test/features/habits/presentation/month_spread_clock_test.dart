@@ -5,7 +5,7 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/domain/completion.dart';
+import 'package:rythm/core/domain/completion.dart';
 import 'package:rythm/features/habits/presentation/widgets/month_spread_view.dart';
 
 class _FixedToday extends TodayNotifier {

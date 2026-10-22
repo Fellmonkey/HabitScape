@@ -3,8 +3,8 @@ import '../../../core/database/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/time_bucket.dart';
 
-import 'completion.dart';
-import 'scheduling.dart' as sched;
+import '../../../core/domain/completion.dart';
+import '../../../core/domain/scheduling.dart' as sched;
 
 /// Pure engine for habit metrics — no side effects, no DB access.
 class HabitEngine {

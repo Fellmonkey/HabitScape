@@ -36,16 +36,16 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     setState(() => _saving = true);
-    final actions = ref.read(weekIntentionActionsProvider.notifier);
-    await actions.save(text);
-    await actions.answerWeek(weekStart);
+    try {
+      await ref
+          .read(weekIntentionActionsProvider.notifier)
+          .saveIntentionAndAnswer(weekStart: weekStart, intention: text);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
     if (!mounted) return;
     Haptics.tap(ref.read(hapticsEnabledProvider));
-    if (!mounted) return;
-    setState(() {
-      _saving = false;
-      _editing = false;
-    });
+    setState(() => _editing = false);
     ref.invalidate(weekSummaryProvider);
   }
 

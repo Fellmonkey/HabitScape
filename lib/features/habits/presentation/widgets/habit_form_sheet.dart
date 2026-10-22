@@ -10,7 +10,7 @@ import '../../../../core/theme/enum_visuals.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import 'icon_picker.dart';
 import '../../domain/habit_templates.dart';
-import '../../domain/scheduling.dart';
+import '../../../../core/domain/scheduling.dart';
 import '../../../../core/settings/today.dart';
 import '../../providers/habit_providers.dart';
 
@@ -74,12 +74,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _cycleLength = cycle.length;
       _cycleDays = cycle.days.toSet();
       _cycleLabels = Map.from(cycle.labels);
-      if (cycle.startDate != null) {
-        _cycleStartDate = DateTime.fromMillisecondsSinceEpoch(
-          cycle.startDate! * 1000,
-          isUtc: true,
-        ).toLocal();
-      }
+      _cycleStartDate = CycleFrequency.decodeStartDate(cycle.startDate);
     } else {
       _nameController = TextEditingController();
       _frequency = FrequencyType.daily;
@@ -110,14 +105,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       length: _cycleLength,
       days: _cycleDays.toList()..sort(),
       labels: _cycleLabels,
-      startDate: _cycleStartDate == null
-          ? null
-          : DateTime(
-                  _cycleStartDate!.year,
-                  _cycleStartDate!.month,
-                  _cycleStartDate!.day,
-                ).millisecondsSinceEpoch ~/
-                1000,
+      startDate: CycleFrequency.encodeStartDate(_cycleStartDate),
     ),
     _ => const DailyFrequency(),
   };
@@ -171,7 +159,6 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     } else {
       final id = await actions.createHabit(
         name: name,
-        category: 'general',
         icon: _icon,
         frequency: frequency,
         timeOfDay: _timeOfDay,

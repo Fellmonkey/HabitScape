@@ -100,6 +100,14 @@ class Exposure {
   Future<void> recordEchoCardShown() =>
       _prefs.setInt(echoLastShownKey, today.unixSeconds);
 
+  /// Records one rendered showing: the card-wide cooldown always charges, and
+  /// a top placement also charges the weekly quota. This is the single verb
+  /// every card mount calls — never two separate writes.
+  Future<void> recordEchoShown({required bool atTop}) async {
+    await recordEchoCardShown();
+    if (atTop) await recordEchoTop();
+  }
+
   // ── Seen memories ──────────────────────────────────────────
 
   /// Dates already shown via «Ещё», so the next visit starts elsewhere.

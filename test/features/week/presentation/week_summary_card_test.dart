@@ -24,8 +24,12 @@ class _FakeWeekIntentionActions extends WeekIntentionActions {
   }
 
   @override
-  Future<void> clear() async {
-    saved = null;
+  Future<void> saveIntentionAndAnswer({
+    required DateTime weekStart,
+    required String intention,
+  }) async {
+    saved = intention;
+    answeredWeekStart = weekStart;
   }
 
   @override

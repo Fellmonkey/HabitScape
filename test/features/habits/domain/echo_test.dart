@@ -183,4 +183,39 @@ void main() {
       );
     });
   });
+
+  group('selectEchoFeed', () {
+    test('falls back to familiar memories once everything was seen', () {
+      final today = DateTime.utc(2026, 3, 12);
+      final notes = [_note(DateTime.utc(2026, 3, 11), id: 1, moment: 'вчера')];
+      final seen = {notes.first.date};
+
+      final feed = selectEchoFeed(notes, today, seen: seen);
+
+      expect(feed.isEmpty, isFalse);
+      expect(feed.memories.single.note.date, notes.first.date);
+      expect(feed.hasAnyNote, isTrue);
+    });
+
+    test('unseen memories are returned as-is', () {
+      final today = DateTime.utc(2026, 3, 12);
+      final notes = [_note(DateTime.utc(2026, 3, 11), id: 1, moment: 'вчера')];
+
+      final feed = selectEchoFeed(notes, today, seen: const {});
+
+      expect(feed.isEmpty, isFalse);
+      expect(feed.memories.single.note.date, notes.first.date);
+    });
+
+    test('an empty archive stays empty even with seen dates', () {
+      final feed = selectEchoFeed(
+        const [],
+        DateTime.utc(2026, 3, 12),
+        seen: const {1},
+      );
+
+      expect(feed.isEmpty, isTrue);
+      expect(feed.hasAnyNote, isFalse);
+    });
+  });
 }

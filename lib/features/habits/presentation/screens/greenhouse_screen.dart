@@ -45,31 +45,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// Habit ids created in this session — they get a one-shot entrance.
   final Set<int> _enteringIds = <int>{};
 
-  bool _echoAtTop = true;
-
   @override
   String get tourScope => AppTourIds.greenhouse;
-
-  @override
-  void initState() {
-    super.initState();
-    _resolveEchoPlacement();
-  }
-
-  /// Resolves the echo placement once, after mount. The build method only
-  /// renders the decision; charging the weekly top quota happens at render —
-  /// in the top card's own mount callback (see [EchoCard.onMemoryShown]).
-  Future<void> _resolveEchoPlacement() async {
-    var atTop = true;
-    try {
-      final exposure = await ref.read(exposureProvider.future);
-      atTop = exposure.echoAtTop;
-    } catch (_) {
-      // Preferences unavailable — keep the default top placement.
-    }
-    if (!mounted) return;
-    setState(() => _echoAtTop = atTop);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +55,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final dayProgress = ref.watch(dayProgressProvider);
     final today = ref.watch(todayDateProvider);
     final theme = Theme.of(context);
+
+    // Echo placement is a provider decision, not a post-mount setState: the
+    // weekly top quota drives it reactively, and the card charges the quota
+    // itself on mount (see [EchoCard.atTop]).
+    final echoAtTop = ref.watch(exposureProvider).value?.echoAtTop ?? true;
 
     return Scaffold(
       body: SafeArea(
@@ -93,6 +75,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
               logs,
               dayProgress,
               today,
+              echoAtTop,
             );
           },
         ),
@@ -114,6 +97,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<HabitLog> logs,
     double dayProgress,
     DateTime today,
+    bool echoAtTop,
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. Logs are indexed by habit id so per-habit lookup is O(1).
@@ -186,19 +170,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        if (_echoAtTop)
-          SliverToBoxAdapter(
-            child: EchoCard(
-              onMemoryShown: () async {
-                try {
-                  final exposure = await ref.read(exposureProvider.future);
-                  await exposure.recordEchoTop();
-                } catch (_) {
-                  // Preferences unavailable — skip the quota charge.
-                }
-              },
-            ),
-          ),
+        if (echoAtTop) const SliverToBoxAdapter(child: EchoCard(atTop: true)),
 
         const SliverToBoxAdapter(child: WeekSummaryCard()),
 
@@ -222,7 +194,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         // -- Reflection block (bottom): goals first --
         const SliverToBoxAdapter(child: MonthGoalsCard()),
         const SliverToBoxAdapter(child: CapsuleCard()),
-        if (!_echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
+        if (!echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
       ],
     );
   }

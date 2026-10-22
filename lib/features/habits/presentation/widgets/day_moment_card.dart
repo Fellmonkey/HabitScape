@@ -403,6 +403,9 @@ class _SavedMoment extends StatelessWidget {
   }
 
   void _openSheet(BuildContext context, DayNote note) {
-    AppSheets.show(context, builder: (_) => DayMomentSheet(initial: note));
+    AppSheets.show(
+      context,
+      builder: (_) => DayMomentSheet(dateTimestamp: note.date),
+    );
   }
 }

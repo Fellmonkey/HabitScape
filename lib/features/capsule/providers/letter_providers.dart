@@ -72,11 +72,6 @@ class LetterActions extends Notifier<void> {
         .lettersDao
         .setReply(id, trimmed.isEmpty ? null : trimmed);
   }
-
-  /// Deletes a capsule.
-  Future<void> delete(int id) {
-    return ref.read(databaseProvider).lettersDao.deleteLetter(id);
-  }
 }
 
 final letterActionsProvider = NotifierProvider<LetterActions, void>(

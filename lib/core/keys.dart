@@ -17,7 +17,6 @@ abstract final class K {
   static const statsRhythm = Key('stats_rhythm');
 
   // ── Greenhouse screen ──────────────────────────────────────
-  static const greenhouseTitle = Key('greenhouse_title');
   static const fabCreateHabit = Key('fab_create_habit');
   static const progressRing = Key('progress_ring');
   static const hideCompletedToggle = Key('hide_completed_toggle');

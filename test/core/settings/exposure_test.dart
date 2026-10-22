@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/settings/exposure.dart';
+import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,6 +72,32 @@ void main() {
       expect(nextMonday.echoTopCount, 0);
       expect(nextMonday.echoAtTop, isTrue);
     });
+
+    test(
+      'recordEchoShown charges the cooldown and optionally the top quota',
+      () async {
+        final monday = DateTime.utc(2026, 10, 26);
+        final exposure = Exposure(prefs, today: monday);
+
+        await exposure.recordEchoShown(atTop: true);
+
+        expect(exposure.echoCardVisible, isFalse);
+        expect(exposure.echoTopCount, 1);
+        expect(prefs.getInt(Exposure.echoLastShownKey), monday.unixSeconds);
+      },
+    );
+
+    test(
+      'recordEchoShown with atTop:false never touches the weekly quota',
+      () async {
+        final exposure = Exposure(prefs, today: DateTime.utc(2026, 10, 26));
+
+        await exposure.recordEchoShown(atTop: false);
+
+        expect(exposure.echoCardVisible, isFalse);
+        expect(exposure.echoTopCount, 0);
+      },
+    );
   });
 
   group('echo cadence', () {

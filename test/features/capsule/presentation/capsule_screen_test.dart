@@ -26,9 +26,6 @@ class _FakeLetterActions extends LetterActions {
 
   @override
   Future<void> markOpened(int id) async {}
-
-  @override
-  Future<void> delete(int id) async {}
 }
 
 void main() {

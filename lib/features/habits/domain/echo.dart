@@ -88,3 +88,18 @@ List<EchoMemory> selectEchoMemories(
 
   return result;
 }
+
+/// Builds the card's feed: unseen memories first, and — once every date has
+/// been seen — familiar memories again instead of an empty card. The one
+/// place the "never show nothing" rule lives.
+EchoFeed selectEchoFeed(
+  List<DayNote> notes,
+  DateTime today, {
+  required Set<int> seen,
+}) {
+  var memories = selectEchoMemories(notes, today, exclude: seen);
+  if (memories.isEmpty && seen.isNotEmpty) {
+    memories = selectEchoMemories(notes, today);
+  }
+  return EchoFeed(memories: memories, hasAnyNote: notes.isNotEmpty);
+}

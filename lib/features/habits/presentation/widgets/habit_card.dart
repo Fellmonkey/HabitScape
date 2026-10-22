@@ -11,7 +11,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
-import '../../domain/scheduling.dart';
+import '../../../../core/domain/scheduling.dart';
 import '../../../../core/settings/today.dart';
 import '../../providers/habit_providers.dart';
 

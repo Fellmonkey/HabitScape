@@ -3,7 +3,7 @@ import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
 
-import '../../habits/domain/completion.dart';
+import '../../../core/domain/completion.dart';
 
 /// Insight: on fully-done days the mood is 🟢 in X% of cases; on empty days
 /// it's 🔴 in Y%. Pairs per-day completion with day mood.

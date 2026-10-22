@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/domain/completion.dart';
+import 'package:rythm/core/domain/completion.dart';
 
 import '../../../fixtures/test_factories.dart';
 
@@ -241,6 +244,103 @@ void main() {
         monthCompletionPct(days: days, today: DateTime.utc(2026, 1, 1)),
         100.0,
       );
+    });
+  });
+
+  group('invariant: day and habit measures never drift', () {
+    test('pooling days equals pooling habits on one window', () {
+      final jan1 = DateTime.utc(2026, 1, 1);
+      final habits = [
+        makeHabit(id: 1, frequencyType: 'daily', createdAt: jan1.unixSeconds),
+        makeHabit(
+          id: 2,
+          frequencyType: 'weekdays',
+          frequencyValue: '{"days":[1,2,3,4,5]}',
+          createdAt: jan1.unixSeconds,
+        ),
+        makeHabit(
+          id: 3,
+          frequencyType: 'daily',
+          createdAt: DateTime.utc(2026, 1, 8).unixSeconds,
+        ),
+      ];
+
+      // Deterministic pseudo-random logs: some off-schedule (a Saturday done
+      // for the weekdays habit), some after the window — both views must
+      // agree on what counts.
+      final rng = math.Random(7);
+      final logs = <HabitLog>[];
+      var logId = 0;
+      for (final habit in habits) {
+        for (var dayOffset = 0; dayOffset < 20; dayOffset++) {
+          final roll = rng.nextInt(100);
+          if (roll < 40) continue; // no log that day
+          logId++;
+          logs.add(
+            makeLog(
+              id: logId,
+              habitId: habit.id,
+              date: DateTime.utc(2026, 1, 1 + dayOffset).unixSeconds,
+              status: roll < 75 ? LogStatus.done : LogStatus.skip,
+            ),
+          );
+        }
+      }
+
+      final windowEnd = DateTime.utc(2026, 1, 15);
+      final days = computeDailyCompletion(
+        habits: habits,
+        logs: logs,
+        start: jan1,
+        end: windowEnd,
+      );
+
+      final fromDays = Completion.pool(days.map((d) => d.completion));
+      final fromHabits = Completion.pool([
+        for (final habit in habits)
+          habitCompletion(
+            habit: habit,
+            logs: logs,
+            start: jan1,
+            end: windowEnd,
+          ),
+      ]);
+
+      expect(fromDays.numerator, fromHabits.numerator);
+      expect(fromDays.expected, fromHabits.expected);
+      expect(fromDays.skipped, fromHabits.skipped);
+      expect(fromDays.percent, fromHabits.percent);
+    });
+
+    test('a log after the window never leaks into either view', () {
+      final habit = makeHabit(createdAt: DateTime.utc(2026, 1, 1).unixSeconds);
+      final logs = [
+        makeLog(
+          habitId: habit.id,
+          date: DateTime.utc(2026, 1, 10).unixSeconds,
+          status: LogStatus.done,
+        ),
+      ];
+      final start = DateTime.utc(2026, 1, 1);
+      final end = DateTime.utc(2026, 1, 9);
+
+      final days = computeDailyCompletion(
+        habits: [habit],
+        logs: logs,
+        start: start,
+        end: end,
+      );
+      final fromDays = Completion.pool(days.map((d) => d.completion));
+      final measure = habitCompletion(
+        habit: habit,
+        logs: logs,
+        start: start,
+        end: end,
+      );
+
+      expect(fromDays.numerator, measure.numerator);
+      expect(fromDays.expected, measure.expected);
+      expect(fromDays.skipped, measure.skipped);
     });
   });
 }

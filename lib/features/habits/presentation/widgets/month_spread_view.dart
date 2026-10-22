@@ -14,7 +14,7 @@ import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../onboarding/app_tours.dart';
-import '../../domain/completion.dart';
+import '../../../../core/domain/completion.dart';
 import 'month_goals_card.dart';
 
 /// The month spread composition: summary, calendar, goals, and moments.

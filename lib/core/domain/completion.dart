@@ -1,6 +1,6 @@
-import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
-import '../../../core/utils/date_helpers.dart';
+import '../database/app_database.dart';
+import '../database/enums.dart';
+import '../utils/date_helpers.dart';
 
 import 'scheduling.dart';
 
@@ -134,47 +134,21 @@ class DayCompletion {
 
 /// Computes per-day completion for [start, end) across all [habits].
 /// Pure — no DB access.
+///
+/// Thin view over the shared kernel: same rule, same pass as
+/// [habitCompletion], so pooled totals can never disagree with their parts.
 List<DayCompletion> computeDailyCompletion({
   required List<Habit> habits,
   required List<HabitLog> logs,
   required DateTime start,
   required DateTime end,
 }) {
-  final logsByDay = <int, List<HabitLog>>{}; // keyed by unix midnight
-  for (final log in logs) {
-    logsByDay.putIfAbsent(log.date, () => []).add(log);
-  }
-
-  final result = <DayCompletion>[];
-  var day = start.toMidnight;
-  while (day.isBefore(end.toMidnight)) {
-    var expected = 0;
-    var done = 0;
-    var skipped = 0;
-    final dayLogs = logsByDay[day.unixSeconds];
-    for (final habit in habits) {
-      // Never expect a habit before it was created.
-      if (day.isBefore(dateFromUnix(habit.createdAt).toMidnight)) continue;
-      if (!isExpectedToday(habit, day)) continue;
-      expected++;
-      final status = _statusFor(dayLogs, habit.id);
-      if (status == LogStatus.done) {
-        done++;
-      } else if (status == LogStatus.skip) {
-        skipped++;
-      }
-    }
-    result.add(
-      DayCompletion(
-        date: day,
-        expected: expected,
-        done: done,
-        skipped: skipped,
-      ),
-    );
-    day = day.add(const Duration(days: 1));
-  }
-  return result;
+  return _computeCompletion(
+    habits: habits,
+    logs: logs,
+    start: start,
+    end: end,
+  ).days;
 }
 
 LogStatus? _statusFor(List<HabitLog>? dayLogs, int habitId) {
@@ -199,36 +173,85 @@ Completion habitCompletion({
   required DateTime start,
   required DateTime end,
 }) {
+  return _computeCompletion(
+        habits: [habit],
+        logs: logs,
+        start: start,
+        end: end,
+      ).byHabit[habit.id] ??
+      Completion.empty;
+}
+
+/// The one loop behind every completion measure.
+///
+/// Walks [start, end) day by day and accumulates both the per-day counts
+/// (for heatmaps and the month spread) and the per-habit counts (for the
+/// habit engine and week summary) in a single pass, so the two views can
+/// never drift apart. The skip policy, the creation-day guard, and the
+/// on-schedule-only rule live here and nowhere else.
+({List<DayCompletion> days, Map<int, Completion> byHabit}) _computeCompletion({
+  required List<Habit> habits,
+  required List<HabitLog> logs,
+  required DateTime start,
+  required DateTime end,
+}) {
   final logsByDay = <int, List<HabitLog>>{}; // keyed by unix midnight
   for (final log in logs) {
     logsByDay.putIfAbsent(log.date, () => []).add(log);
   }
 
-  var expected = 0;
-  var done = 0;
-  var skipped = 0;
+  final habitCounts = <int, _HabitCounts>{};
+
+  final days = <DayCompletion>[];
   var day = start.toMidnight;
-  final endMidnight = end.toMidnight;
-  while (day.isBefore(endMidnight)) {
-    // Never expect a habit before it was created.
-    if (!day.isBefore(dateFromUnix(habit.createdAt).toMidnight) &&
-        isExpectedToday(habit, day)) {
+  while (day.isBefore(end.toMidnight)) {
+    var expected = 0;
+    var done = 0;
+    var skipped = 0;
+    final dayLogs = logsByDay[day.unixSeconds];
+    for (final habit in habits) {
+      // Never expect a habit before it was created.
+      if (day.isBefore(dateFromUnix(habit.createdAt).toMidnight)) continue;
+      if (!isExpectedToday(habit, day)) continue;
       expected++;
-      final status = _statusFor(logsByDay[day.unixSeconds], habit.id);
+      final counts = habitCounts.putIfAbsent(habit.id, _HabitCounts.new);
+      counts.expected++;
+      final status = _statusFor(dayLogs, habit.id);
       if (status == LogStatus.done) {
         done++;
+        counts.done++;
       } else if (status == LogStatus.skip) {
         skipped++;
+        counts.skipped++;
       }
     }
+    days.add(
+      DayCompletion(
+        date: day,
+        expected: expected,
+        done: done,
+        skipped: skipped,
+      ),
+    );
     day = day.add(const Duration(days: 1));
   }
 
-  return Completion.fromCounts(
-    done: done,
-    expected: expected,
-    skipped: skipped,
-  );
+  final byHabit = <int, Completion>{
+    for (final entry in habitCounts.entries)
+      entry.key: Completion.fromCounts(
+        done: entry.value.done,
+        expected: entry.value.expected,
+        skipped: entry.value.skipped,
+      ),
+  };
+  return (days: days, byHabit: byHabit);
+}
+
+/// Raw per-habit counters accumulated while walking the days.
+class _HabitCounts {
+  int expected = 0;
+  int done = 0;
+  int skipped = 0;
 }
 
 /// One day of the month spread: completion + mood + time quality

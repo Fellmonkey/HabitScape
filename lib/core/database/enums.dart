@@ -21,8 +21,10 @@ enum TimeOfDay {
   evening,
   anytime;
 
-  static TimeOfDay fromString(String value) =>
-      TimeOfDay.values.firstWhere((e) => e.name == value);
+  static TimeOfDay fromString(String value) => TimeOfDay.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => TimeOfDay.anytime,
+  );
 }
 
 /// Icon stored on a habit; unknown legacy values fall back to [HabitIcon.check].
@@ -125,11 +127,4 @@ enum TimeQuality {
 
   /// Stored int value (1–5).
   final int value;
-
-  static TimeQuality? fromValue(int? value) => value == null
-      ? null
-      : TimeQuality.values.firstWhere(
-          (e) => e.value == value,
-          orElse: () => TimeQuality.normal,
-        );
 }
