@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/config/app_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/daos/day_notes_dao.dart';
@@ -13,6 +12,7 @@ import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/domain/completion.dart';
 import '../domain/day_moment_draft.dart';
+import '../domain/focus_policy.dart';
 import '../domain/habit_engine.dart';
 import '../../../core/domain/scheduling.dart';
 
@@ -240,11 +240,12 @@ class HabitActions extends Notifier<void> {
   Future<bool> setFocus(int habitId, {required bool isFocus}) {
     final db = ref.read(databaseProvider);
     return db.transaction(() async {
-      if (isFocus) {
-        final current = await _habitsDao.countFocusHabits();
-        if (current >= AppConstants.maxFocusHabits) {
-          return false;
-        }
+      final current = isFocus ? await _habitsDao.countFocusHabits() : 0;
+      if (!FocusPolicy.canSetFocus(
+        currentFocusCount: current,
+        isFocus: isFocus,
+      )) {
+        return false;
       }
       await _habitsDao.toggleFocus(habitId, isFocus: isFocus);
       return true;
