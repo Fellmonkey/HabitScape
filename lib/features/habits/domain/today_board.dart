@@ -23,12 +23,18 @@ class TodayGroup {
 /// first, then morning / afternoon / evening / anytime, then anything not
 /// scheduled today.
 ///
+/// When [hideCompleted] is set, habits with a `done` log in [logs] are
+/// dropped from their section, and sections left empty are omitted — the
+/// same view the screen renders with the toggle on.
+///
 /// Pure — no DB, no clock ([today] is passed in so tests can pin it). Owns
-/// the single definition of the board's ordering and which sections get a
-/// "mark all" affordance.
+/// the single definition of the board's ordering, which sections get a
+/// "mark all" affordance, and what the hide-completed view shows.
 List<TodayGroup> groupToday({
   required List<Habit> habits,
   required DateTime today,
+  List<HabitLog> logs = const [],
+  bool hideCompleted = false,
 }) {
   final focus = <Habit>[];
   final morning = <Habit>[];
@@ -58,7 +64,7 @@ List<TodayGroup> groupToday({
     }
   }
 
-  return [
+  final groups = [
     if (focus.isNotEmpty)
       TodayGroup(kind: TodayGroupKind.focus, habits: focus, canMarkAll: false),
     if (morning.isNotEmpty)
@@ -92,4 +98,25 @@ List<TodayGroup> groupToday({
         canMarkAll: false,
       ),
   ];
+
+  if (!hideCompleted) return groups;
+
+  final logByHabit = {for (final l in logs) l.habitId: l};
+  final visible = <TodayGroup>[];
+  for (final group in groups) {
+    final kept = group.habits.where((h) {
+      final log = logByHabit[h.id];
+      return log == null || log.status != LogStatus.done;
+    }).toList();
+    if (kept.isNotEmpty) {
+      visible.add(
+        TodayGroup(
+          kind: group.kind,
+          habits: kept,
+          canMarkAll: group.canMarkAll,
+        ),
+      );
+    }
+  }
+  return visible;
 }
