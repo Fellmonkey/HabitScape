@@ -8,7 +8,7 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/widgets/day_moment_card.dart';
-import 'package:rythm/features/habits/providers/habit_providers.dart';
+import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

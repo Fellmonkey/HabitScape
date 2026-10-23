@@ -8,7 +8,7 @@ import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
-import 'package:rythm/features/habits/providers/habit_providers.dart';
+import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
