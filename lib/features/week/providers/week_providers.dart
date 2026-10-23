@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/database/history_store_provider.dart';
-import '../../../core/settings/shared_prefs.dart';
 import '../../../core/settings/today.dart';
+import '../../../core/settings/week_answer.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../domain/week_summary.dart';
-
-const _answeredWeekKey = 'week_summary_answered_week';
 
 // ── Streams ──────────────────────────────────────────────────
 
@@ -47,13 +45,13 @@ final weekSummaryProvider = FutureProvider<WeekSummaryView>((ref) async {
     today: today,
     weekStart: weekStart,
   );
-  final prefs = await ref.watch(sharedPrefsProvider.future);
+  final store = await ref.watch(weekAnswerStoreProvider.future);
 
   return WeekSummaryView(
     weekStart: weekStart,
     summary: summary,
     isWindowOpen: isWeekSummaryWindow(today),
-    isAnswered: prefs.getInt(_answeredWeekKey) == weekStart.unixSeconds,
+    isAnswered: store.lastAnsweredWeek == weekStart.unixSeconds,
   );
 });
 
@@ -89,8 +87,8 @@ class WeekIntentionActions extends Notifier<void> {
   /// Records that the user answered the closing [weekStart] — saved an
   /// intention or skipped it. This is the only writer of the answered marker.
   Future<void> answerWeek(DateTime weekStart) async {
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    await prefs.setInt(_answeredWeekKey, weekStart.unixSeconds);
+    final store = await ref.read(weekAnswerStoreProvider.future);
+    await store.markAnswered(weekStart);
   }
 }
 

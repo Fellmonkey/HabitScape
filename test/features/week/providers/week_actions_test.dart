@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
+import 'package:rythm/core/settings/week_answer.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,6 +43,7 @@ void main() {
     expect(saved?.intention, 'Бег по вторникам');
 
     // The answered marker is written for the closing week, not the current one.
-    expect(prefs.getInt('week_summary_answered_week'), closingWeek.unixSeconds);
+    final store = WeekAnswerStore(prefs);
+    expect(store.lastAnsweredWeek, closingWeek.unixSeconds);
   });
 }
