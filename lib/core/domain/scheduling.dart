@@ -320,21 +320,21 @@ class CycleFrequency extends HabitFrequency {
 bool isExpectedToday(Habit habit, DateTime today) {
   return isExpectedOn(
     frequency: HabitFrequency.fromHabit(habit),
-    createdAt: habit.createdAt,
+    createdAt: dateFromUnix(habit.createdAt),
     today: today,
   );
 }
 
 /// Whether a habit with the given [frequency] is expected on [today].
+///
+/// The interface speaks `DateTime` throughout: raw stored unix seconds are
+/// converted where they enter (see [isExpectedToday]).
 bool isExpectedOn({
   required HabitFrequency frequency,
-  required int createdAt,
+  required DateTime createdAt,
   required DateTime today,
 }) {
-  return frequency.isExpectedOn(
-    createdAt: dateFromUnix(createdAt),
-    today: today,
-  );
+  return frequency.isExpectedOn(createdAt: createdAt, today: today);
 }
 
 /// Required base for a habit in a month, accounting for creation date.

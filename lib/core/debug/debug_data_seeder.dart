@@ -616,7 +616,7 @@ class DebugDataSeeder {
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {
     return isExpectedOn(
       frequency: meta.freq.frequency,
-      createdAt: meta.createdAt.unixSeconds,
+      createdAt: meta.createdAt,
       today: date,
     );
   }
