@@ -6,7 +6,9 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
-import '../../providers/habit_providers.dart';
+import '../../../../shared/widgets/confirm_delete_dialog.dart';
+import '../../providers/habit_actions.dart';
+import '../../providers/habit_streams.dart';
 
 /// Lists archived habits; users can restore or permanently delete them.
 class ArchivedHabitsScreen extends ConsumerWidget {
@@ -139,29 +141,7 @@ class _ArchivedHabitTile extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Удалить привычку?'),
-        content: Text(
-          '«${habit.name}» будет удалена навсегда, включая всю историю. '
-          'Это нельзя отменить.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
+    final confirmed = await confirmDeleteHabit(context, habitName: habit.name);
 
     if (confirmed != true || !context.mounted) return;
     await ref

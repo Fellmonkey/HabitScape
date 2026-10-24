@@ -7,8 +7,11 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_sheets.dart';
+import '../../../../shared/widgets/confirm_delete_dialog.dart';
 
-import '../../providers/habit_providers.dart';
+import '../../providers/habit_actions.dart';
+import '../../providers/habit_metrics_providers.dart';
+import '../../providers/habit_streams.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/habit_info_row.dart';
 import '../widgets/history_sliver.dart';
@@ -253,22 +256,9 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         if (context.mounted) nav.pop();
         return;
       case 'delete':
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Удалить привычку?'),
-            content: const Text('Это действие нельзя отменить.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Отмена'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Удалить'),
-              ),
-            ],
-          ),
+        final confirmed = await confirmDeleteHabit(
+          context,
+          habitName: habit.name,
         );
         if (confirmed == true) {
           await actions.setLifecycle(habitId, HabitLifecycle.delete);
