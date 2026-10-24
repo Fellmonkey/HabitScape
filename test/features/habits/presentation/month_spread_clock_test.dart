@@ -44,11 +44,9 @@ void main() {
           theme: AppTheme.light,
           home: Scaffold(
             body: SingleChildScrollView(
-              child: MonthSpreadView(
+              child: MonthSpreadCaptureView(
                 days: days,
                 monthTs: monthStart.unixSeconds,
-                onDayTap: (_) {},
-                capture: true,
               ),
             ),
           ),

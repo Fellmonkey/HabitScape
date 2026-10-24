@@ -11,7 +11,7 @@ import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../core/settings/today.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/month_spread_providers.dart';
 import '../month_spread_exporter.dart';
 import '../widgets/day_moment_sheet.dart';
 import '../widgets/month_spread_view.dart';
@@ -183,12 +183,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     try {
       bytes = await exporter.capturePng(
         context,
-        MonthSpreadView(
-          days: days,
-          monthTs: _monthTs,
-          onDayTap: (_) {},
-          capture: true,
-        ),
+        MonthSpreadCaptureView(days: days, monthTs: _monthTs),
         width: width,
       );
     } catch (_) {

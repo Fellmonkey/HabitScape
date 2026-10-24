@@ -17,45 +17,33 @@ import '../../../onboarding/app_tours.dart';
 import '../../../../core/domain/completion.dart';
 import 'month_goals_card.dart';
 
-/// The month spread composition: summary, calendar, goals, and moments.
+/// The live month spread composition: summary, calendar, goals, and moments.
 ///
-/// The screen and the PNG exporter render the same sections; [capture] only
-/// turns off interaction, onboarding targets, test keys, and the goals card.
+/// The PNG exporter renders the same sections through [MonthSpreadCaptureView];
+/// both share the private section primitives below.
 class MonthSpreadView extends ConsumerWidget {
   const MonthSpreadView({
     required this.days,
     required this.monthTs,
     required this.onDayTap,
-    this.capture = false,
     super.key,
   });
 
   final List<MonthSpreadDay> days;
   final int monthTs;
   final ValueChanged<DateTime> onDayTap;
-  final bool capture;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final today = ref.watch(todayDateProvider);
-    final sections = _sections(context, today);
-
-    if (capture) {
-      final theme = Theme.of(context);
-      return Container(
-        color: theme.scaffoldBackgroundColor,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            for (final section in sections) section,
-            const SizedBox(height: 24),
-          ],
-        ),
-      );
-    }
+    final sections = _sections(
+      context,
+      today,
+      _SectionStyle.live,
+      days: days,
+      monthTs: monthTs,
+      onDayTap: onDayTap,
+    );
 
     return CustomScrollView(
       slivers: [
@@ -63,61 +51,157 @@ class MonthSpreadView extends ConsumerWidget {
       ],
     );
   }
+}
 
-  List<Widget> _sections(BuildContext context, DateTime today) {
+/// The PNG-export rendering of the month spread: the same sections with no
+/// interaction, onboarding targets, test keys, or the goals card.
+class MonthSpreadCaptureView extends ConsumerWidget {
+  const MonthSpreadCaptureView({
+    required this.days,
+    required this.monthTs,
+    super.key,
+  });
+
+  final List<MonthSpreadDay> days;
+  final int monthTs;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final moments = days.where((d) => d.hasMoment).toList();
+    final today = ref.watch(todayDateProvider);
+    final sections = _sections(
+      context,
+      today,
+      _SectionStyle.capture,
+      days: days,
+      monthTs: monthTs,
+      onDayTap: (_) {},
+    );
 
-    return [
-      Padding(
-        padding: capture
-            ? EdgeInsets.zero
-            : const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        child: _MonthSummary(days: days, today: today),
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          for (final section in sections) section,
+          const SizedBox(height: 24),
+        ],
       ),
-      if (capture) ...[
-        const SizedBox(height: 12),
-        _CalendarGrid(
+    );
+  }
+}
+
+/// Layout differences between the live screen and the PNG exporter.
+class _SectionStyle {
+  const _SectionStyle({
+    required this.summaryInsets,
+    required this.gridKey,
+    required this.debugDayKeys,
+    required this.wrapGridInHint,
+    required this.includeGoals,
+    required this.momentsTitleInsets,
+    required this.momentsListInsets,
+    required this.momentsKey,
+    required this.preMomentsGap,
+  });
+
+  final EdgeInsets summaryInsets;
+  final Key gridKey;
+  final bool debugDayKeys;
+  final bool wrapGridInHint;
+  final bool includeGoals;
+  final EdgeInsets momentsTitleInsets;
+  final EdgeInsets momentsListInsets;
+  final Key? momentsKey;
+  final double preMomentsGap;
+
+  static const live = _SectionStyle(
+    summaryInsets: EdgeInsets.fromLTRB(20, 8, 20, 8),
+    gridKey: K.monthSpreadGrid,
+    debugDayKeys: true,
+    wrapGridInHint: true,
+    includeGoals: true,
+    momentsTitleInsets: EdgeInsets.fromLTRB(20, 8, 20, 4),
+    momentsListInsets: EdgeInsets.fromLTRB(20, 0, 20, 24),
+    momentsKey: K.monthSpreadMoments,
+    preMomentsGap: 0,
+  );
+
+  static const capture = _SectionStyle(
+    summaryInsets: EdgeInsets.zero,
+    gridKey: Key('month_spread_grid_capture'),
+    debugDayKeys: false,
+    wrapGridInHint: false,
+    includeGoals: false,
+    momentsTitleInsets: EdgeInsets.zero,
+    momentsListInsets: EdgeInsets.zero,
+    momentsKey: null,
+    preMomentsGap: 8,
+  );
+}
+
+List<Widget> _sections(
+  BuildContext context,
+  DateTime today,
+  _SectionStyle style, {
+  required List<MonthSpreadDay> days,
+  required int monthTs,
+  required ValueChanged<DateTime> onDayTap,
+}) {
+  final theme = Theme.of(context);
+  final moments = days.where((d) => d.hasMoment).toList();
+
+  return [
+    Padding(
+      padding: style.summaryInsets,
+      child: _MonthSummary(days: days, today: today),
+    ),
+    if (style.wrapGridInHint)
+      HintTarget(
+        id: AppHintIds.spreadGrid,
+        child: _CalendarGrid(
           days: days,
           today: today,
-          onDayTap: (_) {},
-          gridKey: const Key('month_spread_grid_capture'),
-          debugDayKeys: false,
+          onDayTap: onDayTap,
+          gridKey: style.gridKey,
+          debugDayKeys: style.debugDayKeys,
         ),
-      ] else
-        HintTarget(
-          id: AppHintIds.spreadGrid,
-          child: _CalendarGrid(days: days, today: today, onDayTap: onDayTap),
-        ),
-      if (!capture) MonthGoalsCard(monthTs: monthTs),
-      if (moments.isNotEmpty) ...[
-        if (capture) const SizedBox(height: 8),
-        Padding(
-          padding: capture
-              ? EdgeInsets.zero
-              : const EdgeInsets.fromLTRB(20, 8, 20, 4),
-          child: Text(
-            'Моменты месяца',
-            key: capture ? null : K.monthSpreadMoments,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
+      )
+    else
+      _CalendarGrid(
+        days: days,
+        today: today,
+        onDayTap: onDayTap,
+        gridKey: style.gridKey,
+        debugDayKeys: style.debugDayKeys,
+      ),
+    if (style.includeGoals) MonthGoalsCard(monthTs: monthTs),
+    if (moments.isNotEmpty) ...[
+      if (style.preMomentsGap != 0) SizedBox(height: style.preMomentsGap),
+      Padding(
+        padding: style.momentsTitleInsets,
+        child: Text(
+          'Моменты месяца',
+          key: style.momentsKey,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.primary,
           ),
         ),
-        Padding(
-          padding: capture
-              ? EdgeInsets.zero
-              : const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            children: [
-              for (final day in moments)
-                _MomentRow(day: day, onTap: () => onDayTap(day.date)),
-            ],
-          ),
+      ),
+      Padding(
+        padding: style.momentsListInsets,
+        child: Column(
+          children: [
+            for (final day in moments)
+              _MomentRow(day: day, onTap: () => onDayTap(day.date)),
+          ],
         ),
-      ],
-    ];
-  }
+      ),
+    ],
+  ];
 }
 
 // ── Month summary ─────────────────────────────────────────────
