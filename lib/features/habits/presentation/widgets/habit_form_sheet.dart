@@ -12,7 +12,7 @@ import 'icon_picker.dart';
 import '../../domain/habit_templates.dart';
 import '../../../../core/domain/scheduling.dart';
 import '../../../../core/settings/today.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/habit_actions.dart';
 
 class HabitFormSheet extends ConsumerStatefulWidget {
   const HabitFormSheet({super.key, this.habit});

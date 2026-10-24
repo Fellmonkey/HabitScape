@@ -12,7 +12,6 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../../../core/settings/today.dart';
-import '../../providers/habit_providers.dart';
 import '../../providers/month_goal_providers.dart';
 
 /// Month goals — things to achieve this month, with checkboxes.

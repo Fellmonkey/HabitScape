@@ -9,7 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/habit_metrics_providers.dart';
 
 /// One month of a habit's check-offs as a calendar grid, coloured by status.
 class MonthHeatmap extends ConsumerWidget {

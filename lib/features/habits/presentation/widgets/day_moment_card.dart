@@ -13,7 +13,8 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/app_tours.dart';
 import '../../domain/day_moment_draft.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/day_note_providers.dart';
+import '../../providers/habit_actions.dart';
 import 'day_moment_sheet.dart';
 
 /// Greenhouse card for today's day moment.

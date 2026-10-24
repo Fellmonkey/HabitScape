@@ -16,7 +16,9 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/today_board.dart';
 import '../../../../core/settings/today.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/habit_actions.dart';
+import '../../providers/habit_metrics_providers.dart';
+import '../../providers/habit_streams.dart';
 import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';

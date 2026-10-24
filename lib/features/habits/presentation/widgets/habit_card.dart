@@ -13,7 +13,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/domain/scheduling.dart';
 import '../../../../core/settings/today.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/habit_actions.dart';
 
 /// A single habit row in the Greenhouse list: tap the check circle to mark
 /// done, tap the card to open details.

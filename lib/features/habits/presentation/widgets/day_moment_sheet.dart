@@ -14,7 +14,8 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/day_moment_draft.dart';
-import '../../providers/habit_providers.dart';
+import '../../providers/day_note_providers.dart';
+import '../../providers/habit_actions.dart';
 
 /// Bottom sheet for editing the day moment: the memorable moment of a
 /// day + the day mood (🟢 good / 🟡 so-so / 🔴 bad).
