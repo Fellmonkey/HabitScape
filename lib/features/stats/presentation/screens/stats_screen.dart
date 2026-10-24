@@ -8,6 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/utils/time_bucket.dart';
+import '../../domain/mood_correlation.dart';
+import '../../domain/rhythm_stats.dart';
 import '../../domain/stats_engine.dart';
 import '../../../../core/domain/completion.dart';
 import '../../providers/stats_providers.dart';
