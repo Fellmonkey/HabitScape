@@ -51,19 +51,52 @@ class HeatmapLayout {
   );
 }
 
-/// The five heatmap intensity tiers — the single source for both the painter
-/// and the legend, so they can never disagree about how many steps exist.
-const heatmapIntensityTiers = <double>[0.08, 0.35, 0.6, 0.85, 1.0];
+/// One heatmap intensity step: the completion-ratio band it covers and the
+/// alpha of the fill it uses on its base colour.
+class HeatmapIntensityStep {
+  const HeatmapIntensityStep({required this.upTo, required this.alpha});
 
-/// Cell color for a day's completion [ratio].
+  /// Upper bound of the ratio band. Inclusive for the first (empty) step,
+  /// exclusive for every later step.
+  final double upTo;
+
+  /// Fill alpha used by this step (1.0 switches to the full glow).
+  final double alpha;
+}
+
+/// The five heatmap intensity tiers — the single source for both the painter
+/// and the legend, so they can never disagree about how many steps exist or
+/// where one band ends and the next begins.
+const heatmapIntensityTiers = <HeatmapIntensityStep>[
+  HeatmapIntensityStep(upTo: 0.0, alpha: 0.08),
+  HeatmapIntensityStep(upTo: 0.25, alpha: 0.35),
+  HeatmapIntensityStep(upTo: 0.5, alpha: 0.6),
+  HeatmapIntensityStep(upTo: 0.75, alpha: 0.85),
+  HeatmapIntensityStep(upTo: 1.0, alpha: 1.0),
+];
+
+/// Cell color for a day's completion [ratio] — derived from the single tier
+/// list, so the painter can never disagree with the legend about how many
+/// steps exist. The empty tier paints [onSurface] faintly; the top tier
+/// switches to the full glow; everything in between tints sage green.
 Color heatmapCellColor(double ratio, {required Color onSurface}) {
-  if (ratio <= 0.0) {
-    return onSurface.withValues(alpha: 0.08);
+  var tierIndex = 0;
+  while (tierIndex < heatmapIntensityTiers.length - 1) {
+    final step = heatmapIntensityTiers[tierIndex];
+    final occupies = tierIndex == 0 ? ratio <= step.upTo : ratio < step.upTo;
+    if (occupies) break;
+    tierIndex++;
   }
-  if (ratio < 0.25) return AppColors.sageGreen.withValues(alpha: 0.35);
-  if (ratio < 0.5) return AppColors.sageGreen.withValues(alpha: 0.6);
-  if (ratio < 0.75) return AppColors.sageGreen.withValues(alpha: 0.85);
-  return AppColors.emeraldGlow;
+  return _tierFill(tierIndex, onSurface: onSurface);
+}
+
+Color _tierFill(int tierIndex, {required Color onSurface}) {
+  final alpha = heatmapIntensityTiers[tierIndex].alpha;
+  if (tierIndex == 0) return onSurface.withValues(alpha: alpha);
+  if (tierIndex == heatmapIntensityTiers.length - 1) {
+    return AppColors.emeraldGlow;
+  }
+  return AppColors.sageGreen.withValues(alpha: alpha);
 }
 
 /// GitHub-style heatmap: 7 weekday rows × N week columns, each cell colored
@@ -271,17 +304,13 @@ class HeatmapLegend extends StatelessWidget {
       children: [
         Text('Меньше', style: theme.textTheme.labelSmall),
         const SizedBox(width: 6),
-        for (final alpha in heatmapIntensityTiers) ...[
+        for (var i = 0; i < heatmapIntensityTiers.length; i++) ...[
           Container(
             width: 10,
             height: 10,
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
-              color: alpha == 1.0
-                  ? AppColors.emeraldGlow
-                  : alpha == 0.08
-                  ? theme.colorScheme.onSurface.withValues(alpha: 0.08)
-                  : AppColors.sageGreen.withValues(alpha: alpha),
+              color: _tierFill(i, onSurface: theme.colorScheme.onSurface),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

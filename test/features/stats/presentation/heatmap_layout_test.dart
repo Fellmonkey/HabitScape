@@ -37,7 +37,21 @@ void main() {
     });
 
     test('heatmapIntensityTiers is the shared five-step scale', () {
-      expect(heatmapIntensityTiers, [0.08, 0.35, 0.6, 0.85, 1.0]);
+      expect(heatmapIntensityTiers, hasLength(5));
+      expect(heatmapIntensityTiers.map((s) => s.alpha), [
+        0.08,
+        0.35,
+        0.6,
+        0.85,
+        1.0,
+      ]);
+      expect(heatmapIntensityTiers.map((s) => s.upTo), [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+      ]);
     });
   });
 
@@ -64,6 +78,32 @@ void main() {
       expect(
         heatmapCellColor(1.0, onSurface: onSurface),
         AppColors.emeraldGlow,
+      );
+    });
+
+    test('band boundaries land on the next tier, not the previous one', () {
+      expect(
+        heatmapCellColor(0.25, onSurface: onSurface),
+        AppColors.sageGreen.withValues(alpha: 0.6),
+      );
+      expect(
+        heatmapCellColor(0.5, onSurface: onSurface),
+        AppColors.sageGreen.withValues(alpha: 0.85),
+      );
+      expect(
+        heatmapCellColor(0.75, onSurface: onSurface),
+        AppColors.emeraldGlow,
+      );
+      expect(
+        heatmapCellColor(0.1, onSurface: onSurface),
+        AppColors.sageGreen.withValues(alpha: 0.35),
+      );
+    });
+
+    test('negative ratios read as empty (first tier)', () {
+      expect(
+        heatmapCellColor(-0.5, onSurface: onSurface),
+        onSurface.withValues(alpha: 0.08),
       );
     });
   });
