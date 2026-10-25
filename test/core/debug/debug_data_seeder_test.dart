@@ -2,14 +2,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/debug/debug_data_seeder.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/domain/completion.dart';
 
 import '../../fixtures/test_db.dart';
 
+/// A clock pinned to a fixed instant — proves the seeder anchors to the
+/// clock seam instead of the wall clock.
+class _FakeClock implements Clock {
+  _FakeClock(this._now);
+
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
+}
+
 void main() {
   group('DebugDataSeeder — настроение', () {
     late AppDatabase db;
+    final pinned = DateTime.utc(2026, 10, 15, 14, 30);
 
     setUp(() {
       db = createTestDatabase();
@@ -21,8 +34,9 @@ void main() {
 
     test('generates day notes with moods correlated to completion', () async {
       // Seed twice — the second run must wipe the first run's notes too.
-      await DebugDataSeeder(db).seed(debugScenarios.first);
-      await DebugDataSeeder(db).seed(debugScenarios.first);
+      final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+      await seeder.seed(debugScenarios.first);
+      await seeder.seed(debugScenarios.first);
 
       final notes = await db.dayNotesDao.getAllNotes();
       expect(notes, isNotEmpty);
@@ -43,8 +57,9 @@ void main() {
       expect(qualities, isNotEmpty);
       expect(qualities.every((q) => q >= 1 && q <= 5), isTrue);
 
-      // Today is the user's live day note — never pre-filled.
-      final today = DateTime.now().toMidnight;
+      // Today (the pinned clock day) is the user's live day note — never
+      // pre-filled.
+      final today = pinned.toMidnight;
       expect(notes.where((n) => n.date == today.unixSeconds), isEmpty);
 
       // The current month gets month goals.

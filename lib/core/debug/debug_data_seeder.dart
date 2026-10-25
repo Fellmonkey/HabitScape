@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/database_reset.dart';
 import '../database/enums.dart';
+import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 import '../domain/scheduling.dart';
 
@@ -234,9 +235,15 @@ final _freqTemplates = [
 /// Seeds the database with realistic data for a [DebugScenario].
 /// **Wipes all existing data** first.
 class DebugDataSeeder {
-  DebugDataSeeder(this.db);
+  DebugDataSeeder(this.db, {Clock clock = const SystemClock()})
+    : _clock = clock;
 
   final AppDatabase db;
+  final Clock _clock;
+
+  /// The "today" this seeder anchors to — the clock seam, never a hidden
+  /// `DateTime.now()`, so seeded scenarios are reproducible and pin-able.
+  DateTime get _todayMidnight => _clock.now().toMidnight;
 
   /// Clears the database and populates it with the given scenario.
   /// Returns the number of habits created.
@@ -245,7 +252,7 @@ class DebugDataSeeder {
     await DatabaseReset(db).all();
 
     final rng = Random(scenario.habitCount * 1000 + scenario.months);
-    final now = DateTime.now().toMidnight;
+    final now = _todayMidnight;
     // Per-day done/expected counts across all habits — feeds the mood notes.
     final dayAgg = <int, _DayAgg>{};
 
@@ -487,7 +494,7 @@ class DebugDataSeeder {
 
   /// Seeds a capsule that opens today — for verifying the Day-X letter flow.
   Future<void> seedCapsuleDueToday() async {
-    final now = DateTime.now().toMidnight;
+    final now = _todayMidnight;
     await db.lettersDao.addLetter(
       deliverAt: now.unixSeconds,
       body: 'Привет из прошлого! Это письмо ты написал себе — и вот день X.',
@@ -497,7 +504,7 @@ class DebugDataSeeder {
 
   /// Seeds a locked capsule that opens in a month — for verifying the closed card.
   Future<void> seedCapsuleLocked() async {
-    final now = DateTime.now().toMidnight;
+    final now = _todayMidnight;
     await db.lettersDao.addLetter(
       deliverAt: shiftMonths(now, 1).unixSeconds,
       body: 'Секретное письмо будущему себе.',
@@ -509,7 +516,7 @@ class DebugDataSeeder {
   /// moods, logs and a saved previous-week intention, so the card renders its
   /// full analysis + reminder state.
   Future<void> seedWeekSummary() async {
-    final now = DateTime.now().toMidnight;
+    final now = _todayMidnight;
     final start = weekStartOf(now);
     final rng = Random(42);
 
