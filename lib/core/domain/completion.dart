@@ -316,6 +316,47 @@ double? monthCompletionPct({
   return Completion.pool(elapsed.map((day) => day.completion)).percent;
 }
 
+/// Aggregated header stats for the month spread: completion over elapsed
+/// days, mood counts, and how many day moments were written.
+///
+/// Computed once per month window (in the spread provider), so the header
+/// widget renders numbers instead of deriving them.
+class MonthSpreadSummary {
+  const MonthSpreadSummary({
+    required this.completionPct,
+    required this.moodCounts,
+    required this.momentsCount,
+  });
+
+  /// Completion % over the elapsed days (null when nothing was expected).
+  final double? completionPct;
+
+  /// Count per mood across the window.
+  final Map<DayMood, int> moodCounts;
+
+  /// Days with a written moment line.
+  final int momentsCount;
+}
+
+/// Builds [MonthSpreadSummary] from one month's days. Pure — no DB access.
+MonthSpreadSummary summarizeMonthSpread({
+  required List<MonthSpreadDay> days,
+  required DateTime today,
+}) {
+  final moodCounts = <DayMood, int>{for (final m in DayMood.values) m: 0};
+  var moments = 0;
+  for (final d in days) {
+    final mood = d.mood;
+    if (mood != null) moodCounts[mood] = moodCounts[mood]! + 1;
+    if (d.hasMoment) moments++;
+  }
+  return MonthSpreadSummary(
+    completionPct: monthCompletionPct(days: days, today: today),
+    moodCounts: moodCounts,
+    momentsCount: moments,
+  );
+}
+
 /// Builds the month-spread days for one month from raw DAO data.
 /// Pure — no DB access. Empty days stay present so the grid stays dense.
 List<MonthSpreadDay> computeMonthSpreadDays({

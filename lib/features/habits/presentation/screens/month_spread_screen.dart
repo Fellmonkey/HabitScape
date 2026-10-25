@@ -14,6 +14,7 @@ import '../../../../core/settings/today.dart';
 import '../../providers/month_spread_providers.dart';
 import '../month_spread_exporter.dart';
 import '../widgets/day_moment_sheet.dart';
+import '../widgets/month_spread_capture_view.dart';
 import '../widgets/month_spread_view.dart';
 
 /// Month spread — the history screen: a calendar week-grid with mood
@@ -84,6 +85,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     ref.watch(todayDateProvider); // keep «today» frame correct across midnight
     final theme = Theme.of(context);
     final daysAsync = ref.watch(monthSpreadProvider(_monthTs));
+    final summary = ref.watch(monthSpreadSummaryProvider(_monthTs));
 
     return Scaffold(
       appBar: AppBar(
@@ -150,6 +152,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
               data: (days) => MonthSpreadView(
                 days: days,
                 monthTs: _monthTs,
+                summary: summary,
                 onDayTap: _openDay,
               ),
             ),
@@ -178,12 +181,13 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     if (days == null || !mounted) return;
 
     final exporter = ref.read(monthSpreadExporterProvider);
+    final summary = ref.read(monthSpreadSummaryProvider(_monthTs));
     final width = MediaQuery.sizeOf(context).width;
     Uint8List? bytes;
     try {
       bytes = await exporter.capturePng(
         context,
-        MonthSpreadCaptureView(days: days, monthTs: _monthTs),
+        MonthSpreadCaptureView(days: days, monthTs: _monthTs, summary: summary),
         width: width,
       );
     } catch (_) {
