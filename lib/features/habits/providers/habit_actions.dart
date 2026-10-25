@@ -37,7 +37,8 @@ class HabitActions extends Notifier<void> {
     required TimeOfDay timeOfDay,
     bool isFocus = false,
   }) async {
-    final now = ref.read(clockProvider).now().toMidnight;
+    // The creation stamp comes from the today seam, not the wall clock.
+    final today = ref.read(todayDateProvider);
     return _habitsDao.insertHabit(
       HabitsCompanion(
         name: Value(name),
@@ -48,20 +49,21 @@ class HabitActions extends Notifier<void> {
         frequencyValue: Value(frequency.encode()),
         timeOfDay: Value(timeOfDay.name),
         isFocus: Value(isFocus),
-        createdAt: Value(now.unixSeconds),
+        createdAt: Value(today.unixSeconds),
       ),
     );
   }
 
   /// Logs [status] for [habitIds] on today — one batched write for every
-  /// status. Owns the "today" policy: the date stamp and (for done) the
-  /// hour are captured here, once.
+  /// status. Owns the "today" policy: the date stamp comes from the today
+  /// seam; only the logged hour (for done) reads the clock.
   Future<void> logToday(List<int> habitIds, {required LogStatus status}) async {
     if (habitIds.isEmpty) return;
     final now = ref.read(clockProvider).now();
+    final today = ref.read(todayDateProvider);
     await _logsDao.logAll(
       habitIds,
-      now.toMidnight.unixSeconds,
+      today.unixSeconds,
       status,
       hour: status == LogStatus.done ? now.hour : null,
     );
@@ -70,8 +72,7 @@ class HabitActions extends Notifier<void> {
   /// Persists a day note under one policy: an empty draft clears the row;
   /// anything else upserts. [dateTimestamp] defaults to today.
   Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) {
-    final ts =
-        dateTimestamp ?? ref.read(clockProvider).now().toMidnight.unixSeconds;
+    final ts = dateTimestamp ?? ref.read(todayDateProvider).unixSeconds;
     if (draft.isEmpty) return _dayNotesDao.clearNote(ts);
     return _dayNotesDao.upsertNote(
       ts,

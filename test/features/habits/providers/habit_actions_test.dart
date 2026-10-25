@@ -6,12 +6,33 @@ import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/domain/scheduling.dart';
+import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/features/habits/domain/day_moment_draft.dart';
 import 'package:rythm/features/habits/providers/habit_actions.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
+
+/// A today notifier pinned to a fixed day — no midnight timer.
+class _FixedToday extends TodayNotifier {
+  _FixedToday(this.ts);
+
+  final int ts;
+
+  @override
+  int build() => ts;
+}
+
+/// A clock pinned to a fixed instant, for proving writes ignore it.
+class _FauxClock implements Clock {
+  _FauxClock(this._now);
+
+  final DateTime _now;
+
+  @override
+  DateTime now() => _now;
+}
 
 void main() {
   late AppDatabase db;
@@ -108,6 +129,47 @@ void main() {
     test('empty list is a no-op', () async {
       await actions.logToday(const [], status: LogStatus.done);
       expect(await db.habitLogsDao.getAllLogs(), isEmpty);
+    });
+
+    test('dates come from the today seam, not the wall clock', () async {
+      final pinned = DateTime.utc(2025, 3, 10).unixSeconds;
+      container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          todayProvider.overrideWith(() => _FixedToday(pinned)),
+          // The clock says June 1 — a write must still land on March 10.
+          clockProvider.overrideWithValue(
+            _FauxClock(DateTime.utc(2025, 6, 1, 13, 30)),
+          ),
+        ],
+      );
+      actions = container.read(habitActionsProvider.notifier);
+
+      final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'A'));
+      await actions.logToday([id], status: LogStatus.done);
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs.single.date, pinned);
+    });
+
+    test('createHabit stamps the today seam', () async {
+      final pinned = DateTime.utc(2025, 3, 10).unixSeconds;
+      container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          todayProvider.overrideWith(() => _FixedToday(pinned)),
+        ],
+      );
+      actions = container.read(habitActionsProvider.notifier);
+
+      final id = await actions.createHabit(
+        name: 'X',
+        icon: HabitIcon.book,
+        frequency: HabitFrequency.decode('daily', '{}'),
+        timeOfDay: TimeOfDay.morning,
+      );
+      final habit = await db.habitsDao.getHabit(id);
+      expect(habit.createdAt, pinned);
     });
   });
 

@@ -35,6 +35,13 @@ final todayDateProvider = Provider<DateTime>((ref) {
   return dateFromUnix(ref.watch(todayProvider));
 });
 
+/// First-of-month of the current calendar day — one computation shared by
+/// every month-scoped provider and screen, so month windows can never be
+/// assembled differently in different places.
+final currentMonthStartProvider = Provider<DateTime>((ref) {
+  return firstOfMonth(ref.watch(todayDateProvider));
+});
+
 class TodayNotifier extends Notifier<int> {
   Timer? _midnightTimer;
 

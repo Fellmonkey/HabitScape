@@ -42,7 +42,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   @override
   void initState() {
     super.initState();
-    _month = firstOfMonth(ref.read(todayDateProvider));
+    _month = ref.read(currentMonthStartProvider);
   }
 
   int get _monthTs => _month.unixSeconds;
@@ -71,7 +71,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   }
 
   void _goToToday() {
-    setState(() => _month = firstOfMonth(ref.read(todayDateProvider)));
+    setState(() => _month = ref.read(currentMonthStartProvider));
   }
 
   bool get _isCurrentMonth {
