@@ -15,7 +15,6 @@ import '../../providers/month_spread_providers.dart';
 import '../month_spread_exporter.dart';
 import '../png_share_contract.dart';
 import '../widgets/day_moment_sheet.dart';
-import '../widgets/month_spread_capture_view.dart';
 import '../widgets/month_spread_view.dart';
 
 /// Month spread — the history screen: a calendar week-grid with mood
@@ -188,7 +187,13 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     try {
       bytes = await exporter.capturePng(
         context,
-        MonthSpreadCaptureView(days: days, monthTs: _monthTs, summary: summary),
+        MonthSpreadView(
+          days: days,
+          monthTs: _monthTs,
+          summary: summary,
+          onDayTap: (_) {},
+          capture: true,
+        ),
         width: width,
       );
     } catch (_) {

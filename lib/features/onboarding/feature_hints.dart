@@ -84,8 +84,9 @@ class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
                   IconButton(
                     icon: const Icon(Icons.close, size: 16),
                     onPressed: () async {
-                      await exposure.dismissHint(hint.key);
-                      if (mounted) setState(() {});
+                      await ref
+                          .read(exposureActionsProvider.notifier)
+                          .dismissHint(hint.key);
                     },
                   ),
                 ],

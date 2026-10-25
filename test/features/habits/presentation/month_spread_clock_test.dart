@@ -6,7 +6,7 @@ import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/domain/completion.dart';
-import 'package:rythm/features/habits/presentation/widgets/month_spread_capture_view.dart';
+import 'package:rythm/features/habits/presentation/widgets/month_spread_view.dart';
 
 class _FixedToday extends TodayNotifier {
   _FixedToday(this.date);
@@ -44,10 +44,12 @@ void main() {
           theme: AppTheme.light,
           home: Scaffold(
             body: SingleChildScrollView(
-              child: MonthSpreadCaptureView(
+              child: MonthSpreadView(
                 days: days,
                 monthTs: monthStart.unixSeconds,
                 summary: summarizeMonthSpread(days: days, today: today),
+                onDayTap: (_) {},
+                capture: true,
               ),
             ),
           ),

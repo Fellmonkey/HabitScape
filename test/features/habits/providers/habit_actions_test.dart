@@ -7,7 +7,6 @@ import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/domain/scheduling.dart';
 import 'package:rythm/core/settings/today.dart';
-import 'package:rythm/features/habits/domain/day_moment_draft.dart';
 import 'package:rythm/features/habits/providers/habit_actions.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 
@@ -220,52 +219,19 @@ void main() {
     );
   });
 
-  group('saveDayMoment', () {
-    final ts = DateTime.utc(2026, 10, 27).unixSeconds;
-
-    test('persists a non-empty draft', () async {
-      await actions.saveDayMoment(
-        const DayMomentDraft(moment: 'Закат', mood: DayMood.good),
-        dateTimestamp: ts,
-      );
-
-      final note = await db.dayNotesDao.getNoteForDate(ts);
-      expect(note?.moment, 'Закат');
-      expect(note?.mood, DayMood.good);
-    });
-
-    test('empty draft clears the stored row', () async {
-      await actions.saveDayMoment(
-        const DayMomentDraft(moment: 'Было', mood: DayMood.ok),
-        dateTimestamp: ts,
-      );
-      await actions.saveDayMoment(const DayMomentDraft(), dateTimestamp: ts);
-
-      final note = await db.dayNotesDao.getNoteForDate(ts);
-      expect(note, isNull);
-    });
-
-    test('defaults to today when no timestamp is given', () async {
-      await actions.saveDayMoment(const DayMomentDraft(moment: 'Сегодня'));
-
-      final note = await db.dayNotesDao.getNoteForDate(todayTimestamp());
-      expect(note?.moment, 'Сегодня');
-    });
-  });
-
   group('MonthGoalActions', () {
     test('add, mark done, delete', () async {
-      final goals = container.read(monthGoalActionsProvider.notifier);
+      final actions = container.read(monthGoalActionsProvider.notifier);
       final ts = firstOfMonth(DateTime.now()).unixSeconds;
 
-      final id = await goals.addMonthGoal('Ship it', monthTs: ts);
-      await goals.setMonthGoalDone(id, isDone: true);
+      final id = await actions.addMonthGoal('Ship it', monthTs: ts);
+      await actions.setMonthGoalDone(id, isDone: true);
 
-      var list = await db.monthlyGoalsDao.getGoalsForMonth(ts);
+      var list = await db.monthlyGoalsDao.watchGoalsForMonth(ts).first;
       expect(list.single.isDone, isTrue);
 
-      await goals.deleteMonthGoal(id);
-      list = await db.monthlyGoalsDao.getGoalsForMonth(ts);
+      await actions.deleteMonthGoal(id);
+      list = await db.monthlyGoalsDao.watchGoalsForMonth(ts).first;
       expect(list, isEmpty);
     });
   });

@@ -88,10 +88,13 @@ class Exposure {
   // ── Echo card cadence ──────────────────────────────────────
 
   /// Whether the echo card may be shown today. A fresh install shows it;
-  /// after a showing it rests for [echoCooldownDays].
+  /// after a showing it rests for [echoCooldownDays]. A showing recorded
+  /// today keeps the card up for the rest of the day — the cooldown begins
+  /// tomorrow, so the just-shown card never vanishes mid-session.
   bool get echoCardVisible {
     final last = _prefs.getInt(echoLastShownKey);
     if (last == null) return true;
+    if (last == today.unixSeconds) return true;
     return today.unixSeconds - last >=
         echoCooldownDays * Duration.secondsPerDay;
   }
@@ -157,3 +160,43 @@ final exposureProvider = FutureProvider<Exposure>((ref) async {
   await exposure.recordFirstUse();
   return exposure;
 });
+
+/// The one command surface over [Exposure] state. Widgets and mixins must
+/// invoke verbs here instead of reaching into the store object, so every
+/// write flows through one interface that invalidates [exposureProvider] —
+/// reads stay reactive and can never go stale mid-session.
+class ExposureActions extends Notifier<void> {
+  @override
+  void build() {}
+
+  Future<Exposure> get _exposure => ref.read(exposureProvider.future);
+
+  Future<void> _mutate(Future<void> Function(Exposure) op) async {
+    final exposure = await _exposure;
+    await op(exposure);
+    ref.invalidate(exposureProvider);
+  }
+
+  /// Records a showing (cooldown + optional weekly top quota) and refreshes
+  /// the snapshot so quota/cooldown reads reflect it immediately.
+  Future<void> recordEchoShown({required bool atTop}) =>
+      _mutate((e) => e.recordEchoShown(atTop: atTop));
+
+  /// Remembers [date] as shown and refreshes the snapshot.
+  Future<void> recordEchoSeen(int date) =>
+      _mutate((e) => e.recordEchoSeen(date));
+
+  /// Marks [tour] as seen and refreshes the snapshot.
+  Future<void> markTourSeen(String tour) =>
+      _mutate((e) => e.markTourSeen(tour));
+
+  /// Clears every tour flag and refreshes the snapshot.
+  Future<void> resetTours() => _mutate((e) => e.resetTours());
+
+  /// Hides [key] for good and refreshes the snapshot.
+  Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
+}
+
+final exposureActionsProvider = NotifierProvider<ExposureActions, void>(
+  ExposureActions.new,
+);

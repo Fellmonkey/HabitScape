@@ -152,8 +152,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _resetOnboarding(WidgetRef ref) async {
-    final exposure = await ref.read(exposureProvider.future);
-    await exposure.resetTours();
+    await ref.read(exposureActionsProvider.notifier).resetTours();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }

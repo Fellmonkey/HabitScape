@@ -12,6 +12,16 @@ TimeBucket timeBucketForHour(int hour) => switch (hour) {
   _ => TimeBucket.night,
 };
 
+/// A representative hour inside each [TimeBucket] — the inverse view the
+/// debug seeder uses to stamp plausible logged hours, so seeded histories can
+/// never disagree with bucket boundaries.
+int representativeHourForBucket(TimeBucket bucket) => switch (bucket) {
+  TimeBucket.morning => 8,
+  TimeBucket.day => 14,
+  TimeBucket.evening => 20,
+  TimeBucket.night => 2,
+};
+
 /// Accumulates [TimeBucket] counts over logged hours (nulls skipped).
 /// Both engines that describe *when* habits were done share this aggregation,
 /// so a bucket-boundary change can never desynchronize them.

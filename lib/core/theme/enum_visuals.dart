@@ -7,7 +7,11 @@ library;
 
 import 'package:flutter/material.dart' hide TimeOfDay;
 
+import '../database/app_database.dart';
 import '../database/enums.dart';
+import '../domain/scheduling.dart';
+import '../formatting/russian_plural.dart';
+import '../utils/localized_dates.dart';
 import 'app_colors.dart';
 
 extension FrequencyTypeVisuals on FrequencyType {
@@ -79,24 +83,24 @@ extension DayMoodVisuals on DayMood {
   };
 }
 
-/// Legacy 1–5 time-quality metric — its look lives here, not in storage.
-extension TimeQualityVisuals on TimeQuality {
+/// Presentation labels for the scheduling kernel. The kernel itself only
+/// emits values; every human-readable frequency string lives here so a label
+/// change never touches domain logic or its tests.
+extension HabitFrequencyVisuals on HabitFrequency {
   String get label => switch (this) {
-    TimeQuality.wasted => 'Впустую',
-    TimeQuality.lazy => 'Лениво',
-    TimeQuality.normal => 'Нормально',
-    TimeQuality.good => 'Хорошо',
-    TimeQuality.max => 'Максимально',
-  };
-
-  Color get color => switch (this) {
-    TimeQuality.wasted => AppColors.dustyRose,
-    TimeQuality.lazy => AppColors.mutedTerracotta,
-    TimeQuality.normal => AppColors.warmAmber,
-    TimeQuality.good => AppColors.sageGreen,
-    TimeQuality.max => AppColors.emeraldGlow,
+    DailyFrequency() => 'Каждый день',
+    WeekdaysFrequency(:final days) =>
+      days.map((d) => shortWeekdayNames[d]).join(', '),
+    XPerWeekFrequency(:final x) => '$x× в нед',
+    EveryXDaysFrequency(:final x) => everyXDaysLabel(x),
+    CycleFrequency(:final length, :final days) =>
+      'Цикл $length дн. (дни: ${days.join(',')})',
   };
 }
+
+/// Short human-readable frequency description, e.g. "Mon, Wed, Fri",
+/// "3×/week" — presentation, so it lives next to the other enum visuals.
+String frequencyLabel(Habit habit) => HabitFrequency.fromHabit(habit).label;
 
 /// The rendered form of a [HabitIcon]: material icon + short Russian label.
 class HabitIconVisual {

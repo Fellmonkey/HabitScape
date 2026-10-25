@@ -1,6 +1,6 @@
-import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/database/enums.dart';
-import 'package:rythm/core/utils/time_bucket.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/database/enums.dart';
+import '../../../core/utils/time_bucket.dart';
 
 import '../../../core/domain/completion.dart';
 

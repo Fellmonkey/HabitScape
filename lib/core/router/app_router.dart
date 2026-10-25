@@ -16,70 +16,80 @@ import 'shell_scaffold.dart';
 /// Root navigator key, used by the debug overlay.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final appRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
-  initialLocation: '/',
-  routes: [
-    ShellRoute(
-      builder: (context, state, child) => ShellScaffold(child: child),
-      routes: [
-        GoRoute(
-          path: '/',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: GreenhouseScreen()),
-        ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: SettingsScreen()),
-        ),
-        GoRoute(
-          path: '/stats',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: StatsScreen()),
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/habit/:id',
-      pageBuilder: (context, state) {
-        final id = int.parse(state.pathParameters['id']!);
-        return _motionPage(
+/// Builds the app's route table. Tests use the same factory (with a fresh
+/// navigator key) so navigation can never drift from production — including
+/// routes like `/archive` that a hand-rolled test router used to omit.
+GoRouter buildAppRouter({
+  GlobalKey<NavigatorState>? navigatorKey,
+  String initialLocation = '/',
+}) {
+  return GoRouter(
+    navigatorKey: navigatorKey ?? rootNavigatorKey,
+    initialLocation: initialLocation,
+    routes: [
+      ShellRoute(
+        builder: (context, state, child) => ShellScaffold(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: GreenhouseScreen()),
+          ),
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SettingsScreen()),
+          ),
+          GoRoute(
+            path: '/stats',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: StatsScreen()),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/habit/:id',
+        pageBuilder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return _motionPage(
+            name: state.uri.toString(),
+            child: HabitDetailScreen(habitId: id),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/archive',
+        pageBuilder: (context, state) => _motionPage(
           name: state.uri.toString(),
-          child: HabitDetailScreen(habitId: id),
-        );
-      },
-    ),
-    GoRoute(
-      path: '/archive',
-      pageBuilder: (context, state) => _motionPage(
-        name: state.uri.toString(),
-        child: const ArchivedHabitsScreen(),
+          child: const ArchivedHabitsScreen(),
+        ),
       ),
-    ),
-    GoRoute(
-      path: '/month',
-      pageBuilder: (context, state) => _motionPage(
-        name: state.uri.toString(),
-        child: const MonthSpreadScreen(),
+      GoRoute(
+        path: '/month',
+        pageBuilder: (context, state) => _motionPage(
+          name: state.uri.toString(),
+          child: const MonthSpreadScreen(),
+        ),
       ),
-    ),
-    GoRoute(
-      path: '/capsules',
-      pageBuilder: (context, state) => _motionPage(
-        name: state.uri.toString(),
-        child: CapsuleScreen(autofocus: state.extra == true),
+      GoRoute(
+        path: '/capsules',
+        pageBuilder: (context, state) => _motionPage(
+          name: state.uri.toString(),
+          child: CapsuleScreen(autofocus: state.extra == true),
+        ),
       ),
-    ),
-    GoRoute(
-      path: '/letter',
-      pageBuilder: (context, state) => _motionPage(
-        name: state.uri.toString(),
-        child: LetterScreen(capsule: state.extra! as Letter),
+      GoRoute(
+        path: '/letter',
+        pageBuilder: (context, state) => _motionPage(
+          name: state.uri.toString(),
+          child: LetterScreen(capsule: state.extra! as Letter),
+        ),
       ),
-    ),
-  ],
-);
+    ],
+  );
+}
+
+final appRouter = buildAppRouter();
 
 /// Custom-transition page for pushed screens: fade + slight rise + scale,
 /// strong ease-out, transform/opacity only. Both forward and back use the

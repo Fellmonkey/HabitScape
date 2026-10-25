@@ -83,8 +83,8 @@ void main() {
       expect((await db.lettersDao.getAllLetters()).single.reply, isNull);
     });
 
-    test('deleteLetter removes one row; deleteAll clears everything', () async {
-      final a = await db.lettersDao.addLetter(
+    test('deleteAllLetters clears everything', () async {
+      await db.lettersDao.addLetter(
         deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
         body: 'A',
         createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
@@ -95,8 +95,7 @@ void main() {
         createdAt: DateTime.utc(2026, 10, 2).unixSeconds,
       );
 
-      await db.lettersDao.deleteLetter(a);
-      expect(await db.lettersDao.getAllLetters(), hasLength(1));
+      expect(await db.lettersDao.getAllLetters(), hasLength(2));
 
       await db.lettersDao.deleteAllLetters();
       expect(await db.lettersDao.getAllLetters(), isEmpty);

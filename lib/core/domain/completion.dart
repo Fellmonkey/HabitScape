@@ -2,6 +2,7 @@ import '../database/app_database.dart';
 import '../database/enums.dart';
 import '../utils/date_helpers.dart';
 
+import 'moment.dart' as moment_kernel;
 import 'scheduling.dart';
 
 /// The single skip policy of the app: a skipped day is excused, so it is
@@ -293,7 +294,7 @@ class MonthSpreadDay {
   /// The memorable day-moment line (null when not written).
   final String? moment;
 
-  bool get hasMoment => moment != null && moment!.trim().isNotEmpty;
+  bool get hasMoment => moment_kernel.hasMoment(moment);
 
   Completion get completion =>
       Completion.fromCounts(done: done, expected: expected, skipped: skipped);

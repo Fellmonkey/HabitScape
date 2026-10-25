@@ -39,11 +39,11 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     final exposure = await ref.read(exposureProvider.future);
     if (!mounted || _hintController == null) return;
     if (exposure.hasSeenTour(tourScope)) return;
-    // Seen on start — a dismissed tour never nags again.
-    await exposure.markTourSeen(tourScope);
-    if (!mounted || _hintController == null) return;
-    // hintful skips missing steps per tour policy; no polling needed.
+    // Start the tour first — mark it seen only once it actually begins, so a
+    // failed start never permanently consumes the tour.
     await _hintController!.start(hintTour);
+    if (!mounted || _hintController == null) return;
+    await ref.read(exposureActionsProvider.notifier).markTourSeen(tourScope);
   }
 
   @override

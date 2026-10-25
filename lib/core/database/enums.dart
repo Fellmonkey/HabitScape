@@ -113,18 +113,3 @@ class DayMoodConverter extends TypeConverter<DayMood, String> {
   @override
   String toSql(DayMood value) => value.name;
 }
-
-/// How rationally the day's time was used, from 1 (wasted) to 5 (max).
-/// Legacy: no longer asked, but preserved on edit so old notes keep data.
-enum TimeQuality {
-  wasted(1),
-  lazy(2),
-  normal(3),
-  good(4),
-  max(5);
-
-  const TimeQuality(this.value);
-
-  /// Stored int value (1–5).
-  final int value;
-}

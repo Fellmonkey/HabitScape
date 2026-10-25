@@ -112,8 +112,9 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   }
 
   Future<void> _recordShown() async {
-    final exposure = await ref.read(exposureProvider.future);
-    await exposure.recordEchoShown(atTop: widget.atTop);
+    await ref
+        .read(exposureActionsProvider.notifier)
+        .recordEchoShown(atTop: widget.atTop);
   }
 
   @override
@@ -251,7 +252,8 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
       _expanded = false;
     });
     // Shown once is enough — the next visit starts with another memory.
-    final exposure = await ref.read(exposureProvider.future);
-    await exposure.recordEchoSeen(current.note.date);
+    await ref
+        .read(exposureActionsProvider.notifier)
+        .recordEchoSeen(current.note.date);
   }
 }

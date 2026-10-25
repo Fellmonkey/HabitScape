@@ -6,9 +6,10 @@ import 'package:rythm/core/formatting/formatting.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../fixtures/test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,13 +17,7 @@ void main() {
   setUp(() async {
     // Pre-mark all onboarding tours as seen, so the settings tour's bouncing
     // tooltip never blocks pumpAndSettle (see integration helpers).
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'onboarding_seen': [
-        AppTourIds.greenhouse,
-        AppTourIds.spread,
-        AppTourIds.settings,
-      ],
-    });
+    SharedPreferences.setMockInitialValues(onboardingSeenPrefs());
   });
 
   testWidgets('settings screen offers theme switching', (tester) async {
@@ -83,11 +78,7 @@ void main() {
     final last = DateTime.now().toMidnight.subtract(const Duration(days: 31));
     SharedPreferences.setMockInitialValues(<String, Object>{
       'last_backup_date': last.unixSeconds,
-      'onboarding_seen': [
-        AppTourIds.greenhouse,
-        AppTourIds.spread,
-        AppTourIds.settings,
-      ],
+      ...onboardingSeenPrefs(),
     });
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(

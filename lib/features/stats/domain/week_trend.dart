@@ -1,5 +1,5 @@
-import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/utils/date_helpers.dart';
 
 import '../../../core/domain/completion.dart';
 

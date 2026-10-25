@@ -1,4 +1,4 @@
-import 'package:rythm/core/database/app_database.dart';
+import '../../../core/database/app_database.dart';
 
 import '../../../core/domain/completion.dart';
 import 'mood_correlation.dart';

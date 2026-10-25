@@ -15,7 +15,6 @@ import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/day_moment_draft.dart';
 import '../../providers/day_note_providers.dart';
-import '../../providers/habit_actions.dart';
 
 /// Bottom sheet for editing the day moment: the memorable moment of a
 /// day + the day mood (🟢 good / 🟡 so-so / 🔴 bad).
@@ -90,7 +89,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   }
 
   Future<void> _save() async {
-    final actions = ref.read(habitActionsProvider.notifier);
+    final actions = ref.read(dayNoteActionsProvider.notifier);
     final ts = widget.dateTimestamp ?? ref.read(todayProvider);
 
     await actions.saveDayMoment(_draft, dateTimestamp: ts);

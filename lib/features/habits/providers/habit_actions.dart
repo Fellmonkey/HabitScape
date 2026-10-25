@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
-import '../../../core/database/daos/day_notes_dao.dart';
 import '../../../core/database/daos/habit_logs_dao.dart';
 import '../../../core/database/daos/habits_dao.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../domain/day_moment_draft.dart';
 import '../domain/focus_policy.dart';
 
 /// Notifier for creating/updating/deleting habits and logging completions.
@@ -27,7 +25,6 @@ class HabitActions extends Notifier<void> {
 
   HabitsDao get _habitsDao => ref.read(databaseProvider).habitsDao;
   HabitLogsDao get _logsDao => ref.read(databaseProvider).habitLogsDao;
-  DayNotesDao get _dayNotesDao => ref.read(databaseProvider).dayNotesDao;
 
   /// Create a new habit.
   Future<int> createHabit({
@@ -66,19 +63,6 @@ class HabitActions extends Notifier<void> {
       today.unixSeconds,
       status,
       hour: status == LogStatus.done ? now.hour : null,
-    );
-  }
-
-  /// Persists a day note under one policy: an empty draft clears the row;
-  /// anything else upserts. [dateTimestamp] defaults to today.
-  Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) {
-    final ts = dateTimestamp ?? ref.read(todayDateProvider).unixSeconds;
-    if (draft.isEmpty) return _dayNotesDao.clearNote(ts);
-    return _dayNotesDao.upsertNote(
-      ts,
-      moment: draft.momentOrNull,
-      mood: draft.mood,
-      timeQuality: draft.timeQuality,
     );
   }
 

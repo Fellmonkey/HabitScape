@@ -2,9 +2,7 @@ import 'dart:convert';
 
 import '../database/app_database.dart';
 import '../database/enums.dart';
-import '../formatting/russian_plural.dart';
 import '../utils/date_helpers.dart';
-import '../utils/localized_dates.dart';
 
 // ── Frequency value object ───────────────────────────────────
 //
@@ -17,7 +15,6 @@ sealed class HabitFrequency {
 
   FrequencyType get type;
   String encode();
-  String get label;
 
   /// Whether a habit with this schedule is expected on [today].
   bool isExpectedOn({required DateTime createdAt, required DateTime today});
@@ -91,9 +88,6 @@ class DailyFrequency extends HabitFrequency {
   String encode() => '{}';
 
   @override
-  String get label => 'Каждый день';
-
-  @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
       true;
 
@@ -116,9 +110,6 @@ class WeekdaysFrequency extends HabitFrequency {
 
   @override
   String encode() => jsonEncode({'days': days});
-
-  @override
-  String get label => days.map((d) => shortWeekdayNames[d]).join(', ');
 
   @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
@@ -150,9 +141,6 @@ class XPerWeekFrequency extends HabitFrequency {
   String encode() => jsonEncode({'x': x});
 
   @override
-  String get label => '$x× в нед';
-
-  @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
       true; // Simplification: any day may count for x_per_week.
 
@@ -177,9 +165,6 @@ class EveryXDaysFrequency extends HabitFrequency {
 
   @override
   String encode() => jsonEncode({'x': x});
-
-  @override
-  String get label => everyXDaysLabel(x);
 
   @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) {
@@ -269,9 +254,6 @@ class CycleFrequency extends HabitFrequency {
     'labels': labels.map((k, v) => MapEntry(k.toString(), v)),
     if (startDate != null) 'startDate': startDate,
   });
-
-  @override
-  String get label => 'Цикл $length дн. (дни: ${days.join(',')})';
 
   @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) {
@@ -373,6 +355,3 @@ String? getCycleLabelForDate(Habit habit, DateTime date) {
   if (frequency is! CycleFrequency) return null;
   return frequency.labelFor(date, dateFromUnix(habit.createdAt));
 }
-
-/// Short human-readable frequency description, e.g. "Mon, Wed, Fri", "3×/week".
-String frequencyLabel(Habit habit) => HabitFrequency.fromHabit(habit).label;

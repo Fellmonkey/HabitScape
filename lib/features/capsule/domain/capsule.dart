@@ -80,9 +80,6 @@ class CapsuleFeed {
   final List<Letter> opened;
 
   bool get isEmpty => upcoming.isEmpty && due.isEmpty && opened.isEmpty;
-
-  Letter? get nextDue => due.isEmpty ? null : due.first;
-  Letter? get nextUpcoming => upcoming.isEmpty ? null : upcoming.first;
 }
 
 /// Whole days until delivery (0 or negative once it is due).

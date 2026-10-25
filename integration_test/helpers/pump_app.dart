@@ -2,20 +2,12 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/router/shell_scaffold.dart';
+import 'package:rythm/core/router/app_router.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/onboarding/app_tours.dart';
-import 'package:rythm/features/capsule/presentation/screens/capsule_screen.dart';
-import 'package:rythm/features/capsule/presentation/screens/letter_screen.dart';
-import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
-import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
-import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
-import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
-import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Creates an in-memory [AppDatabase] for integration tests (FK enabled).
@@ -29,58 +21,12 @@ AppDatabase createIntegrationTestDatabase() {
   );
 }
 
-/// Creates a fresh GoRouter instance to avoid GlobalKey collisions between
-/// tests.  The route structure mirrors [appRouter] in `app_router.dart`.
-GoRouter _createTestRouter() => GoRouter(
-  initialLocation: '/',
-  routes: [
-    ShellRoute(
-      builder: (context, state, child) => ShellScaffold(child: child),
-      routes: [
-        GoRoute(
-          path: '/',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: GreenhouseScreen()),
-        ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: SettingsScreen()),
-        ),
-        GoRoute(
-          path: '/stats',
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: StatsScreen()),
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/habit/:id',
-      builder: (context, state) {
-        final id = int.parse(state.pathParameters['id']!);
-        return HabitDetailScreen(habitId: id);
-      },
-    ),
-    GoRoute(
-      path: '/month',
-      builder: (context, state) => const MonthSpreadScreen(),
-    ),
-    GoRoute(
-      path: '/capsules',
-      builder: (context, state) =>
-          CapsuleScreen(autofocus: state.extra == true),
-    ),
-    GoRoute(
-      path: '/letter',
-      builder: (context, state) =>
-          LetterScreen(capsule: state.extra! as Letter),
-    ),
-  ],
-);
-
 /// Pumps the full app with an in-memory database and fake
-/// SharedPreferences.  Returns the [AppDatabase] so tests can seed data
+/// SharedPreferences. Returns the [AppDatabase] so tests can seed data
 /// directly through DAOs.
+///
+/// The route table is the production one (via [buildAppRouter]) — tests
+/// exercise the exact navigation the app ships, not a re-implementation.
 ///
 /// Usage:
 /// ```dart
@@ -123,7 +69,9 @@ Future<AppDatabase> pumpApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: ThemeMode.light,
-        routerConfig: _createTestRouter(),
+        // A fresh navigator key per test avoids GlobalKey collisions between
+        // routers; the route table itself is the production one.
+        routerConfig: buildAppRouter(navigatorKey: GlobalKey<NavigatorState>()),
       ),
     ),
   );

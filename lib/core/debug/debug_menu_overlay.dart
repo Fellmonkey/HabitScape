@@ -197,8 +197,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
 
   Future<void> _resetOnboarding() async {
     try {
-      final exposure = await ref.read(exposureProvider.future);
-      await exposure.resetTours();
+      await ref.read(exposureActionsProvider.notifier).resetTours();
       if (!mounted) return;
       setState(() {
         _lastResult = '👋 Подсказки появятся снова при открытии экранов';
@@ -408,11 +407,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
           child: OutlinedButton.icon(
             onPressed: _seeding
                 ? null
-                : () => _runScenario(
-                    debugScenarios.firstWhere(
-                      (s) => s.name == '5 привычек · 1 мес',
-                    ),
-                  ),
+                : () => _runScenario(debugScenarioById('5-1m')!),
             icon: const Icon(Icons.person, size: 18),
             label: const Text('UX: Обычный (5 привычек, 1 мес)'),
             style: OutlinedButton.styleFrom(
@@ -426,11 +421,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
           child: OutlinedButton.icon(
             onPressed: _seeding
                 ? null
-                : () => _runScenario(
-                    debugScenarios.firstWhere(
-                      (s) => s.name == '30 привычек · 12 мес',
-                    ),
-                  ),
+                : () => _runScenario(debugScenarioById('30-12m')!),
             icon: const Icon(Icons.workspace_premium, size: 18),
             label: const Text('UX: Опытный (30 привычек, 12 мес)'),
             style: OutlinedButton.styleFrom(

@@ -5,13 +5,16 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/database_reset.dart';
 import '../database/enums.dart';
+import '../domain/mood_rule.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';
+import '../utils/time_bucket.dart';
 import '../domain/scheduling.dart';
 
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {
   const DebugScenario({
+    required this.id,
     required this.name,
     required this.description,
     required this.habitCount,
@@ -19,6 +22,9 @@ class DebugScenario {
     this.icon = '📦',
   });
 
+  /// Stable identifier — UI buttons and tests bind to this, never to the
+  /// human-readable [name], which is presentation and may change.
+  final String id;
   final String name;
   final String description;
   final int habitCount;
@@ -28,10 +34,19 @@ class DebugScenario {
   final String icon;
 }
 
+/// Looks a scenario up by its stable [id]; null when unknown.
+DebugScenario? debugScenarioById(String id) {
+  for (final scenario in debugScenarios) {
+    if (scenario.id == id) return scenario;
+  }
+  return null;
+}
+
 /// Available scenarios for the debug menu.
 const debugScenarios = [
   // ── Small ──
   DebugScenario(
+    id: '5-1m',
     name: '5 привычек · 1 мес',
     description: 'Минимальный набор',
     habitCount: 5,
@@ -39,6 +54,7 @@ const debugScenarios = [
     icon: '🌱',
   ),
   DebugScenario(
+    id: '5-3m',
     name: '5 привычек · 3 мес',
     description: 'Квартал с малым числом',
     habitCount: 5,
@@ -46,6 +62,7 @@ const debugScenarios = [
     icon: '🌿',
   ),
   DebugScenario(
+    id: '5-6m',
     name: '5 привычек · 6 мес',
     description: 'Полгода',
     habitCount: 5,
@@ -53,6 +70,7 @@ const debugScenarios = [
     icon: '🌳',
   ),
   DebugScenario(
+    id: '5-12m',
     name: '5 привычек · 12 мес',
     description: 'Полный год',
     habitCount: 5,
@@ -61,6 +79,7 @@ const debugScenarios = [
   ),
   // ── Medium ──
   DebugScenario(
+    id: '30-1m',
     name: '30 привычек · 1 мес',
     description: 'Много привычек, мало истории',
     habitCount: 30,
@@ -68,6 +87,7 @@ const debugScenarios = [
     icon: '📋',
   ),
   DebugScenario(
+    id: '30-3m',
     name: '30 привычек · 3 мес',
     description: 'Активный пользователь',
     habitCount: 30,
@@ -75,6 +95,7 @@ const debugScenarios = [
     icon: '📊',
   ),
   DebugScenario(
+    id: '30-6m',
     name: '30 привычек · 6 мес',
     description: 'Полгода активности',
     habitCount: 30,
@@ -82,6 +103,7 @@ const debugScenarios = [
     icon: '📈',
   ),
   DebugScenario(
+    id: '30-12m',
     name: '30 привычек · 12 мес',
     description: 'Тяжёлый юзер, год',
     habitCount: 30,
@@ -90,6 +112,7 @@ const debugScenarios = [
   ),
   // ── Large ──
   DebugScenario(
+    id: '90-1m',
     name: '90 привычек · 1 мес',
     description: 'Стресс-тест UI',
     habitCount: 90,
@@ -97,6 +120,7 @@ const debugScenarios = [
     icon: '🔥',
   ),
   DebugScenario(
+    id: '90-3m',
     name: '90 привычек · 3 мес',
     description: 'Массивный набор',
     habitCount: 90,
@@ -104,6 +128,7 @@ const debugScenarios = [
     icon: '💥',
   ),
   DebugScenario(
+    id: '90-12m',
     name: '90 привычек · 12 мес',
     description: 'Максимальная нагрузка',
     habitCount: 90,
@@ -346,13 +371,10 @@ class DebugDataSeeder {
       m = nextMonthStart(m);
     }
 
-    // 5. Generate today's logs as pending (so Greenhouse shows them)
-    await _generateTodayLogs(habitMeta, now);
-
-    // 6. Day notes: mood + time quality correlated with daily completion.
+    // 5. Day notes: mood + time quality correlated with daily completion.
     await _generateDayNotes(dayAgg, now, rng);
 
-    // 7. Month goals for the current month.
+    // 6. Month goals for the current month.
     await _generateMonthGoals(now);
 
     return scenario.habitCount;
@@ -440,7 +462,7 @@ class DebugDataSeeder {
 
       final agg = entry.value;
       final ratio = agg.expected == 0 ? 0.0 : agg.done / agg.expected;
-      final mood = _moodForRatio(ratio, rng);
+      final mood = moodForCompletionRatio(ratio, rng.nextDouble());
       final quality = _qualityForRatio(ratio, rng);
       final moment = rng.nextDouble() < 0.55
           ? _momentPool[rng.nextInt(_momentPool.length)]
@@ -553,15 +575,19 @@ class DebugDataSeeder {
           loggedHour: const Value(21),
         ),
       );
-      // Weak habit: done ~1 day out of 3 so it clearly lags.
+      // Weak habit: done ~1 day out of 3 so it clearly lags. Days without a
+      // done log get no row at all — exactly what production produces.
       final doneToday = day.difference(start).inDays % 3 == 0;
-      await db.habitLogsDao.upsertLog(
-        HabitLogsCompanion(
-          habitId: Value(weak),
-          date: Value(day.unixSeconds),
-          status: Value(doneToday ? LogStatus.done : LogStatus.pending),
-        ),
-      );
+      if (doneToday) {
+        await db.habitLogsDao.upsertLog(
+          HabitLogsCompanion(
+            habitId: Value(weak),
+            date: Value(day.unixSeconds),
+            status: const Value(LogStatus.done),
+            loggedHour: const Value(8),
+          ),
+        );
+      }
       // Alternative a mood note, ~2/3 good.
       if (rng.nextDouble() < 0.85) {
         await db.dayNotesDao.upsertNote(
@@ -581,44 +607,9 @@ class DebugDataSeeder {
     );
   }
 
-  /// Maps a day's completion ratio to a mood with noise.
-  static DayMood _moodForRatio(double ratio, Random rng) {
-    final roll = rng.nextDouble();
-    if (ratio >= 0.8) {
-      return roll < 0.75
-          ? DayMood.good
-          : roll < 0.95
-          ? DayMood.ok
-          : DayMood.bad;
-    } else if (ratio >= 0.4) {
-      return roll < 0.3
-          ? DayMood.good
-          : roll < 0.8
-          ? DayMood.ok
-          : DayMood.bad;
-    } else {
-      return roll < 0.1
-          ? DayMood.good
-          : roll < 0.4
-          ? DayMood.ok
-          : DayMood.bad;
-    }
-  }
-
-  /// Generates pending logs for today so the Greenhouse shows habits. Only
-  /// habits the schedule actually expects today get a pending row — the same
-  /// rule the board uses, so seeded states are always reachable.
-  Future<void> _generateTodayLogs(List<_HabitMeta> metas, DateTime now) async {
-    await db.habitLogsDao.upsertLogs([
-      for (final meta in metas)
-        if (!meta.createdAt.isAfter(now) && _shouldLogDay(meta, now))
-          HabitLogsCompanion.insert(
-            habitId: meta.id,
-            date: now.unixSeconds,
-            status: const Value(LogStatus.pending),
-          ),
-    ]);
-  }
+  /// Maps a day's completion ratio to a mood with noise — the shared
+  /// generation curve in `core/domain/mood_rule.dart`, which mirrors the
+  /// relationship the stats insight measures.
 
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {
     return isExpectedOn(
@@ -629,11 +620,23 @@ class DebugDataSeeder {
   }
 
   static int _hourForTimeOfDay(TimeOfDay tod, Random rng) => switch (tod) {
-    TimeOfDay.morning => 6 + rng.nextInt(5), // 6–10
-    TimeOfDay.afternoon => 12 + rng.nextInt(5), // 12–16
-    TimeOfDay.evening => 18 + rng.nextInt(4), // 18–21
-    TimeOfDay.anytime => 7 + rng.nextInt(14), // 7–20
+    TimeOfDay.morning => _jittered(rng, TimeBucket.morning),
+    TimeOfDay.afternoon => _jittered(rng, TimeBucket.day),
+    TimeOfDay.evening => _jittered(rng, TimeBucket.evening),
+    TimeOfDay.anytime => switch (rng.nextInt(3)) {
+      0 => _jittered(rng, TimeBucket.morning),
+      1 => _jittered(rng, TimeBucket.day),
+      _ => _jittered(rng, TimeBucket.evening),
+    },
   };
+
+  /// A plausible hour inside [bucket] (representative ± 2) — the same
+  /// boundaries the rhythm stats use, so seeded hours always classify back
+  /// into the bucket the habit belongs to.
+  static int _jittered(Random rng, TimeBucket bucket) {
+    final base = representativeHourForBucket(bucket);
+    return (base - 2 + rng.nextInt(5)).clamp(0, 23);
+  }
 }
 
 /// Per-day done/expected counts across all habits.

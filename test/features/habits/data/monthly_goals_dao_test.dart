@@ -22,7 +22,7 @@ void main() {
     test('addGoal inserts a goal for the month', () async {
       final id = await db.monthlyGoalsDao.addGoal(janTs, 'Снять 4 видео');
 
-      final goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
+      final goals = await db.monthlyGoalsDao.watchGoalsForMonth(janTs).first;
       expect(goals, hasLength(1));
       expect(goals.first.id, id);
       expect(goals.first.title, 'Снять 4 видео');
@@ -33,8 +33,8 @@ void main() {
       await db.monthlyGoalsDao.addGoal(janTs, 'Январская цель');
       await db.monthlyGoalsDao.addGoal(febTs, 'Февральская цель');
 
-      final jan = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
-      final feb = await db.monthlyGoalsDao.getGoalsForMonth(febTs);
+      final jan = await db.monthlyGoalsDao.watchGoalsForMonth(janTs).first;
+      final feb = await db.monthlyGoalsDao.watchGoalsForMonth(febTs).first;
 
       expect(jan, hasLength(1));
       expect(jan.first.title, 'Январская цель');
@@ -46,11 +46,11 @@ void main() {
       final id = await db.monthlyGoalsDao.addGoal(janTs, 'Цель');
 
       await db.monthlyGoalsDao.setGoalDone(id, isDone: true);
-      var goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
+      var goals = await db.monthlyGoalsDao.watchGoalsForMonth(janTs).first;
       expect(goals.first.isDone, isTrue);
 
       await db.monthlyGoalsDao.setGoalDone(id, isDone: false);
-      goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
+      goals = await db.monthlyGoalsDao.watchGoalsForMonth(janTs).first;
       expect(goals.first.isDone, isFalse);
     });
 
@@ -60,7 +60,7 @@ void main() {
 
       await db.monthlyGoalsDao.deleteGoal(a);
 
-      final goals = await db.monthlyGoalsDao.getGoalsForMonth(janTs);
+      final goals = await db.monthlyGoalsDao.watchGoalsForMonth(janTs).first;
       expect(goals, hasLength(1));
       expect(goals.first.id, b);
     });

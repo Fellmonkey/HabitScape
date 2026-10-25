@@ -88,12 +88,14 @@ void main() {
 
   // ── labels ──────────────────────────────────────────────────
 
-  group('frequency labels', () {
-    test('everyXDays uses the shared Russian plural rule', () {
-      expect(const EveryXDaysFrequency(1).label, 'Каждый день');
-      expect(const EveryXDaysFrequency(2).label, 'Каждые 2 дня');
-      expect(const EveryXDaysFrequency(5).label, 'Каждые 5 дней');
-      expect(const EveryXDaysFrequency(21).label, 'Каждый 21 день');
+  group('frequency values stay pure', () {
+    test('everyXDays exposes its x and encodes it', () {
+      expect(const EveryXDaysFrequency(2).x, 2);
+      expect(const EveryXDaysFrequency(2).encode(), '{"x":2}');
+    });
+
+    test('weekdays exposes the cleaned day list', () {
+      expect(WeekdaysFrequency(const [1, 3, 5]).days, [1, 3, 5]);
     });
   });
 
@@ -587,6 +589,121 @@ void main() {
           today: DateTime.utc(2026, 1, 6),
         ),
         isFalse,
+      );
+    });
+  });
+
+  // ── calendar edge cases ─────────────────────────────────────
+
+  group('calendar edge cases', () {
+    test('daily counts the whole leap-year February (29 days)', () {
+      final habit = makeHabit(
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2024, 1, 1).unixSeconds,
+      );
+      expect(calculateRequiredBase(habit, 2024, 2), 29);
+    });
+
+    test('daily counts a non-leap February (28 days)', () {
+      final habit = makeHabit(
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+      );
+      expect(calculateRequiredBase(habit, 2026, 2), 28);
+    });
+
+    test(
+      'everyXDays crosses the leap day without skipping or double-counting',
+      () {
+        // Anchor Jan 1, 2024, x=2: expected days are Jan 1, 3, … so the
+        // first February day is Feb 2 and the last is Feb 29 (even diffs
+        // from the anchor) → 14 days.
+        final habit = makeHabit(
+          frequencyType: 'everyXDays',
+          frequencyValue: '{"x":2}',
+          createdAt: DateTime.utc(2024, 1, 1).unixSeconds,
+        );
+        expect(calculateRequiredBase(habit, 2024, 2), 14);
+      },
+    );
+
+    test('everyXDays anchored on Feb 29 stays put on the 29th', () {
+      // Created on leap day; a year later the anchor date does not exist, so
+      // the reference stays the stored calendar day (Feb 29 → Feb 28's day).
+      final created = DateTime.utc(2024, 2, 29);
+      final habit = makeHabit(
+        frequencyType: 'everyXDays',
+        frequencyValue: '{"x":4}',
+        createdAt: created.unixSeconds,
+      );
+      // diff = Feb 29 2025 - Feb 29 2024 = 365 days → 365 % 4 = 1 → off.
+      expect(isExpectedToday(habit, DateTime.utc(2025, 2, 28)), isFalse);
+      // diff = 366 → 366 % 4 = 2 → off.
+      expect(isExpectedToday(habit, DateTime.utc(2025, 3, 1)), isFalse);
+    });
+
+    test('xPerWeek across a year boundary keeps ceil(days/7·x)', () {
+      // Dec 31 2025 → Jan 30 2026 = 30 days → ceil(30/7·2) = 9.
+      final habit = makeHabit(
+        frequencyType: 'xPerWeek',
+        frequencyValue: '{"x":2}',
+        createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
+      );
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2025, 12, 31),
+          DateTime.utc(2026, 1, 30),
+        ),
+        9,
+      );
+    });
+
+    test('weekdays at a year end count the shared week once', () {
+      // Dec 29 2025 (Mon) … Jan 4 2026 (Sun) is one Mon–Fri run; the window
+      // spanning both years must count each weekday exactly once (5 days).
+      final habit = makeHabit(
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,2,3,4,5]}',
+        createdAt: DateTime.utc(2025, 1, 1).unixSeconds,
+      );
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2025, 12, 29),
+          DateTime.utc(2026, 1, 5),
+        ),
+        5,
+      );
+    });
+
+    test('cycle phase wraps across the year boundary', () {
+      // Start Dec 30, 2025; length 3, days [1]: Dec 30, Jan 2, Jan 5…
+      final habit = makeHabit(
+        frequencyType: 'cycle',
+        frequencyValue:
+            '{"length":3,"days":[1],"startDate":${DateTime.utc(2025, 12, 30).unixSeconds}}',
+        createdAt: DateTime.utc(2025, 12, 30).unixSeconds,
+      );
+      expect(isExpectedToday(habit, DateTime.utc(2025, 12, 30)), isTrue);
+      expect(isExpectedToday(habit, DateTime.utc(2026, 1, 1)), isFalse);
+      expect(isExpectedToday(habit, DateTime.utc(2026, 1, 2)), isTrue);
+      expect(isExpectedToday(habit, DateTime.utc(2026, 1, 5)), isTrue);
+    });
+
+    test('non-midnight inputs are normalized to midnight before counting', () {
+      final habit = makeHabit(
+        frequencyType: 'daily',
+        createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+      );
+      // A 14:00 start/end still counts whole days.
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1, 14),
+          DateTime.utc(2026, 1, 4, 14),
+        ),
+        3,
       );
     });
   });

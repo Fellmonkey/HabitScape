@@ -35,6 +35,7 @@ List<TodayGroup> groupToday({
   required DateTime today,
   List<HabitLog> logs = const [],
   bool hideCompleted = false,
+  Map<int, HabitLog>? logByHabit,
 }) {
   final focus = <Habit>[];
   final morning = <Habit>[];
@@ -101,11 +102,11 @@ List<TodayGroup> groupToday({
 
   if (!hideCompleted) return groups;
 
-  final logByHabit = {for (final l in logs) l.habitId: l};
+  final index = logByHabit ?? {for (final l in logs) l.habitId: l};
   final visible = <TodayGroup>[];
   for (final group in groups) {
     final kept = group.habits.where((h) {
-      final log = logByHabit[h.id];
+      final log = index[h.id];
       return log == null || log.status != LogStatus.done;
     }).toList();
     if (kept.isNotEmpty) {

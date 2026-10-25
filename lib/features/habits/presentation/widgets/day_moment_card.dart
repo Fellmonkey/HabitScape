@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/domain/moment.dart' as moment_kernel;
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
@@ -14,7 +15,6 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../onboarding/app_tours.dart';
 import '../../domain/day_moment_draft.dart';
 import '../../providers/day_note_providers.dart';
-import '../../providers/habit_actions.dart';
 import 'day_moment_sheet.dart';
 
 /// Greenhouse card for today's day moment.
@@ -35,7 +35,7 @@ class DayMomentCard extends ConsumerWidget {
         loading: () => const SizedBox.shrink(),
         error: (_, _) => const SizedBox.shrink(),
         data: (note) {
-          final hasMoment = (note?.moment?.trim() ?? '').isNotEmpty;
+          final hasMoment = moment_kernel.hasMoment(note?.moment);
           if (AppMotion.mayDisable(context)) {
             return hasMoment
                 ? _SavedMoment(note: note!)
@@ -118,7 +118,7 @@ class _DayMomentComposerState extends ConsumerState<_DayMomentComposer> {
     if (_saving || !_canSave) return;
     setState(() => _saving = true);
 
-    await ref.read(habitActionsProvider.notifier).saveDayMoment(_draft);
+    await ref.read(dayNoteActionsProvider.notifier).saveDayMoment(_draft);
 
     if (!mounted) return;
     Haptics.tap(ref.read(hapticsEnabledProvider));

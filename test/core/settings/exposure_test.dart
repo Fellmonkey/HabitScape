@@ -81,7 +81,8 @@ void main() {
 
         await exposure.recordEchoShown(atTop: true);
 
-        expect(exposure.echoCardVisible, isFalse);
+        // Shown today: the card stays up; the next day starts the cooldown.
+        expect(exposure.echoCardVisible, isTrue);
         expect(exposure.echoTopCount, 1);
         expect(prefs.getInt(Exposure.echoLastShownKey), monday.unixSeconds);
       },
@@ -94,7 +95,7 @@ void main() {
 
         await exposure.recordEchoShown(atTop: false);
 
-        expect(exposure.echoCardVisible, isFalse);
+        expect(exposure.echoCardVisible, isTrue);
         expect(exposure.echoTopCount, 0);
       },
     );
@@ -107,7 +108,8 @@ void main() {
 
       expect(exposure.echoCardVisible, isTrue);
       await exposure.recordEchoCardShown();
-      expect(exposure.echoCardVisible, isFalse);
+      // Recorded today — the card stays up for the rest of today.
+      expect(exposure.echoCardVisible, isTrue);
 
       final tomorrow = Exposure(prefs, today: day.add(const Duration(days: 1)));
       expect(tomorrow.echoCardVisible, isFalse);

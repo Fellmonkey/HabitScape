@@ -112,8 +112,6 @@ void main() {
       expect(feed.upcoming.map((l) => l.id), [1]);
       expect(feed.due.map((l) => l.id), [2]);
       expect(feed.opened.map((l) => l.id), [3]);
-      expect(feed.nextUpcoming?.id, 1);
-      expect(feed.nextDue?.id, 2);
       expect(feed.isEmpty, isFalse);
     });
 
@@ -160,8 +158,6 @@ void main() {
       final feed = CapsuleFeed.fromLetters(const [], today);
 
       expect(feed.isEmpty, isTrue);
-      expect(feed.nextDue, isNull);
-      expect(feed.nextUpcoming, isNull);
     });
   });
 

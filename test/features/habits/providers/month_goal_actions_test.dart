@@ -33,21 +33,24 @@ void main() {
         final id = await actions.addMonthGoal('Пробежать 5 км');
         expect(id, greaterThan(0));
 
-        var goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+        var goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
         expect(goals, hasLength(1));
         expect(goals.single.title, 'Пробежать 5 км');
         expect(goals.single.isDone, isFalse);
 
         await actions.setMonthGoalDone(id, isDone: true);
-        goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+        goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
         expect(goals.single.isDone, isTrue);
 
         await actions.setMonthGoalDone(id, isDone: false);
-        goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+        goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
         expect(goals.single.isDone, isFalse);
 
         await actions.deleteMonthGoal(id);
-        expect(await db.monthlyGoalsDao.getGoalsForMonth(monthTs), isEmpty);
+        expect(
+          await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first,
+          isEmpty,
+        );
       },
     );
 
@@ -56,7 +59,7 @@ void main() {
       final monthTs = firstOfMonth(DateTime.now()).unixSeconds;
 
       await actions.addMonthGoal('Цель по умолчанию');
-      final goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+      final goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
       expect(goals, hasLength(1));
     });
   });

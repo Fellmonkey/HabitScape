@@ -12,4 +12,8 @@ abstract final class AppConstants {
 
   /// Number of days shown in the stats heatmap (inclusive of today).
   static const statsHeatmapDays = 365;
+
+  /// The shared "a month" window: how old a day note must be to trigger the
+  /// capsule invitation, and how stale a backup gets before it is flagged.
+  static const staleNoteAfterDays = 30;
 }

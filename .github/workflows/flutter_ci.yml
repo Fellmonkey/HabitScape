@@ -29,3 +29,8 @@ jobs:
 
       - name: Run tests
         run: flutter test --reporter=expanded
+
+      - name: Build web (release)
+        # Compiles the PWA target including the JS-interop PNG-share adapter,
+        # so web-only code is validated on every CI run.
+        run: flutter build web --release

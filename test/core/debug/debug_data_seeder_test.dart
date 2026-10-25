@@ -4,6 +4,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/core/domain/completion.dart';
 
 import '../../fixtures/test_db.dart';
@@ -64,7 +65,7 @@ void main() {
 
       // The current month gets month goals.
       final monthTs = DateTime.utc(today.year, today.month, 1).unixSeconds;
-      final goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+      final goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
       expect(goals, isNotEmpty);
 
       // Mood correlates with completion: fully-done days score higher
@@ -122,5 +123,63 @@ void main() {
       expect(await db.lettersDao.getAllLetters(), isEmpty);
       expect(await db.weeklyIntentionsDao.getAllIntentions(), isEmpty);
     });
+
+    test('never writes rows production cannot produce (pending)', () async {
+      final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+      await seeder.seed(debugScenarios.first);
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, isNotEmpty);
+      expect(
+        logs.every(
+          (l) => l.status == LogStatus.done || l.status == LogStatus.skip,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'logged hours classify back into the habit bucket boundaries',
+      () async {
+        final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+        await seeder.seed(debugScenarios.first);
+
+        final habits = await db.habitsDao.getActiveHabits();
+        final logs = await db.habitLogsDao.getAllLogs();
+
+        TimeBucket bucketFor(TimeOfDay tod) => switch (tod) {
+          TimeOfDay.morning => TimeBucket.morning,
+          TimeOfDay.afternoon => TimeBucket.day,
+          TimeOfDay.evening => TimeBucket.evening,
+          TimeOfDay.anytime =>
+            TimeBucket.morning, // anytime spans morning/day/evening
+        };
+
+        for (final habit in habits) {
+          final tod = TimeOfDay.fromString(habit.timeOfDay);
+          final expected = bucketFor(tod);
+          final habitLogs = logs.where((l) => l.habitId == habit.id).toList();
+          for (final log in habitLogs) {
+            if (log.status != LogStatus.done || log.loggedHour == null) {
+              continue;
+            }
+            final actual = timeBucketForHour(log.loggedHour!);
+            if (tod == TimeOfDay.anytime) {
+              expect([
+                TimeBucket.morning,
+                TimeBucket.day,
+                TimeBucket.evening,
+              ], contains(actual));
+            } else {
+              expect(
+                actual,
+                expected,
+                reason: 'habit ${habit.name} hour ${log.loggedHour}',
+              );
+            }
+          }
+        }
+      },
+    );
   });
 }

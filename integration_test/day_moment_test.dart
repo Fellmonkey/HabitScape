@@ -293,14 +293,14 @@ void main() {
       // Toggle it done.
       final now = DateTime.now();
       final monthTs = DateTime.utc(now.year, now.month, 1).unixSeconds;
-      final goals = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+      final goals = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
       expect(goals, hasLength(1));
       expect(goals.first.isDone, isFalse);
 
       await tester.tap(find.byKey(K.monthGoal(goals.first.id)));
       await tester.pumpAndSettle();
 
-      final after = await db.monthlyGoalsDao.getGoalsForMonth(monthTs);
+      final after = await db.monthlyGoalsDao.watchGoalsForMonth(monthTs).first;
       expect(after.first.isDone, isTrue);
     });
   });

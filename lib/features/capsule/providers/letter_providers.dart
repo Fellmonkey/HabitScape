@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_constants.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../domain/capsule.dart';
@@ -29,16 +31,16 @@ final letterProvider = StreamProvider.autoDispose.family<Letter?, int>((
   return ref.watch(databaseProvider).lettersDao.watchLetter(id);
 });
 
-/// True once a note older than 30 days exists — the signal that the user has
-/// been around long enough to deserve the capsule invitation.
+/// True once a note older than [AppConstants.staleNoteAfterDays] days exists —
+/// the signal that the user has been around long enough to deserve the capsule
+/// invitation. Derives from the shared notes stream so the day-notes table is
+/// never watched twice app-wide.
 final hasOldNoteProvider = StreamProvider<bool>((ref) {
   final cutoff = dateFromUnix(
     ref.watch(todayProvider),
-  ).subtract(const Duration(days: 30)).unixSeconds;
+  ).subtract(const Duration(days: AppConstants.staleNoteAfterDays)).unixSeconds;
   return ref
-      .watch(databaseProvider)
-      .dayNotesDao
-      .watchAllNotes()
+      .watch(dayNotesStreamProvider)
       .map((notes) => notes.any((n) => n.date <= cutoff));
 });
 

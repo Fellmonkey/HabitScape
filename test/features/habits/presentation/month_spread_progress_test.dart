@@ -11,11 +11,11 @@ import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
+import '../../../fixtures/test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -23,13 +23,7 @@ void main() {
   late AppDatabase db;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'onboarding_seen': [
-        AppTourIds.greenhouse,
-        AppTourIds.spread,
-        AppTourIds.settings,
-      ],
-    });
+    SharedPreferences.setMockInitialValues(onboardingSeenPrefs());
     db = createTestDatabase();
     await _seedCurrentMonthDone(db);
   });

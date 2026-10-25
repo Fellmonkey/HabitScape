@@ -12,7 +12,7 @@ import '../domain/week_summary.dart';
 
 /// The current week's intention (null when not written yet).
 final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
-  final today = dateFromUnix(ref.watch(todayProvider));
+  final today = ref.watch(todayDateProvider);
   return ref
       .watch(databaseProvider)
       .weeklyIntentionsDao
@@ -22,7 +22,7 @@ final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 /// The previous week's intention — shown in the next summary as a gentle
 /// reminder of what was carried over.
 final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
-  final today = dateFromUnix(ref.watch(todayProvider));
+  final today = ref.watch(todayDateProvider);
   return ref
       .watch(databaseProvider)
       .weeklyIntentionsDao
@@ -35,7 +35,7 @@ final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 /// which week is closing, whether the window is open, and whether the user
 /// already answered it.
 final weekSummaryProvider = FutureProvider<WeekSummaryView>((ref) async {
-  final today = dateFromUnix(ref.watch(todayProvider));
+  final today = ref.watch(todayDateProvider);
   final weekStart = closingWeekStart(today);
   final snapshot = await ref.watch(historyStoreProvider).week(weekStart);
   final summary = computeWeekSummary(
@@ -61,7 +61,7 @@ class WeekIntentionActions extends Notifier<void> {
   @override
   void build() {}
 
-  DateTime get _today => dateFromUnix(ref.read(todayProvider));
+  DateTime get _today => ref.read(todayDateProvider);
 
   /// Saves the current week's intention.
   Future<void> save(String intention) {

@@ -66,9 +66,4 @@ class LettersDao extends DatabaseAccessor<AppDatabase> with _$LettersDaoMixin {
 
   /// Deletes all capsules (for import).
   Future<int> deleteAllLetters() => delete(letters).go();
-
-  /// Deletes a single capsule.
-  Future<int> deleteLetter(int id) {
-    return (delete(letters)..where((l) => l.id.equals(id))).go();
-  }
 }

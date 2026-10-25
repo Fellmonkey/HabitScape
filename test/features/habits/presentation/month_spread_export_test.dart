@@ -10,11 +10,11 @@ import 'package:rythm/features/habits/presentation/month_spread_exporter.dart';
 import 'package:rythm/features/habits/presentation/png_share_contract.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/fake_month_spread_exporter.dart';
 import '../../../fixtures/test_db.dart';
+import '../../../fixtures/test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,13 +25,7 @@ void main() {
   setUp(() async {
     // Pre-mark all onboarding tours as seen, so the spread tour's bouncing
     // tooltip never blocks pumpAndSettle (see integration helpers).
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'onboarding_seen': [
-        AppTourIds.greenhouse,
-        AppTourIds.spread,
-        AppTourIds.settings,
-      ],
-    });
+    SharedPreferences.setMockInitialValues(onboardingSeenPrefs());
     db = createTestDatabase();
     exporter = FakeMonthSpreadExporter();
   });

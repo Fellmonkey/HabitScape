@@ -1,5 +1,6 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
+import '../../../core/domain/moment.dart' as moment_kernel;
 
 /// The editable state of one day note.
 ///
@@ -36,7 +37,7 @@ class DayMomentDraft {
 
   String get trimmedMoment => moment.trim();
 
-  bool get hasMoment => trimmedMoment.isNotEmpty;
+  bool get hasMoment => moment_kernel.hasMoment(moment);
 
   bool get isEmpty => !hasMoment && mood == null && timeQuality == null;
 

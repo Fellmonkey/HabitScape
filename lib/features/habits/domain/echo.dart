@@ -1,4 +1,5 @@
 import '../../../core/database/app_database.dart';
+import '../../../core/domain/moment.dart';
 import '../../../core/utils/date_helpers.dart';
 
 /// How far back an echo comes from. Chosen automatically, nearest memory
@@ -50,8 +51,7 @@ List<EchoMemory> selectEchoMemories(
 }) {
   final todayTs = today.toMidnight.unixSeconds;
   final eligible = notes.where((n) {
-    final moment = (n.moment ?? '').trim();
-    return moment.isNotEmpty && n.date < todayTs && !exclude.contains(n.date);
+    return hasMoment(n.moment) && n.date < todayTs && !exclude.contains(n.date);
   }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
   final targets = <EchoHorizon, (DateTime, int)>{

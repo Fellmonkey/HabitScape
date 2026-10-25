@@ -104,14 +104,17 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. The hide-completed filter is a board rule too, so the toggle
-    // just feeds it. Logs are indexed by habit id so per-habit lookup is O(1).
+    // just feeds it. Logs are indexed by habit id once here and shared with
+    // both the board filter and the card list, so the index is never built
+    // twice per frame.
+    final logByHabit = {for (final l in logs) l.habitId: l};
     final groups = groupToday(
       habits: habits,
       today: today,
       logs: logs,
       hideCompleted: _hideCompleted,
+      logByHabit: logByHabit,
     );
-    final logByHabit = {for (final l in logs) l.habitId: l};
 
     return CustomScrollView(
       slivers: [
