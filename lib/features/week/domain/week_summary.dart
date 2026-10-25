@@ -117,8 +117,7 @@ WeekSummary computeWeekSummary({
   // week never count as missed. The same capped window feeds both the
   // day-level matrix and the per-habit measures below, so the summary can
   // never disagree with its parts.
-  final weekEnd = today.toMidnight.add(const Duration(days: 1));
-  final cappedEnd = weekEnd.isAfter(end) ? end : weekEnd;
+  final cappedEnd = elapsedWindowEnd(today, end);
 
   // Day-level completion comes from the shared completion module so the
   // week summary's day counts agree with the heatmap and month spread.

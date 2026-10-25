@@ -302,6 +302,15 @@ class MonthSpreadDay {
   double get ratio => completion.ratioOrZero;
 }
 
+/// The exclusive end of a window capped at today: future days never count as
+/// missed, so a running period is not dragged down by days that haven't
+/// happened yet. Returns the earlier of [windowEnd] and tomorrow relative to
+/// [today]. This is the one "elapsed-only" rule every completion view uses.
+DateTime elapsedWindowEnd(DateTime today, DateTime windowEnd) {
+  final tomorrow = today.toMidnight.add(const Duration(days: 1));
+  return tomorrow.isBefore(windowEnd) ? tomorrow : windowEnd;
+}
+
 /// Completion % across the month's elapsed days — days still in the future
 /// are left out, so a running month is never dragged down by them.
 /// Null when nothing was expected on the elapsed days.
@@ -311,8 +320,10 @@ double? monthCompletionPct({
   required List<MonthSpreadDay> days,
   required DateTime today,
 }) {
-  final cutoff = today.toMidnight;
-  final elapsed = days.where((day) => !day.date.isAfter(cutoff));
+  if (days.isEmpty) return null;
+  final windowEnd = days.last.date.add(const Duration(days: 1));
+  final cutoff = elapsedWindowEnd(today, windowEnd);
+  final elapsed = days.where((day) => day.date.isBefore(cutoff));
   return Completion.pool(elapsed.map((day) => day.completion)).percent;
 }
 

@@ -247,6 +247,32 @@ void main() {
     });
   });
 
+  group('elapsedWindowEnd', () {
+    test('window fully in the past is unchanged', () {
+      final end = DateTime.utc(2026, 1, 8);
+      final today = DateTime.utc(2026, 1, 20, 21, 30);
+      expect(elapsedWindowEnd(today, end), end);
+    });
+
+    test('today inside the window caps at tomorrow', () {
+      final end = DateTime.utc(2026, 1, 8);
+      final today = DateTime.utc(2026, 1, 5, 21, 30);
+      expect(elapsedWindowEnd(today, end), DateTime.utc(2026, 1, 6));
+    });
+
+    test('today on the last day keeps the whole window', () {
+      final end = DateTime.utc(2026, 1, 8);
+      final today = DateTime.utc(2026, 1, 7, 23, 59);
+      expect(elapsedWindowEnd(today, end), end);
+    });
+
+    test('today before the window yields an empty elapsed range', () {
+      final end = DateTime.utc(2026, 2, 1);
+      final today = DateTime.utc(2026, 1, 31);
+      expect(elapsedWindowEnd(today, end), DateTime.utc(2026, 2, 1));
+    });
+  });
+
   group('xPerWeek windows', () {
     test(
       'denominator uses the schedule window rule, not every-day expectations',
