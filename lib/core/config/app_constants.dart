@@ -1,6 +1,9 @@
 /// Tuning knobs for the app, kept in one place so a change never requires
 /// hunting across modules.
 abstract final class AppConstants {
+  /// The version shown on the About card (kept in sync with pubspec).
+  static const appVersion = '1.0.0';
+
   /// Maximum number of habits a user can mark as focus.
   static const maxFocusHabits = 5;
 

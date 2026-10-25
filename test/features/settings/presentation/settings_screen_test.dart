@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rythm/core/formatting/formatting.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
@@ -99,7 +100,7 @@ void main() {
 
     expect(find.text('Давно не было бэкапа'), findsOneWidget);
     expect(
-      find.text('Последний экспорт: ${last.day}.${last.month}.${last.year}'),
+      find.text('Последний экспорт: ${formatFullDate(last)}'),
       findsOneWidget,
     );
   });
