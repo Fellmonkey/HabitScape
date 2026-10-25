@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/config/app_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
@@ -15,10 +16,14 @@ import '../../providers/habit_streams.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/habit_info_row.dart';
 import '../widgets/history_sliver.dart';
+import '../widgets/metrics_detail_section.dart';
 import '../widgets/month_heatmap.dart';
 import '../widgets/month_stats_section.dart';
 import '../widgets/time_distribution_section.dart';
-import '../../domain/habit_engine.dart';
+
+/// The actions offered on the habit-detail menu — typed verbs, so the menu
+/// and its handler can never disagree on a meaning.
+enum HabitDetailAction { skip, focus, unfocus, archive, delete }
 
 /// Habit detail screen — stats, heatmap, streak info, time distribution.
 class HabitDetailScreen extends ConsumerStatefulWidget {
@@ -91,17 +96,19 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                         color: AppColors.warmAmber,
                       ),
                     ),
-                  PopupMenuButton<String>(
+                  PopupMenuButton<HabitDetailAction>(
                     key: K.habitDetailMenu,
                     onSelected: (val) => _handleMenu(context, ref, val, habit),
                     itemBuilder: (_) => [
                       const PopupMenuItem(
                         key: K.habitDetailSkip,
-                        value: 'skip',
+                        value: HabitDetailAction.skip,
                         child: Text('Пропустить сегодня'),
                       ),
                       PopupMenuItem(
-                        value: habit.isFocus ? 'unfocus' : 'focus',
+                        value: habit.isFocus
+                            ? HabitDetailAction.unfocus
+                            : HabitDetailAction.focus,
                         child: Text(
                           habit.isFocus
                               ? 'Убрать из фокуса'
@@ -109,11 +116,11 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                         ),
                       ),
                       const PopupMenuItem(
-                        value: 'archive',
+                        value: HabitDetailAction.archive,
                         child: Text('Архивировать'),
                       ),
                       const PopupMenuItem(
-                        value: 'delete',
+                        value: HabitDetailAction.delete,
                         child: Text('Удалить'),
                       ),
                     ],
@@ -195,7 +202,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                           child: Center(child: CircularProgressIndicator()),
                         ),
                         error: (e, _) => Text('Ошибка метрик: $e'),
-                        data: (m) => _MetricsDetailSection(metrics: m),
+                        data: (m) => MetricsDetailSection(metrics: m),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -223,14 +230,14 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
   Future<void> _handleMenu(
     BuildContext context,
     WidgetRef ref,
-    String action,
+    HabitDetailAction action,
     Habit habit,
   ) async {
     final actions = ref.read(habitActionsProvider.notifier);
     final nav = Navigator.of(context);
 
     switch (action) {
-      case 'skip':
+      case HabitDetailAction.skip:
         await actions.logToday([habitId], status: LogStatus.skip);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -240,22 +247,26 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           );
         }
         return;
-      case 'focus':
+      case HabitDetailAction.focus:
         final ok = await actions.setFocus(habitId, isFocus: true);
         if (!ok && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Максимум 5 фокусных привычек')),
+            SnackBar(
+              content: Text(
+                'Максимум ${AppConstants.maxFocusHabits} фокусных привычек',
+              ),
+            ),
           );
         }
         return;
-      case 'unfocus':
+      case HabitDetailAction.unfocus:
         await actions.setFocus(habitId, isFocus: false);
         return;
-      case 'archive':
+      case HabitDetailAction.archive:
         await actions.setLifecycle(habitId, HabitLifecycle.archive);
         if (context.mounted) nav.pop();
         return;
-      case 'delete':
+      case HabitDetailAction.delete:
         final confirmed = await confirmDeleteHabit(
           context,
           habitName: habit.name,
@@ -266,33 +277,5 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         }
         return;
     }
-  }
-}
-
-// ── Metrics detail ───────────────────────────────────────────
-class _MetricsDetailSection extends StatelessWidget {
-  const _MetricsDetailSection({required this.metrics});
-
-  final HabitMetrics metrics;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Метрики', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Text('Выполнение: ${metrics.completionPct.toStringAsFixed(1)}%'),
-        Text('Выполнено: ${metrics.absoluteCompletions}'),
-        Text('Ожидалось: ${metrics.requiredBase}'),
-        Text('Пропуски: ${metrics.skipCount}'),
-        const SizedBox(height: 8),
-        Text('Утро: ${(metrics.morningRatio * 100).round()}%'),
-        Text('День: ${(metrics.afternoonRatio * 100).round()}%'),
-        Text('Вечер: ${(metrics.eveningRatio * 100).round()}%'),
-        Text('Ночь: ${(metrics.nightRatio * 100).round()}%'),
-      ],
-    );
   }
 }
