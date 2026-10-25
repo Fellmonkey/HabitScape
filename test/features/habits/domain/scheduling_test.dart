@@ -79,10 +79,10 @@ void main() {
       );
     });
 
-    test('decoded values are cached by type and value', () {
+    test('decoded values are fresh instances — no hidden shared state', () {
       final first = HabitFrequency.decode('weekdays', '{"days":[1,2]}');
       final second = HabitFrequency.decode('weekdays', '{"days":[1,2]}');
-      expect(identical(first, second), isTrue);
+      expect(identical(first, second), isFalse);
     });
   });
 
@@ -388,6 +388,148 @@ void main() {
         createdAt: jan1,
       );
       expect(calculateRequiredBase(habit, 2026, 1), 5);
+    });
+  });
+
+  // ── countExpectedInRange ───────────────────────────────────
+
+  group('countExpectedInRange', () {
+    final jan1 = DateTime.utc(2026, 1, 1).unixSeconds;
+    final jan15 = DateTime.utc(2026, 1, 15).unixSeconds;
+    final feb1 = DateTime.utc(2026, 2, 1).unixSeconds;
+
+    test('daily counts every day in the half-open range', () {
+      final habit = makeHabit(frequencyType: 'daily', createdAt: jan1);
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        31,
+      );
+    });
+
+    test('weekdays counts only scheduled weekdays', () {
+      final habit = makeHabit(
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,2,3,4,5]}',
+        createdAt: jan1,
+      );
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        22,
+      );
+    });
+
+    test('xPerWeek uses ceil(days/7·x)', () {
+      final habit = makeHabit(
+        frequencyType: 'xPerWeek',
+        frequencyValue: '{"x":3}',
+        createdAt: jan1,
+      );
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        14,
+      );
+    });
+
+    test('xPerWeek counts from the effective start', () {
+      final habit = makeHabit(
+        frequencyType: 'xPerWeek',
+        frequencyValue: '{"x":3}',
+        createdAt: jan15,
+      );
+      // Jan 15 → Jan 31 inclusive = 17 days → ceil(17/7·3) = 8.
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        8,
+      );
+    });
+
+    test('everyXDays counts multiples of x from the anchor', () {
+      final habit = makeHabit(
+        frequencyType: 'everyXDays',
+        frequencyValue: '{"x":3}',
+        createdAt: jan1,
+      );
+      // Jan 1, 4, 7, …, 31 → 11 days.
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        11,
+      );
+    });
+
+    test('cycle counts its cycle days in the window', () {
+      final habit = makeHabit(
+        frequencyType: 'cycle',
+        frequencyValue:
+            '{"length":4,"days":[1,3],"startDate":${DateTime.utc(2026, 1, 1).unixSeconds}}',
+        createdAt: jan1,
+      );
+      // Cycle days 1 and 3 of 4 repeat 16 times across 31 days.
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 2, 1),
+        ),
+        16,
+      );
+    });
+
+    test('a habit created after the window expects nothing', () {
+      final habit = makeHabit(frequencyType: 'daily', createdAt: feb1);
+      expect(
+        countExpectedInRange(
+          habit,
+          DateTime.utc(2026, 1, 1),
+          DateTime.utc(2026, 1, 31),
+        ),
+        0,
+      );
+    });
+
+    test('agrees with calculateRequiredBase for every frequency', () {
+      final frequencies = <String, String>{
+        'daily': '{}',
+        'weekdays': '{"days":[1,2,3,4,5]}',
+        'xPerWeek': '{"x":3}',
+        'everyXDays': '{"x":2}',
+        'cycle': '{"length":5,"days":[1,3],"startDate":$jan1}',
+      };
+      for (final entry in frequencies.entries) {
+        final habit = makeHabit(
+          frequencyType: entry.key,
+          frequencyValue: entry.value,
+          createdAt: jan1,
+        );
+        expect(
+          countExpectedInRange(
+            habit,
+            DateTime.utc(2026, 1, 1),
+            DateTime.utc(2026, 2, 1),
+          ),
+          calculateRequiredBase(habit, 2026, 1),
+          reason: '${entry.key} must share one count',
+        );
+      }
     });
   });
 

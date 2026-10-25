@@ -247,6 +247,57 @@ void main() {
     });
   });
 
+  group('xPerWeek windows', () {
+    test(
+      'denominator uses the schedule window rule, not every-day expectations',
+      () {
+        final habit = makeHabit(
+          frequencyType: 'xPerWeek',
+          frequencyValue: '{"x":3}',
+          createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+        );
+        final logs = [
+          for (var d = 1; d <= 10; d++)
+            makeLog(
+              id: d,
+              date: DateTime.utc(2026, 1, d).unixSeconds,
+              status: LogStatus.done,
+            ),
+        ];
+
+        final measure = habitCompletion(
+          habit: habit,
+          logs: logs,
+          start: DateTime.utc(2026, 1, 1),
+          end: DateTime.utc(2026, 2, 1),
+        );
+
+        // ceil(31/7·3) = 14 — the same number calculateRequiredBase reports.
+        expect(measure.expected, 14);
+        expect(measure.numerator, 10);
+        expect(measure.percent, closeTo(71.43, 0.01));
+      },
+    );
+
+    test('the per-day matrix still marks every day as possible', () {
+      final habit = makeHabit(
+        frequencyType: 'xPerWeek',
+        frequencyValue: '{"x":3}',
+        createdAt: DateTime.utc(2026, 1, 1).unixSeconds,
+      );
+
+      final days = computeDailyCompletion(
+        habits: [habit],
+        logs: const [],
+        start: DateTime.utc(2026, 1, 1),
+        end: DateTime.utc(2026, 1, 4),
+      );
+
+      expect(days, hasLength(3));
+      expect(days.every((d) => d.expected == 1), isTrue);
+    });
+  });
+
   group('invariant: day and habit measures never drift', () {
     test('pooling days equals pooling habits on one window', () {
       final jan1 = DateTime.utc(2026, 1, 1);

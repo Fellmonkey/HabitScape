@@ -191,16 +191,13 @@ WeekSummary computeWeekSummary({
   // ── Next week's schedule ──────────────────────────────────
   // How many days each habit is planned on the coming week — lets the card
   // explain why a ratio is low (a habit planned only 2 days can only score
-  // 0–2, not 7).
+  // 0–2, not 7). The count comes from the scheduling module's window rule,
+  // the same one the completion kernel uses for the current week.
   final nextWeekStart = start.add(const Duration(days: 7));
+  final nextWeekEnd = nextWeekStart.add(const Duration(days: 7));
   final nextWeekPlannedDays = <int, int>{};
   for (final habit in activeHabits) {
-    var days = 0;
-    for (var i = 0; i < 7; i++) {
-      if (isExpectedToday(habit, nextWeekStart.add(Duration(days: i)))) {
-        days++;
-      }
-    }
+    final days = countExpectedInRange(habit, nextWeekStart, nextWeekEnd);
     if (days > 0) nextWeekPlannedDays[habit.id] = days;
   }
 

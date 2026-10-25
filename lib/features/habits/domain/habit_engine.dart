@@ -4,7 +4,6 @@ import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/time_bucket.dart';
 
 import '../../../core/domain/completion.dart';
-import '../../../core/domain/scheduling.dart' as sched;
 
 /// Pure engine for habit metrics — no side effects, no DB access.
 class HabitEngine {
@@ -17,11 +16,11 @@ class HabitEngine {
     int year,
     int month,
   ) {
-    // The schedule module owns "how many times is this habit expected".
-    final rawBase = sched.calculateRequiredBase(habit, year, month);
-
-    // The completion module owns "which logs count as done": only on days the
-    // habit is expected. Off-schedule done logs never inflate the numerator.
+    // One measure, one owner: the completion module decides which days count
+    // and which statuses fill the numerator. Its denominator already comes
+    // from the scheduling module's window rule, so this engine never rebuilds
+    // a Completion from two different walks — the month card can't disagree
+    // with the heatmap or the week summary.
     final monthStart = DateTime.utc(year, month, 1);
     final measure = habitCompletion(
       habit: habit,
@@ -40,14 +39,6 @@ class HabitEngine {
     final eveningCount = counts[TimeBucket.evening]!;
     final nightCount = counts[TimeBucket.night]!;
 
-    // One measure, one denominator: skips excuse their expectation, so they
-    // are removed from the base instead of raising the result.
-    final completion = Completion.fromCounts(
-      done: measure.numerator,
-      expected: rawBase,
-      skipped: measure.skipped,
-    );
-
     final totalTimed =
         morningCount + afternoonCount + eveningCount + nightCount;
     final mRatio = totalTimed > 0 ? morningCount / totalTimed : 0.25;
@@ -56,15 +47,15 @@ class HabitEngine {
     final nRatio = totalTimed > 0 ? nightCount / totalTimed : 0.25;
 
     return HabitMetrics(
-      completionPct: completion.percentOrZero,
-      absoluteCompletions: completion.numerator,
+      completionPct: measure.percentOrZero,
+      absoluteCompletions: measure.numerator,
       morningRatio: mRatio,
       afternoonRatio: aRatio,
       eveningRatio: eRatio,
       nightRatio: nRatio,
-      requiredBase: rawBase,
-      adjustedBase: completion.denominator,
-      skipCount: completion.skipped,
+      requiredBase: measure.expected,
+      adjustedBase: measure.denominator,
+      skipCount: measure.skipped,
     );
   }
 }

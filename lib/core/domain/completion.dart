@@ -200,6 +200,7 @@ Completion habitCompletion({
     logsByDay.putIfAbsent(log.date, () => []).add(log);
   }
 
+  final habitById = <int, Habit>{for (final h in habits) h.id: h};
   final habitCounts = <int, _HabitCounts>{};
 
   final days = <DayCompletion>[];
@@ -215,7 +216,6 @@ Completion habitCompletion({
       if (!isExpectedToday(habit, day)) continue;
       expected++;
       final counts = habitCounts.putIfAbsent(habit.id, _HabitCounts.new);
-      counts.expected++;
       final status = _statusFor(dayLogs, habit.id);
       if (status == LogStatus.done) {
         done++;
@@ -234,6 +234,18 @@ Completion habitCompletion({
       ),
     );
     day = day.add(const Duration(days: 1));
+  }
+
+  // The per-habit expectation count comes from the scheduling module's window
+  // rule ([countExpectedInRange]), not from the day walk: flexible schedules
+  // (xPerWeek) expect ceil(days/7·x) over a window, while the day-level
+  // matrix above still marks every active day as possible. Both views then
+  // share one denominator, so the month card and the heatmap can never
+  // disagree about "how many times was this expected".
+  for (final entry in habitCounts.entries) {
+    final habit = habitById[entry.key];
+    if (habit == null) continue;
+    entry.value.expected = countExpectedInRange(habit, start, end);
   }
 
   final byHabit = <int, Completion>{

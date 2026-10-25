@@ -12,9 +12,6 @@ import '../utils/localized_dates.dart';
 // stores it as `(frequencyType, frequencyValue)` for compatibility, but every
 // producer and consumer passes [HabitFrequency], never raw JSON.
 
-const _maxCacheEntries = 128;
-final Map<String, HabitFrequency> _frequencyCache = {};
-
 sealed class HabitFrequency {
   const HabitFrequency();
 
@@ -25,23 +22,19 @@ sealed class HabitFrequency {
   /// Whether a habit with this schedule is expected on [today].
   bool isExpectedOn({required DateTime createdAt, required DateTime today});
 
-  /// How many times this schedule expects the habit in the active range.
-  int requiredBase({
+  /// How many days this schedule expects in the half-open range [start, end).
+  ///
+  /// Pure frequency math: the anchor ([createdAt]) is used by schedules whose
+  /// phase depends on it (everyXDays, cycle). Callers clamp the range to the
+  /// habit's effective start before reaching this method.
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
+    required DateTime start,
+    required DateTime end,
   });
 
-  static HabitFrequency decode(String type, String value) {
-    final key = '$type|$value';
-    final cached = _frequencyCache[key];
-    if (cached != null) return cached;
-
-    final frequency = _decode(type, value);
-    if (_frequencyCache.length >= _maxCacheEntries) _frequencyCache.clear();
-    _frequencyCache[key] = frequency;
-    return frequency;
-  }
+  static HabitFrequency decode(String type, String value) =>
+      _decode(type, value);
 
   static HabitFrequency fromHabit(Habit habit) =>
       decode(habit.frequencyType, habit.frequencyValue);
@@ -105,11 +98,11 @@ class DailyFrequency extends HabitFrequency {
       true;
 
   @override
-  int requiredBase({
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
-  }) => daysBetweenInclusive(effectiveStart, monthEnd);
+    required DateTime start,
+    required DateTime end,
+  }) => end.toMidnight.difference(start.toMidnight).inDays;
 }
 
 class WeekdaysFrequency extends HabitFrequency {
@@ -132,11 +125,12 @@ class WeekdaysFrequency extends HabitFrequency {
       days.contains(today.weekday);
 
   @override
-  int requiredBase({
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
-  }) => countWeekdaysInRange(effectiveStart, monthEnd, days);
+    required DateTime start,
+    required DateTime end,
+  }) =>
+      countWeekdaysInRange(start, end.subtract(const Duration(days: 1)), days);
 
   static List<int> _cleanDays(List<int> input) {
     final clean = input.where((d) => d >= 1 && d <= 7).toSet().toList()..sort();
@@ -160,16 +154,16 @@ class XPerWeekFrequency extends HabitFrequency {
 
   @override
   bool isExpectedOn({required DateTime createdAt, required DateTime today}) =>
-      true; // Simplification: always show for x_per_week.
+      true; // Simplification: any day may count for x_per_week.
 
   @override
-  int requiredBase({
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
+    required DateTime start,
+    required DateTime end,
   }) {
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-    return (activeDays / 7.0 * x).ceil();
+    final days = end.toMidnight.difference(start.toMidnight).inDays;
+    return (days / 7.0 * x).ceil();
   }
 }
 
@@ -195,13 +189,21 @@ class EveryXDaysFrequency extends HabitFrequency {
   }
 
   @override
-  int requiredBase({
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
+    required DateTime start,
+    required DateTime end,
   }) {
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-    return (activeDays / x).ceil();
+    // Expected days are the multiples of x counted from the anchor. The
+    // indices of the first and last expected day in [start, end) are enough
+    // to count them closed-form — no day walk needed.
+    final anchor = createdAt.toMidnight;
+    final period = end.toMidnight.difference(anchor).inDays;
+    final beforeStart = start.toMidnight.difference(anchor).inDays;
+    final firstIndex = beforeStart <= 0 ? -1 : (beforeStart - 1) ~/ x;
+    final lastIndex = (period - 1) ~/ x;
+    final count = lastIndex - firstIndex;
+    return count < 0 ? 0 : count;
   }
 }
 
@@ -280,16 +282,16 @@ class CycleFrequency extends HabitFrequency {
   }
 
   @override
-  int requiredBase({
+  int countExpectedInRange({
     required DateTime createdAt,
-    required DateTime effectiveStart,
-    required DateTime monthEnd,
+    required DateTime start,
+    required DateTime end,
   }) {
     final reference = _referenceDate(createdAt);
-    final activeDays = daysBetweenInclusive(effectiveStart, monthEnd);
-    final startDiff = effectiveStart.toMidnight.difference(reference).inDays;
+    final startDiff = start.toMidnight.difference(reference).inDays;
+    final period = end.toMidnight.difference(start.toMidnight).inDays;
     var expected = 0;
-    for (var i = 0; i < activeDays; i++) {
+    for (var i = 0; i < period; i++) {
       final diff = startDiff + i;
       if (diff < 0) continue;
       if (days.contains(diff % length + 1)) expected++;
@@ -337,25 +339,32 @@ bool isExpectedOn({
   return frequency.isExpectedOn(createdAt: createdAt, today: today);
 }
 
+/// Number of days on which the habit is expected in [start, end), accounting
+/// for its creation date (a habit is never expected before it exists).
+///
+/// Owns the single definition of "how many times is this habit expected in a
+/// window": the completion kernel, month metrics, week summaries and heatmaps
+/// all derive their denominator from this. [end] is exclusive.
+int countExpectedInRange(Habit habit, DateTime start, DateTime end) {
+  final createdAt = dateFromUnix(habit.createdAt);
+  // Effective start: max(range start, habit creation date).
+  final effectiveStart = createdAt.isAfter(start) ? createdAt : start;
+  // Created later than the window — nothing expected.
+  if (!effectiveStart.isBefore(end)) return 0;
+
+  return HabitFrequency.fromHabit(
+    habit,
+  ).countExpectedInRange(createdAt: createdAt, start: effectiveStart, end: end);
+}
+
 /// Required base for a habit in a month, accounting for creation date.
 ///
-/// Owns the single definition of "how many times is this habit expected in
-/// this month" so month metrics, week summaries and heatmaps agree.
+/// Month view of [countExpectedInRange]: the single definition of "how many
+/// times is this habit expected in this month" so month metrics, week
+/// summaries and heatmaps agree.
 int calculateRequiredBase(Habit habit, int year, int month) {
-  final createdAt = dateFromUnix(habit.createdAt);
   final monthStart = DateTime.utc(year, month, 1);
-  final monthEnd = DateTime.utc(year, month + 1, 0);
-
-  // Effective start: max(month start, habit creation date).
-  final effectiveStart = createdAt.isAfter(monthStart) ? createdAt : monthStart;
-  // Created later than this month — no base.
-  if (effectiveStart.isAfter(monthEnd)) return 0;
-
-  return HabitFrequency.fromHabit(habit).requiredBase(
-    createdAt: createdAt,
-    effectiveStart: effectiveStart,
-    monthEnd: monthEnd,
-  );
+  return countExpectedInRange(habit, monthStart, nextMonthStart(monthStart));
 }
 
 /// Label for the current cycle day, if any.

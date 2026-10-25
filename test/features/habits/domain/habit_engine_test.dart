@@ -227,6 +227,34 @@ void main() {
       expect(m.morningRatio, closeTo(0.0, 0.01));
     });
 
+    test(
+      'xPerWeek uses the schedule window rule, not every-day expectations',
+      () {
+        final habit = makeHabit(
+          frequencyType: 'xPerWeek',
+          frequencyValue: '{"x":3}',
+          createdAt: jan1,
+        );
+        final logs = [
+          for (var i = 1; i <= 10; i++)
+            makeLog(
+              id: i,
+              date: janDay(i),
+              status: LogStatus.done,
+              loggedHour: 8,
+            ),
+        ];
+
+        final m = HabitEngine.calculateMetrics(habit, logs, 2026, 1);
+
+        // ceil(31/7·3) = 14 — the same denominator the heatmap and week
+        // summary use, so the month card can never show a different %.
+        expect(m.requiredBase, 14);
+        expect(m.adjustedBase, 14);
+        expect(m.completionPct, closeTo(100 * 10 / 14, 0.01));
+      },
+    );
+
     test('off-schedule done logs do not count toward completion', () {
       final habit = makeHabit(
         frequencyType: 'weekdays',
