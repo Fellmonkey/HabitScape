@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'png_share_contract.dart';
 import 'png_share_stub.dart' if (dart.library.js_interop) 'png_share_web.dart';
 
 /// Captures and shares a PNG "photo" of the month spread.
@@ -59,8 +60,9 @@ class MonthSpreadExporter {
     }
   }
 
-  /// Shares PNG bytes (web may fall back to a download). Throws on failure.
-  Future<void> sharePng(Uint8List bytes, {required String fileName}) {
+  /// Shares PNG bytes. Every platform adapter returns the same vocabulary
+  /// ([ShareOutcome]) — the caller maps it, never catches platform quirks.
+  Future<ShareOutcome> sharePng(Uint8List bytes, {required String fileName}) {
     return sharePngBytes(bytes, fileName: fileName);
   }
 }

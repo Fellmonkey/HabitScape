@@ -7,6 +7,7 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/month_spread_exporter.dart';
+import 'package:rythm/features/habits/presentation/png_share_contract.dart';
 import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 import 'package:rythm/features/onboarding/app_tours.dart';
@@ -78,5 +79,25 @@ void main() {
       exporter.lastFileName,
       matches(RegExp(r'^habitscape_\d{4}-\d{2}\.png$')),
     );
+  });
+
+  testWidgets('a failed share surfaces the error snackbar', (tester) async {
+    exporter.shareOutcome = ShareOutcome.failed;
+    await pumpSpread(tester);
+
+    await tester.tap(find.byKey(K.monthSpreadExport));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось поделиться'), findsOneWidget);
+  });
+
+  testWidgets('a cancelled share stays quiet — no error UI', (tester) async {
+    exporter.shareOutcome = ShareOutcome.cancelled;
+    await pumpSpread(tester);
+
+    await tester.tap(find.byKey(K.monthSpreadExport));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось поделиться'), findsNothing);
   });
 }

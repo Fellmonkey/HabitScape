@@ -13,6 +13,7 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../core/settings/today.dart';
 import '../../providers/month_spread_providers.dart';
 import '../month_spread_exporter.dart';
+import '../png_share_contract.dart';
 import '../widgets/day_moment_sheet.dart';
 import '../widgets/month_spread_capture_view.dart';
 import '../widgets/month_spread_view.dart';
@@ -197,10 +198,9 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
       if (mounted) _showSnackBar(context, 'Не удалось создать изображение.');
       return;
     }
-    try {
-      await exporter.sharePng(bytes, fileName: _exportFileName());
-    } catch (e) {
-      if (mounted) _showSnackBar(context, 'Не удалось поделиться: $e');
+    final outcome = await exporter.sharePng(bytes, fileName: _exportFileName());
+    if (outcome == ShareOutcome.failed && mounted) {
+      _showSnackBar(context, 'Не удалось поделиться');
     }
   }
 
