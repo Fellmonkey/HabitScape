@@ -108553,7 +108553,7 @@ A.ae5.prototype={
 $3(a,b,c){return this.abp(a,b,c)},
 $C:"$3",
 $R:3,
-abp(a,b,c){var s=0,r=A.u(t.H),q=this,p
+abp(a,b,c){var s=0,r=A.u(t.H),q=this,p,o
 var $async$$3=A.v(function(d,e){if(d===1)return A.q(e,r)
 for(;;)switch(s){case 0:s=b<2?2:3
 break
@@ -108567,42 +108567,45 @@ case 7:case 6:s=b<4?8:9
 break
 case 8:s=10
 return A.n(a.Mx(q.a.gR6().b),$async$$3)
-case 10:case 9:s=b<5?11:12
+case 10:case 9:p=b<5
+s=p?11:12
 break
-case 11:p=q.a
-s=13
-return A.n(a.vd(p.gqh()),$async$$3)
-case 13:p=p.glv()
-s=14
+case 11:s=13
+return A.n(a.vd(q.a.gqh()),$async$$3)
+case 13:case 12:s=b>=3&&p?14:15
+break
+case 14:p=q.a.glv()
+s=16
 return A.n(a.yZ(p,p.gSD()),$async$$3)
-case 14:case 12:s=b<6?15:16
+case 16:case 15:s=b<6?17:18
 break
-case 15:p=a.a
-s=17
+case 17:p=a.a
+s=19
 return A.n(p.FS("DELETE FROM habit_logs WHERE id NOT IN (SELECT MIN(id) FROM habit_logs GROUP BY habit_id, date)"),$async$$3)
-case 17:s=18
+case 19:s=20
 return A.n(p.FS("DROP INDEX IF EXISTS idx_habit_logs_habit_date"),$async$$3)
-case 18:s=19
+case 20:s=21
 return A.n(a.Mx(q.a.gR6().b),$async$$3)
-case 19:case 16:s=b<7?20:21
+case 21:case 18:s=b<7?22:23
 break
-case 20:s=22
+case 22:s=24
 return A.n(a.a.FS("ALTER TABLE habits RENAME COLUMN seed_archetype TO icon"),$async$$3)
-case 22:case 21:s=b<8?23:24
+case 24:case 23:s=b<8?25:26
 break
-case 23:s=25
+case 25:s=27
 return A.n(a.vd(q.a.gjY()),$async$$3)
-case 25:case 24:s=b<9?26:27
+case 27:case 26:p=b>=8
+s=p&&b<9?28:29
 break
-case 26:p=q.a.gjY()
-s=28
-return A.n(a.yZ(p,p.gBe()),$async$$3)
-case 28:case 27:s=b<10?29:30
+case 28:o=q.a.gjY()
+s=30
+return A.n(a.yZ(o,o.gBe()),$async$$3)
+case 30:case 29:s=p&&b<10?31:32
 break
-case 29:p=q.a.gjY()
-s=31
+case 31:p=q.a.gjY()
+s=33
 return A.n(a.yZ(p,p.gSw()),$async$$3)
-case 31:case 30:return A.r(null,r)}})
+case 33:case 32:return A.r(null,r)}})
 return A.t($async$$3,r)},
 $S:702}
 A.hV.prototype={
