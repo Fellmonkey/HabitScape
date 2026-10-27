@@ -132,39 +132,25 @@ class YearSummaryScreen extends ConsumerWidget {
               children: [
                 const AppCardHeader(
                   icon: Icons.schedule_rounded,
-                  title: 'Расписания',
+                  title: 'Что выполняется лучше',
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 2),
+                Text(
+                  'По типам расписаний: процент выполненных ожидаемых дней.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 ..._frequencyRows(context, year.frequencyInsights),
                 const SizedBox(height: 8),
                 Text(
-                  'Частота настройки не причина, а наблюдение: что чаще '
-                  'выполняется в твоём расписании.',
+                  'Это наблюдение, а не причина — но может подсказать, '
+                  'какое расписание тебе подходит.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-        if (year.intentions.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: AppRadius.borderL,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppCardHeader(
-                  icon: Icons.trending_up_rounded,
-                  title: 'Намерения недель',
-                ),
-                const SizedBox(height: 12),
-                ..._intentionRows(context, year),
               ],
             ),
           ),
@@ -298,58 +284,13 @@ class YearSummaryScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               SizedBox(
-                width: 56,
+                width: 96,
                 child: Text(
-                  '${stat.pct.round()}% · n=${stat.expected}',
+                  '${stat.pct.round()}% · ${stat.done} из ${stat.expected}',
                   textAlign: TextAlign.end,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-    ];
-  }
-
-  List<Widget> _intentionRows(BuildContext context, YearSummary year) {
-    final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
-    return [
-      for (final record in year.intentions.take(6))
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 92,
-                child: Text(
-                  formatShortDate(record.weekStart, today: year.today),
-                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '«${record.intention}»',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    if (record.followingWeekPct != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'Следующая неделя: '
-                        '${record.followingWeekPct!.round()}%',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                    ],
-                  ],
                 ),
               ),
             ],

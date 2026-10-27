@@ -100,6 +100,8 @@ void main() {
 
     expect(find.text(_noRecordsText), findsOneWidget);
     expect(find.text(_notComparableText), findsNothing);
+    // No history yet — the year button stays hidden.
+    expect(find.byKey(K.yearSummaryOpen), findsNothing);
   });
 
   testWidgets('explains the missing comparison when only partial days exist', (
@@ -112,8 +114,10 @@ void main() {
     expect(find.text(_noRecordsText), findsNothing);
   });
 
-  testWidgets('header opens the year summary', (tester) async {
-    await seed(partialDays: 0);
+  testWidgets('header opens the year summary once there is history', (
+    tester,
+  ) async {
+    await seed(partialDays: 5);
     await pumpStats(tester);
 
     expect(find.byKey(K.yearSummaryOpen), findsOneWidget);

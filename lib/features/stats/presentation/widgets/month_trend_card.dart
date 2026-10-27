@@ -62,11 +62,25 @@ class MonthlyTrendCard extends ConsumerWidget {
             icon: Icons.show_chart_rounded,
             title: 'Тренд по месяцам',
           ),
+          const SizedBox(height: 2),
+          Text(
+            'Процент выполненных ожидаемых привычек за каждый месяц.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
           const SizedBox(height: 12),
           for (final point in trend) ...[
             _MonthRow(point: point, startYear: startYear),
             const SizedBox(height: 6),
           ],
+          const SizedBox(height: 2),
+          Text(
+            'Месяцы без отметок пропущены.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
         ],
       ),
     );

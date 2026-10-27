@@ -9,7 +9,9 @@ import '../../../../core/domain/completion.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../providers/stats_providers.dart';
+import '../../providers/year_summary_providers.dart';
 import '../widgets/heatmap_card.dart';
+import '../widgets/intentions_card.dart';
 import '../widgets/mood_correlation_card.dart';
 import '../widgets/month_trend_card.dart';
 import '../widgets/rhythm_card.dart';
@@ -42,6 +44,9 @@ class StatsScreen extends ConsumerWidget {
     }
 
     final theme = Theme.of(context);
+    // The year button only appears once there is actually something to show
+    // on the year screen — the empty state would only invite confusion.
+    final hasHistory = ref.watch(yearSummaryProvider).value?.hasData ?? false;
     final scrollView = CustomScrollView(
       slivers: [
         // ── Header ──
@@ -75,19 +80,20 @@ class StatsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: OutlinedButton.icon(
-                    key: K.yearSummaryOpen,
-                    onPressed: () => context.push('/year'),
-                    icon: const Icon(Icons.auto_awesome_outlined, size: 18),
-                    label: const Text('Итоги года'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                if (hasHistory)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: OutlinedButton.icon(
+                      key: K.yearSummaryOpen,
+                      onPressed: () => context.push('/year'),
+                      icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                      label: const Text('Итоги года'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -182,6 +188,15 @@ class StatsScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: RhythmCard(rhythm: stats.rhythm),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Intentions ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: IntentionsCard(),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

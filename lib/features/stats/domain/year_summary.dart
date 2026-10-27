@@ -35,6 +35,48 @@ class WeekIntentionRecord {
   final double? followingWeekPct;
 }
 
+/// Builds the intention archive: the newest stored weekly intentions with the
+/// completion of the following week as their "reality". Pure — no DB access.
+/// Shared by the year summary and the stats screen's intention card.
+List<WeekIntentionRecord> computeIntentionRecords({
+  required List<Habit> habits,
+  required List<HabitLog> logs,
+  required List<WeeklyIntention> intentions,
+  required DateTime start,
+  required DateTime end,
+  required DateTime now,
+}) {
+  final cutoff = elapsedWindowEnd(now, end);
+  final records = <WeekIntentionRecord>[];
+  final withText =
+      intentions.where((i) => i.intention?.trim().isNotEmpty ?? false).toList()
+        ..sort((a, b) => b.weekStart.compareTo(a.weekStart));
+  for (final intention in withText.take(8)) {
+    final weekStart = dateFromUnix(intention.weekStart).toMidnight;
+    final followingStart = weekStart.add(const Duration(days: 7));
+    final followingEnd = followingStart.add(const Duration(days: 7));
+
+    double? followingPct;
+    if (followingStart.isBefore(cutoff)) {
+      final followingDays = computeDailyCompletion(
+        habits: habits,
+        logs: logs,
+        start: followingStart,
+        end: followingEnd,
+      );
+      followingPct = Completion.overDays(followingDays).percent;
+    }
+    records.add(
+      WeekIntentionRecord(
+        weekStart: weekStart,
+        intention: intention.intention!.trim(),
+        followingWeekPct: followingPct,
+      ),
+    );
+  }
+  return records;
+}
+
 /// The year's closing summary: one pooled completion figure, the mood year in
 /// pixels data, and the anchor facts (best month, best/worst habit, goals,
 /// schedule insights, intentions).
@@ -237,33 +279,14 @@ YearSummary computeYearSummary({
   ]..sort((a, b) => b.pct.compareTo(a.pct));
 
   // ── Weekly intentions with their following-week reality ────
-  final records = <WeekIntentionRecord>[];
-  final withText =
-      intentions.where((i) => i.intention?.trim().isNotEmpty ?? false).toList()
-        ..sort((a, b) => b.weekStart.compareTo(a.weekStart));
-  for (final intention in withText.take(8)) {
-    final weekStart = dateFromUnix(intention.weekStart).toMidnight;
-    final followingStart = weekStart.add(const Duration(days: 7));
-    final followingEnd = followingStart.add(const Duration(days: 7));
-
-    double? followingPct;
-    if (followingStart.isBefore(cutoff)) {
-      final followingDays = computeDailyCompletion(
-        habits: habits,
-        logs: logs,
-        start: followingStart,
-        end: followingEnd,
-      );
-      followingPct = Completion.overDays(followingDays).percent;
-    }
-    records.add(
-      WeekIntentionRecord(
-        weekStart: weekStart,
-        intention: intention.intention!.trim(),
-        followingWeekPct: followingPct,
-      ),
-    );
-  }
+  final records = computeIntentionRecords(
+    habits: habits,
+    logs: logs,
+    intentions: intentions,
+    start: start,
+    end: end,
+    now: now,
+  );
 
   return YearSummary(
     windowStart: start.toMidnight,
