@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
-import '../../../../core/database/enums.dart' as enums;
+import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
@@ -291,11 +291,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     if (direction == DismissDirection.startToEnd) {
                       await actions.logToday([
                         habit.id,
-                      ], status: enums.LogStatus.done);
+                      ], status: LogStatus.done);
                     } else {
                       await actions.logToday([
                         habit.id,
-                      ], status: enums.LogStatus.skip);
+                      ], status: LogStatus.skip);
                     }
                     return false;
                   },
@@ -322,7 +322,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     Haptics.heavy(ref.read(hapticsEnabledProvider));
     ref.read(habitActionsProvider.notifier).logToday([
       for (final h in habits) h.id,
-    ], status: enums.LogStatus.done);
+    ], status: LogStatus.done);
   }
 
   String _formatToday(DateTime today) => formatFullDate(today);

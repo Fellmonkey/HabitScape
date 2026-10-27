@@ -3,16 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/domain/scheduling.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
-import 'icon_picker.dart';
 import '../../domain/habit_templates.dart';
-import '../../../../core/domain/scheduling.dart';
-import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
+import 'cycle_editor.dart';
+import 'habit_template_strip.dart';
+import 'icon_picker.dart';
+import 'number_stepper.dart';
+import 'weekday_chip_selector.dart';
 
 class HabitFormSheet extends ConsumerStatefulWidget {
   const HabitFormSheet({super.key, this.habit});
@@ -31,10 +34,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
   late final Set<int> _selectedWeekdays;
   late int _xValue;
   late int _everyXDays;
-  late int _cycleLength;
-  late final Set<int> _cycleDays;
-  late final Map<int, String> _cycleLabels;
-  DateTime? _cycleStartDate;
+  late CycleConfig _cycle;
   bool _advancedExpanded = false;
 
   bool get _isEdit => widget.habit != null;
@@ -71,10 +71,12 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       final cycle = frequency is CycleFrequency
           ? frequency
           : CycleFrequency(length: 5, days: const [1]);
-      _cycleLength = cycle.length;
-      _cycleDays = cycle.days.toSet();
-      _cycleLabels = Map.from(cycle.labels);
-      _cycleStartDate = CycleFrequency.decodeStartDate(cycle.startDate);
+      _cycle = CycleConfig(
+        length: cycle.length,
+        days: cycle.days.toSet(),
+        labels: Map.from(cycle.labels),
+        startDate: CycleFrequency.decodeStartDate(cycle.startDate),
+      );
     } else {
       _nameController = TextEditingController();
       _frequency = FrequencyType.daily;
@@ -83,9 +85,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _selectedWeekdays = {1, 2, 3, 4, 5};
       _xValue = 3;
       _everyXDays = 7;
-      _cycleLength = 5;
-      _cycleDays = {1};
-      _cycleLabels = {};
+      _cycle = const CycleConfig(length: 5, days: {1}, labels: {});
     }
   }
 
@@ -102,10 +102,10 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     FrequencyType.xPerWeek => XPerWeekFrequency(_xValue),
     FrequencyType.everyXDays => EveryXDaysFrequency(_everyXDays),
     FrequencyType.cycle => CycleFrequency(
-      length: _cycleLength,
-      days: _cycleDays.toList()..sort(),
-      labels: _cycleLabels,
-      startDate: CycleFrequency.encodeStartDate(_cycleStartDate),
+      length: _cycle.length,
+      days: _cycle.days.toList()..sort(),
+      labels: _cycle.labels,
+      startDate: CycleFrequency.encodeStartDate(_cycle.startDate),
     ),
     _ => const DailyFrequency(),
   };
@@ -127,13 +127,11 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
         case EveryXDaysFrequency(:final x):
           _everyXDays = x < 2 ? 7 : x;
         case CycleFrequency frequency:
-          _cycleLength = frequency.length;
-          _cycleDays
-            ..clear()
-            ..addAll(frequency.days);
-          _cycleLabels
-            ..clear()
-            ..addAll(frequency.labels);
+          _cycle = _cycle.copyWith(
+            length: frequency.length,
+            days: frequency.days.toSet(),
+            labels: Map.from(frequency.labels),
+          );
         case DailyFrequency():
           break;
       }
@@ -195,23 +193,11 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
             ),
             const SizedBox(height: 20),
 
-            // ── Name ──
-            if (!_isEdit) ...[
-              Text('Шаблоны', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: habitTemplates.map((t) {
-                  return ActionChip(
-                    avatar: Icon(t.icon.visual.icon, size: 16),
-                    label: Text(t.name),
-                    onPressed: () => _applyTemplate(t),
-                  );
-                }).toList(),
+            // ── Templates (new habits only) ──
+            if (!_isEdit)
+              HabitTemplateStrip(
+                onApply: (t) => setState(() => _applyTemplate(t)),
               ),
-              const SizedBox(height: 16),
-            ],
 
             TextField(
               key: K.habitNameField,
@@ -236,10 +222,16 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
             const SizedBox(height: 8),
 
             if (_frequency == FrequencyType.weekdays)
-              ..._buildWeekdaySelector(theme),
+              WeekdayChipSelector(
+                selected: _selectedWeekdays,
+                onChanged: (next) => setState(
+                  () => _selectedWeekdays
+                    ..clear()
+                    ..addAll(next),
+                ),
+              ),
             if (_frequency == FrequencyType.xPerWeek)
-              ..._buildXStepper(
-                theme,
+              NumberStepper(
                 label: '$_xValue раз в неделю',
                 value: _xValue,
                 min: 1,
@@ -247,8 +239,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
                 onChanged: (v) => setState(() => _xValue = v),
               ),
             if (_frequency == FrequencyType.everyXDays)
-              ..._buildXStepper(
-                theme,
+              NumberStepper(
                 label: everyXDaysLabel(_everyXDays),
                 value: _everyXDays,
                 min: 2,
@@ -256,7 +247,10 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
                 onChanged: (v) => setState(() => _everyXDays = v),
               ),
             if (_frequency == FrequencyType.cycle)
-              ..._buildCycleSelector(theme),
+              CycleEditor(
+                config: _cycle,
+                onChanged: (c) => setState(() => _cycle = c),
+              ),
             const SizedBox(height: 8),
 
             // ── Optional settings (time, icon) ──
@@ -331,187 +325,5 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       selected: _frequency == type,
       onSelected: (_) => setState(() => _frequency = type),
     );
-  }
-
-  List<Widget> _buildWeekdaySelector(ThemeData theme) {
-    const days = [
-      (1, 'Пн'),
-      (2, 'Вт'),
-      (3, 'Ср'),
-      (4, 'Чт'),
-      (5, 'Пт'),
-      (6, 'Сб'),
-      (7, 'Вс'),
-    ];
-    return [
-      Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: days.map(((int n, String label) r) {
-          final selected = _selectedWeekdays.contains(r.$1);
-          return FilterChip(
-            label: Text(r.$2),
-            selected: selected,
-            onSelected: (_) => setState(() {
-              if (selected) {
-                if (_selectedWeekdays.length > 1) {
-                  _selectedWeekdays.remove(r.$1);
-                }
-              } else {
-                _selectedWeekdays.add(r.$1);
-              }
-            }),
-          );
-        }).toList(),
-      ),
-      const SizedBox(height: 8),
-    ];
-  }
-
-  List<Widget> _buildCycleSelector(ThemeData theme) {
-    return [
-      _buildXStepper(
-        theme,
-        label: 'Длина цикла: $_cycleLength дн.',
-        value: _cycleLength,
-        min: 2,
-        max: 30,
-        onChanged: (v) => setState(() {
-          _cycleLength = v;
-          _cycleDays.removeWhere((day) => day > _cycleLength);
-          if (_cycleDays.isEmpty) _cycleDays.add(1);
-        }),
-      ).first,
-      const SizedBox(height: 8),
-      Text('Активные дни цикла:', style: theme.textTheme.bodyMedium),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: List.generate(_cycleLength, (index) {
-          final day = index + 1;
-          final selected = _cycleDays.contains(day);
-          return FilterChip(
-            label: Text('$day'),
-            selected: selected,
-            onSelected: (_) => setState(() {
-              if (selected) {
-                if (_cycleDays.length > 1) {
-                  _cycleDays.remove(day);
-                  _cycleLabels.remove(day);
-                }
-              } else {
-                _cycleDays.add(day);
-              }
-            }),
-          );
-        }),
-      ),
-      if (_cycleDays.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        Text(
-          'Подписи к дням (опционально):',
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 8),
-        ...(() {
-          final sortedDays = _cycleDays.toList()..sort();
-          return sortedDays.map((day) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TextFormField(
-                key: ValueKey('cycle_label_$day'),
-                initialValue: _cycleLabels[day] ?? '',
-                decoration: InputDecoration(
-                  labelText: 'Подпись для дня $day',
-                  border: OutlineInputBorder(borderRadius: AppRadius.borderS),
-                  isDense: true,
-                ),
-                onChanged: (val) {
-                  if (val.trim().isEmpty) {
-                    _cycleLabels.remove(day);
-                  } else {
-                    _cycleLabels[day] = val.trim();
-                  }
-                },
-              ),
-            );
-          });
-        })(),
-      ],
-      const SizedBox(height: 16),
-      Text('Начало отсчета цикла:', style: theme.textTheme.bodyMedium),
-      const SizedBox(height: 8),
-      InkWell(
-        onTap: () async {
-          final date = await showDatePicker(
-            context: context,
-            initialDate: _cycleStartDate ?? ref.read(todayDateProvider),
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
-          );
-          if (date != null) {
-            setState(() => _cycleStartDate = date);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-            ),
-            borderRadius: AppRadius.borderS,
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.calendar_month_rounded,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _cycleStartDate == null
-                    ? 'Дата создания (По умолчанию)'
-                    : '${_cycleStartDate!.day.toString().padLeft(2, '0')}.${_cycleStartDate!.month.toString().padLeft(2, '0')}.${_cycleStartDate!.year}',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-    ];
-  }
-
-  List<Widget> _buildXStepper(
-    ThemeData theme, {
-    required String label,
-    required int value,
-    required int min,
-    required int max,
-    required ValueChanged<int> onChanged,
-  }) {
-    return [
-      Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: value > min ? () => onChanged(value - 1) : null,
-          ),
-          Expanded(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: value < max ? () => onChanged(value + 1) : null,
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-    ];
   }
 }

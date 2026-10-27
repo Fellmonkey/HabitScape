@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/theme/app_colors.dart';
-import 'package:rythm/features/stats/presentation/widgets/github_heatmap.dart';
+import 'package:rythm/features/stats/presentation/widgets/heatmap_layout.dart';
 
 void main() {
   group('HeatmapLayout', () {

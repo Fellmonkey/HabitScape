@@ -46,4 +46,33 @@ void main() {
     final store = WeekAnswerStore(prefs);
     expect(store.lastAnsweredWeek, closingWeek.unixSeconds);
   });
+
+  test(
+    'answerWeek invalidates weekSummaryProvider so reads never go stale',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final db = createTestDatabase();
+      addTearDown(db.close);
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final before = await container.read(weekSummaryProvider.future);
+      expect(before.isAnswered, isFalse);
+
+      await container
+          .read(weekIntentionActionsProvider.notifier)
+          .answerWeek(before.weekStart);
+
+      // Without invalidation this would still be the cached pre-answer snapshot.
+      final after = await container.read(weekSummaryProvider.future);
+      expect(after.isAnswered, isTrue);
+    },
+  );
 }

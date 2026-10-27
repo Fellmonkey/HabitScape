@@ -86,9 +86,13 @@ class WeekIntentionActions extends Notifier<void> {
 
   /// Records that the user answered the closing [weekStart] — saved an
   /// intention or skipped it. This is the only writer of the answered marker.
+  /// It also invalidates [weekSummaryProvider], so reads reflect the answer
+  /// immediately — widgets call this one verb and never `ref.invalidate`
+  /// themselves, mirroring the Exposure command surface.
   Future<void> answerWeek(DateTime weekStart) async {
     final store = await ref.read(weekAnswerStoreProvider.future);
     await store.markAnswered(weekStart);
+    ref.invalidate(weekSummaryProvider);
   }
 }
 

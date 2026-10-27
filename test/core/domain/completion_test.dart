@@ -6,7 +6,7 @@ import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/domain/completion.dart';
 
-import '../../../fixtures/test_factories.dart';
+import '../../fixtures/test_factories.dart';
 
 MonthSpreadDay day(DateTime date, {int expected = 2, int done = 0}) =>
     MonthSpreadDay(

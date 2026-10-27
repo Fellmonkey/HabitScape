@@ -46,13 +46,10 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
     if (!mounted) return;
     Haptics.tap(ref.read(hapticsEnabledProvider));
     setState(() => _editing = false);
-    ref.invalidate(weekSummaryProvider);
   }
 
   Future<void> _skip(DateTime weekStart) async {
     await ref.read(weekIntentionActionsProvider.notifier).answerWeek(weekStart);
-    if (!mounted) return;
-    ref.invalidate(weekSummaryProvider);
   }
 
   @override
