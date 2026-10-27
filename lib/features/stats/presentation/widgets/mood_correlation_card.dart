@@ -31,22 +31,24 @@ class MoodCorrelationCard extends StatelessWidget {
                   title: 'Настроение и выполнение',
                 ),
                 const SizedBox(height: 12),
-                _CorrRow(
-                  label: 'В дни, когда всё выполнено',
+                _CorrBlock(
+                  title: 'В дни, когда всё выполнено',
                   icon: Icons.check_circle_rounded,
                   color: context.palette.emerald,
-                  value: corr.goodShareOnFull != null
-                      ? '${corr.goodShareOnFull!.round()}%'
+                  text: corr.fullDays > 0
+                      ? 'настроение хорошее в ${corr.goodShareOnFull!.round()}% случаев'
                       : 'пока мало таких дней',
+                  n: corr.fullDays > 0 ? corr.fullDays : null,
                 ),
-                const SizedBox(height: 10),
-                _CorrRow(
-                  label: 'В дни без отметок',
+                const SizedBox(height: 12),
+                _CorrBlock(
+                  title: 'В дни без отметок',
                   icon: Icons.inbox_outlined,
                   color: context.palette.greyBlue,
-                  value: corr.badShareOnEmpty != null
-                      ? '${corr.badShareOnEmpty!.round()}%'
+                  text: corr.emptyDays > 0
+                      ? 'настроение плохое в ${corr.badShareOnEmpty!.round()}% случаев'
                       : 'пока мало таких дней',
+                  n: corr.emptyDays > 0 ? corr.emptyDays : null,
                 ),
               ],
             )
@@ -72,37 +74,58 @@ class MoodCorrelationCard extends StatelessWidget {
   }
 }
 
-class _CorrRow extends StatelessWidget {
-  const _CorrRow({
-    required this.label,
+/// One correlation insight: a sentence plus the sample size it is built from.
+/// The n defends the observation from over-reading — «это наблюдение,
+/// не причина».
+class _CorrBlock extends StatelessWidget {
+  const _CorrBlock({
+    required this.title,
     required this.icon,
     required this.color,
-    required this.value,
+    required this.text,
+    this.n,
   });
 
-  final String label;
+  final String title;
   final IconData icon;
   final Color color;
-  final String value;
+  final String text;
+  final int? n;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-        const SizedBox(width: 8),
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(icon, size: 16, color: color),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        Text(title, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+        const SizedBox(height: 3),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, size: 16, color: color),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (n != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                'n = $n',
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ],
+          ],
         ),
       ],
     );

@@ -11,11 +11,13 @@ import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/capsule/domain/capsule.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
+import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
 import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
+import 'package:rythm/features/habits/providers/month_summary_providers.dart';
 import 'package:rythm/features/week/domain/week_summary.dart';
 import 'package:rythm/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,6 +79,11 @@ void main() {
                 isWindowOpen: false,
                 isAnswered: false,
               ),
+            ),
+          ),
+          monthSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              MonthSummaryView(monthStart: DateTime.now().toMidnight),
             ),
           ),
           monthGoalsProvider.overrideWith(

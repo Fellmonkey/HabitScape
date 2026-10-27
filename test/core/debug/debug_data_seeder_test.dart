@@ -182,4 +182,57 @@ void main() {
       },
     );
   });
+
+  group('DebugDataSeeder — итог месяца', () {
+    late AppDatabase db;
+    final pinned = DateTime.utc(2026, 10, 28, 14, 30);
+
+    setUp(() {
+      db = createTestDatabase();
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test(
+      'seedMonthSummary fills the current month with habits, logs, moods and goals',
+      () async {
+        final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+        await seeder.seedMonthSummary();
+
+        final today = pinned.toMidnight;
+        final monthStart = DateTime.utc(today.year, today.month, 1);
+        final monthEnd = today.add(const Duration(days: 1));
+
+        final habits = await db.habitsDao.getActiveHabits();
+        expect(habits, hasLength(2));
+        final strong = habits.firstWhere((h) => h.name == 'Чтение книг');
+        final weak = habits.firstWhere((h) => h.name == 'Бег');
+
+        final logs = await db.habitLogsDao.getLogsInRange(
+          monthStart.unixSeconds,
+          monthEnd.unixSeconds,
+        );
+        // The strong habit is logged every elapsed day of the month.
+        final strongLogs = logs.where((l) => l.habitId == strong.id).toList();
+        expect(strongLogs.length, today.day);
+        // The weak habit lags clearly behind.
+        final weakLogs = logs.where((l) => l.habitId == weak.id).toList();
+        expect(weakLogs.length, lessThan(strongLogs.length));
+
+        final notes = await db.dayNotesDao.getNotesInRange(
+          monthStart.unixSeconds,
+          monthEnd.unixSeconds,
+        );
+        expect(notes, isNotEmpty);
+
+        final goals = await db.monthlyGoalsDao.getGoalsForMonth(
+          monthStart.unixSeconds,
+        );
+        expect(goals, hasLength(3));
+        expect(goals.where((g) => g.isDone), hasLength(1));
+      },
+    );
+  });
 }

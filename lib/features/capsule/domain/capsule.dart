@@ -106,3 +106,53 @@ String wroteAgoLabel(Letter letter) {
   if (days >= 150) return 'полгода назад';
   return 'месяц назад';
 }
+
+/// Cumulative capsule statistics: how many were sent, opened and replied to,
+/// and when the next locked one opens. Pure — derived only from the feed's
+/// letters, never from the wall clock.
+class CapsuleStats {
+  const CapsuleStats({
+    required this.sent,
+    required this.opened,
+    required this.replied,
+    this.nextDueInDays,
+  });
+
+  /// Total capsules ever written.
+  final int sent;
+
+  /// Of [sent], how many have been opened.
+  final int opened;
+
+  /// Of [opened], how many got a written reply.
+  final int replied;
+
+  /// Whole days until the next locked capsule opens (null when none pending).
+  final int? nextDueInDays;
+
+  factory CapsuleStats.fromLetters(List<Letter> letters, DateTime today) {
+    final opened = letters.where((letter) => letter.isOpened).toList();
+    final replied = opened
+        .where((letter) => letter.reply?.trim().isNotEmpty ?? false)
+        .length;
+
+    final pending =
+        letters
+            .where(
+              (letter) =>
+                  !letter.isOpened &&
+                  dateFromUnix(letter.deliverAt).isAfter(today.toMidnight),
+            )
+            .toList()
+          ..sort((a, b) => a.deliverAt.compareTo(b.deliverAt));
+
+    return CapsuleStats(
+      sent: letters.length,
+      opened: opened.length,
+      replied: replied,
+      nextDueInDays: pending.isEmpty ? null : daysUntil(pending.first, today),
+    );
+  }
+
+  bool get hasHistory => sent > 0;
+}

@@ -18,6 +18,14 @@ class MonthlyGoalsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  /// Gets the goals of one month (one-shot).
+  Future<List<MonthlyGoal>> getGoalsForMonth(int monthTs) {
+    return (select(monthlyGoals)
+          ..where((g) => g.month.equals(monthTs))
+          ..orderBy([(g) => OrderingTerm.asc(g.id)]))
+        .get();
+  }
+
   /// Adds a goal to a month and returns its id.
   Future<int> addGoal(int monthTs, String title) {
     return into(

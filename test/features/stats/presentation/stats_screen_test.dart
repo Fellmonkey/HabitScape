@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
@@ -109,5 +110,81 @@ void main() {
 
     expect(find.text(_notComparableText), findsOneWidget);
     expect(find.text(_noRecordsText), findsNothing);
+  });
+
+  testWidgets('header opens the year summary', (tester) async {
+    await seed(partialDays: 0);
+    await pumpStats(tester);
+
+    expect(find.byKey(K.yearSummaryOpen), findsOneWidget);
+    expect(find.text('Итоги года'), findsOneWidget);
+  });
+
+  testWidgets('correlation reads as an insight with a sample size', (
+    tester,
+  ) async {
+    final createdAt = DateTime.now().toMidnight
+        .subtract(const Duration(days: 400))
+        .unixSeconds;
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        makeHabitCompanion(name: 'Зарядка', createdAt: createdAt),
+        makeHabitCompanion(name: 'Чтение', createdAt: createdAt),
+      ]);
+    });
+
+    final today = DateTime.now().toMidnight;
+    final logs = <HabitLogsCompanion>[];
+    final notes = <DayNotesCompanion>[];
+    // Ten fully-done days with a good mood.
+    for (var i = 0; i < 10; i++) {
+      final date = today.subtract(Duration(days: i));
+      logs.add(
+        HabitLogsCompanion.insert(
+          habitId: 1,
+          date: date.unixSeconds,
+          status: const Value(LogStatus.done),
+        ),
+      );
+      logs.add(
+        HabitLogsCompanion.insert(
+          habitId: 2,
+          date: date.unixSeconds,
+          status: const Value(LogStatus.done),
+        ),
+      );
+      notes.add(
+        DayNotesCompanion.insert(
+          date: date.unixSeconds,
+          mood: const Value(DayMood.good),
+        ),
+      );
+    }
+    // Ten empty days with a bad mood.
+    for (var i = 11; i < 21; i++) {
+      final date = today.subtract(Duration(days: i));
+      notes.add(
+        DayNotesCompanion.insert(
+          date: date.unixSeconds,
+          mood: const Value(DayMood.bad),
+        ),
+      );
+    }
+    await db.batch((batch) {
+      batch.insertAll(db.habitLogs, logs);
+      batch.insertAll(db.dayNotes, notes);
+    });
+
+    await pumpStats(tester);
+
+    expect(
+      find.textContaining('настроение хорошее в 100% случаев'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('настроение плохое в 100% случаев'),
+      findsOneWidget,
+    );
+    expect(find.text('n = 10'), findsNWidgets(2));
   });
 }

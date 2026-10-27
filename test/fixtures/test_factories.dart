@@ -121,6 +121,7 @@ Letter makeLetterSnapshot({
   String body = 'Письмо себе',
   bool isOpened = false,
   int? openedAt,
+  String? reply,
 }) {
   return Letter(
     id: id,
@@ -129,6 +130,7 @@ Letter makeLetterSnapshot({
     body: body,
     isOpened: isOpened,
     openedAt: openedAt,
+    reply: reply,
   );
 }
 

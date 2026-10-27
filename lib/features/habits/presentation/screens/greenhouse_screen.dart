@@ -12,6 +12,7 @@ import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/today_board.dart';
@@ -27,6 +28,7 @@ import '../widgets/entrance.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
+import '../widgets/month_summary_card.dart';
 import '../widgets/progress_ring.dart';
 import '../widgets/today_group_visuals.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
@@ -224,6 +226,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         const SliverToBoxAdapter(child: WeekSummaryCard()),
 
+        const SliverToBoxAdapter(child: MonthSummaryCard()),
+
         const SliverToBoxAdapter(child: FeatureHintBanner()),
 
         if (habits.isEmpty)
@@ -270,7 +274,16 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                 _entryRow(_entries[index], animation),
           ),
 
-        // -- Reflection block (bottom): goals first --
+        // ── Reflection block (bottom): goals first ──
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
+            child: const AppSectionHeader(
+              icon: Icons.self_improvement_rounded,
+              title: 'Рефлексия',
+            ),
+          ),
+        ),
         const SliverToBoxAdapter(child: MonthGoalsCard()),
         const SliverToBoxAdapter(child: CapsuleCard()),
         if (!echoAtTop) const SliverToBoxAdapter(child: EchoCard()),

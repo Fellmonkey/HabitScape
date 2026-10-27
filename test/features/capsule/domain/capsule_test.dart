@@ -186,4 +186,52 @@ void main() {
       expect(wroteAgoLabel(letter), 'год назад');
     });
   });
+
+  group('CapsuleStats', () {
+    final today = DateTime.utc(2026, 11, 1);
+
+    test('counts sent, opened and replied', () {
+      final stats = CapsuleStats.fromLetters([
+        makeLetterSnapshot(
+          id: 1,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+          isOpened: true,
+          reply: 'Сбылось',
+        ),
+        makeLetterSnapshot(
+          id: 2,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+          isOpened: true,
+        ),
+        makeLetterSnapshot(
+          id: 3,
+          deliverAt: DateTime.utc(2026, 12, 1).unixSeconds,
+        ),
+      ], today);
+
+      expect(stats.sent, 3);
+      expect(stats.opened, 2);
+      expect(stats.replied, 1);
+      expect(stats.nextDueInDays, 30);
+      expect(stats.hasHistory, isTrue);
+    });
+
+    test('no pending capsule means no next opening', () {
+      final stats = CapsuleStats.fromLetters([
+        makeLetterSnapshot(
+          id: 1,
+          deliverAt: DateTime.utc(2026, 10, 1).unixSeconds,
+          isOpened: true,
+        ),
+      ], today);
+
+      expect(stats.nextDueInDays, isNull);
+    });
+
+    test('empty history has nothing to show', () {
+      final stats = CapsuleStats.fromLetters(const [], today);
+      expect(stats.hasHistory, isFalse);
+      expect(stats.sent, 0);
+    });
+  });
 }

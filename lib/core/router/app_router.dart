@@ -9,6 +9,7 @@ import '../../features/habits/presentation/screens/habit_detail_screen.dart';
 import '../../features/habits/presentation/screens/month_spread_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
+import '../../features/stats/presentation/screens/year_summary_screen.dart';
 import '../database/app_database.dart';
 import '../theme/motion_tokens.dart';
 import 'shell_scaffold.dart';
@@ -83,6 +84,13 @@ GoRouter buildAppRouter({
         pageBuilder: (context, state) => _motionPage(
           name: state.uri.toString(),
           child: LetterScreen(capsule: state.extra! as Letter),
+        ),
+      ),
+      GoRoute(
+        path: '/year',
+        pageBuilder: (context, state) => _motionPage(
+          name: state.uri.toString(),
+          child: const YearSummaryScreen(),
         ),
       ),
     ],

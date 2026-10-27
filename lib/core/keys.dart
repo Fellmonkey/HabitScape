@@ -123,4 +123,19 @@ abstract final class K {
   static const weekIntentionField = Key('week_intention_field');
   static const weekIntentionSave = Key('week_intention_save');
   static const weekIntentionSkip = Key('week_intention_skip');
+
+  // ── Month summary (Итог месяца) ────────────────────────────
+  static const monthSummaryCard = Key('month_summary_card');
+  static const monthSummaryTitle = Key('month_summary_title');
+  static const debugMonthSummaryPreview = Key('debug_month_summary_preview');
+
+  // ── Year summary (Итоги года) ──────────────────────────────
+  static const yearSummaryOpen = Key('year_summary_open');
+  static const yearSummaryScreen = Key('year_summary_screen');
+  static const yearSummaryTitle = Key('year_summary_title');
+  static const yearPixelsGrid = Key('year_pixels_grid');
+  static const yearStatsLines = Key('year_stats_lines');
+
+  // ── Capsule stats ──────────────────────────────────────────
+  static const capsuleStatsStrip = Key('capsule_stats_strip');
 }

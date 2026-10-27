@@ -88,8 +88,98 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           _buildComposer(context),
-          if (feed != null) ..._buildSections(feed),
+          if (feed != null) ...[
+            _buildStatsStrip(
+              context,
+              CapsuleStats.fromLetters([
+                ...feed.upcoming,
+                ...feed.due,
+                ...feed.opened,
+              ], feed.today),
+            ),
+            ..._buildSections(feed),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// «Капсулы в цифрах»: a quiet cumulative strip — sent / opened / replied,
+  /// plus the next opening if one is pending. Only appears once there is a
+  /// history to count.
+  Widget _buildStatsStrip(BuildContext context, CapsuleStats stats) {
+    final theme = Theme.of(context);
+    if (!stats.hasHistory) return const SizedBox.shrink();
+
+    Widget mini(String value, String label) => Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
+          borderRadius: AppRadius.borderM,
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final nextLine = stats.nextDueInDays != null
+        ? 'Следующая откроется через ${stats.nextDueInDays} '
+              '${pluralDays(stats.nextDueInDays!)}'
+        : 'Писем в пути нет';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Material(
+        key: K.capsuleStatsStrip,
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderL,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Капсулы в цифрах',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  mini('${stats.sent}', 'Послано'),
+                  const SizedBox(width: 8),
+                  mini('${stats.opened}', 'Открыто'),
+                  const SizedBox(width: 8),
+                  mini('${stats.replied}', 'Отвечено'),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                nextLine,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

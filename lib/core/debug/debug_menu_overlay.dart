@@ -10,6 +10,7 @@ import '../settings/hintful.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'debug_data_seeder.dart';
+import 'month_summary_preview.dart';
 
 /// Draggable floating button that opens the debug menu (debug builds only).
 class DebugMenuOverlay extends StatefulWidget {
@@ -238,6 +239,14 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     }
   }
 
+  /// Opens the «Итог месяца» preview — computed live, outside the window.
+  void _showMonthSummary() {
+    AppSheets.show<void>(
+      context,
+      builder: (_) => const MonthSummaryPreviewSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -371,6 +380,37 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.sageGreen,
               side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+
+        // ── Month summary helpers ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Итог месяца: данные созданы',
+                    (s) => s.seedMonthSummary(),
+                  ),
+            icon: const Icon(Icons.event_available_outlined, size: 18),
+            label: const Text('Итог месяца: данные созданы'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _showMonthSummary,
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('Показать итог месяца'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
             ),
           ),
         ),

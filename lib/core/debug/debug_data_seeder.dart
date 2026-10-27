@@ -607,6 +607,79 @@ class DebugDataSeeder {
     );
   }
 
+  /// Seeds data for «Итог месяца»: a realistic closing month — two habits
+  /// (strong/weak), logs across the elapsed days, moods and goals — so the
+  /// month summary card (or the debug preview) has something to summarize.
+  Future<void> seedMonthSummary() async {
+    final now = _todayMidnight;
+    final start = firstOfMonth(now);
+    final rng = Random(43);
+
+    // Two habits: one strong, one weak — the best-habit pick should be
+    // readable, and the completion percentage neither 0 nor 100.
+    final strong = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: const Value('Чтение книг'),
+        createdAt: Value(start.subtract(const Duration(days: 30)).unixSeconds),
+        icon: const Value('book'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        timeOfDay: const Value('evening'),
+      ),
+    );
+    final weak = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: const Value('Бег'),
+        createdAt: Value(start.subtract(const Duration(days: 30)).unixSeconds),
+        icon: const Value('run'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        timeOfDay: const Value('morning'),
+      ),
+    );
+
+    // Log the elapsed days of the current month (1st → today).
+    var day = start;
+    while (!day.isAfter(now)) {
+      await db.habitLogsDao.upsertLog(
+        HabitLogsCompanion(
+          habitId: Value(strong),
+          date: Value(day.unixSeconds),
+          status: const Value(LogStatus.done),
+          loggedHour: const Value(21),
+        ),
+      );
+      // Weak habit: done ~1 day out of 3 so it clearly lags.
+      final doneToday = day.difference(start).inDays % 3 == 0;
+      if (doneToday) {
+        await db.habitLogsDao.upsertLog(
+          HabitLogsCompanion(
+            habitId: Value(weak),
+            date: Value(day.unixSeconds),
+            status: const Value(LogStatus.done),
+            loggedHour: const Value(8),
+          ),
+        );
+      }
+      // Most days carry a mood note, ~2/3 good.
+      if (rng.nextDouble() < 0.85) {
+        await db.dayNotesDao.upsertNote(
+          day.unixSeconds,
+          moment: rng.nextDouble() < 0.5 ? 'День в порядке' : null,
+          mood: rng.nextDouble() < 0.66 ? DayMood.good : DayMood.ok,
+        );
+      }
+      day = day.add(const Duration(days: 1));
+    }
+
+    // Three goals for the month; one already done.
+    await _generateMonthGoals(now);
+    final goals = await db.monthlyGoalsDao.getGoalsForMonth(start.unixSeconds);
+    if (goals.isNotEmpty) {
+      await db.monthlyGoalsDao.setGoalDone(goals.first.id, isDone: true);
+    }
+  }
+
   /// Maps a day's completion ratio to a mood with noise — the shared
   /// generation curve in `core/domain/mood_rule.dart`, which mirrors the
   /// relationship the stats insight measures.

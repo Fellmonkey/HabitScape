@@ -47,6 +47,11 @@ void main() {
   });
 
   Future<void> pumpScreen(WidgetTester tester, {bool autofocus = false}) async {
+    // Tall viewport: the sections below the composer (and the stats strip)
+    // must be built; ListView doesn't build what is off-screen.
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -163,5 +168,47 @@ void main() {
       fakeActions.created.single.deliverAt,
     ).difference(DateTime.now().toMidnight).inDays;
     expect(days, inInclusiveRange(360, 370));
+  });
+
+  testWidgets('shows cumulative capsule statistics once there is history', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    expect(find.text('Капсулы в цифрах'), findsNothing);
+
+    final today = DateTime.now().toMidnight;
+    lettersController.add([
+      Letter(
+        id: 1,
+        createdAt: today.subtract(const Duration(days: 35)).unixSeconds,
+        deliverAt: today.subtract(const Duration(days: 30)).unixSeconds,
+        body: 'Сбылось ли?',
+        isOpened: true,
+        openedAt: today.subtract(const Duration(days: 30)).unixSeconds,
+        reply: 'Да, сбылось',
+      ),
+      Letter(
+        id: 2,
+        createdAt: today.subtract(const Duration(days: 35)).unixSeconds,
+        deliverAt: today.subtract(const Duration(days: 30)).unixSeconds,
+        body: 'Без ответа',
+        isOpened: true,
+        openedAt: today.subtract(const Duration(days: 30)).unixSeconds,
+      ),
+      Letter(
+        id: 3,
+        createdAt: today.subtract(const Duration(days: 5)).unixSeconds,
+        deliverAt: today.add(const Duration(days: 20)).unixSeconds,
+        body: 'В пути',
+        isOpened: false,
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Капсулы в цифрах'), findsOneWidget);
+    expect(find.text('Послано'), findsOneWidget);
+    expect(find.text('Открыто'), findsOneWidget);
+    expect(find.text('Отвечено'), findsOneWidget);
+    expect(find.text('Следующая откроется через 20 дней'), findsOneWidget);
   });
 }
