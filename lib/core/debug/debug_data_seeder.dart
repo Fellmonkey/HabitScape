@@ -534,6 +534,68 @@ class DebugDataSeeder {
     );
   }
 
+  /// Seeds a realistic capsule + intentions history: several opened capsules
+  /// (one with a reply), several locked upcoming ones, and weekly intentions
+  /// across the past weeks — so the capsule stats strip and the stats screen's
+  /// «Намерения недель» card have something to show.
+  Future<void> seedCapsulesAndIntentions() async {
+    final now = _todayMidnight;
+
+    // ── Capsules ────────────────────────────────────────────
+    // Opened: written a month ago, opened weeks ago. One carries a reply.
+    final opened = [
+      (body: 'Не бросай бег', reply: 'Не бросил: 3 пробежки в неделю'),
+      (body: 'Помни про цель года', reply: null),
+      (body: 'Позвони маме чаще', reply: null),
+    ];
+    for (var i = 0; i < opened.length; i++) {
+      final createdAt = shiftMonths(now, -3 - i).unixSeconds;
+      final deliverAt = shiftMonths(now, -2 - i).unixSeconds;
+      final id = await db.lettersDao.addLetter(
+        deliverAt: deliverAt,
+        body: opened[i].body,
+        createdAt: createdAt,
+      );
+      final openedAt = shiftMonths(now, -1 - i).unixSeconds;
+      if (opened[i].reply != null) {
+        await db.lettersDao.setReply(id, opened[i].reply);
+      }
+      await db.lettersDao.markOpened(id, openedAt);
+    }
+
+    // Locked (upcoming): due next week and in a month.
+    await db.lettersDao.addLetter(
+      deliverAt: now.add(const Duration(days: 7)).unixSeconds,
+      body: 'Что изменилось за неделю?',
+      createdAt: now.unixSeconds,
+    );
+    await db.lettersDao.addLetter(
+      deliverAt: shiftMonths(now, 1).unixSeconds,
+      body: 'Письмо себе через месяц',
+      createdAt: now.unixSeconds,
+    );
+
+    // ── Weekly intentions ───────────────────────────────────
+    // Past weeks (2–8 weeks ago), so the following week of each has already
+    // happened and the "reality" percentage can be computed.
+    final intentions = [
+      'Бег по вторникам',
+      'Ложиться до полуночи',
+      'Без сахара по будням',
+      'Читать 20 минут в день',
+      'Разобрать рабочий стол',
+      'Звонить маме по воскресеньям',
+      'Гулять в обед',
+    ];
+    for (var i = 0; i < intentions.length; i++) {
+      final weekStart = weekStartOf(now).subtract(Duration(days: 7 * (i + 2)));
+      await db.weeklyIntentionsDao.setIntention(
+        weekStart.unixSeconds,
+        intentions[i],
+      );
+    }
+  }
+
   /// Seeds data for idea D — «Итог недели»: a realistic current week with
   /// moods, logs and a saved previous-week intention, so the card renders its
   /// full analysis + reminder state.

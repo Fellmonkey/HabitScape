@@ -182,14 +182,29 @@ void main() {
 
     await pumpStats(tester);
 
+    final correlationCard = find.byKey(K.statsCorrelation);
     expect(
-      find.textContaining('настроение хорошее в 100% случаев'),
+      find.descendant(
+        of: correlationCard,
+        matching: find.text('Хорошее настроение'),
+      ),
       findsOneWidget,
     );
     expect(
-      find.textContaining('настроение плохое в 100% случаев'),
+      find.descendant(
+        of: correlationCard,
+        matching: find.text('Плохое настроение'),
+      ),
       findsOneWidget,
     );
-    expect(find.text('n = 10'), findsNWidgets(2));
+    expect(
+      find.descendant(of: correlationCard, matching: find.text('100%')),
+      findsNWidgets(2),
+    );
+    expect(
+      find.descendant(of: correlationCard, matching: find.text('n = 10')),
+      findsNWidgets(2),
+    );
+    expect(find.textContaining('Это наблюдение, а не причина'), findsOneWidget);
   });
 }

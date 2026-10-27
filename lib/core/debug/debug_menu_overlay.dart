@@ -372,6 +372,23 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             onPressed: _seeding
                 ? null
                 : () => _seedCapsule(
+                    'Капсулы и намерения: история создана',
+                    (s) => s.seedCapsulesAndIntentions(),
+                  ),
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('Капсулы и намерения: история'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.darkLavender,
+              side: const BorderSide(color: AppColors.darkLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
                     'Итог недели: данные созданы',
                     (s) => s.seedWeekSummary(),
                   ),

@@ -234,5 +234,23 @@ void main() {
         expect(goals.where((g) => g.isDone), hasLength(1));
       },
     );
+
+    test(
+      'seedCapsulesAndIntentions fills capsules and weekly intentions',
+      () async {
+        final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+        await seeder.seedCapsulesAndIntentions();
+
+        final letters = await db.lettersDao.getAllLetters();
+        // 3 opened + 2 locked.
+        expect(letters, hasLength(5));
+        expect(letters.where((l) => l.isOpened), hasLength(3));
+        expect(letters.where((l) => l.reply != null), hasLength(1));
+
+        final intentions = await db.weeklyIntentionsDao.getAllIntentions();
+        expect(intentions, hasLength(7));
+        expect(intentions.every((i) => i.intention != null), isTrue);
+      },
+    );
   });
 }
