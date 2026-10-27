@@ -32,8 +32,12 @@ class _HabitCardState extends ConsumerState<HabitCard>
   late final AnimationController _bounceController;
   late final Animation<double> _scaleAnim;
 
-  bool get _isDone =>
-      widget.log != null && widget.log!.status == LogStatus.done;
+  /// Optimistic done: set the moment the user taps, so the check fills in
+  /// instantly instead of waiting for the database stream round-trip. Cleared
+  /// if the write fails.
+  bool _pendingDone = false;
+
+  bool get _isDone => widget.log?.status == LogStatus.done || _pendingDone;
 
   bool get _showFreqBadge {
     final type = FrequencyType.fromString(widget.habit.frequencyType);
@@ -85,9 +89,14 @@ class _HabitCardState extends ConsumerState<HabitCard>
     if (_isDone) return;
     Haptics.medium(ref.read(hapticsEnabledProvider));
     if (!AppMotion.mayDisable(context)) _bounceController.forward(from: 0);
-    ref.read(habitActionsProvider.notifier).logToday([
-      widget.habit.id,
-    ], status: LogStatus.done);
+    setState(() => _pendingDone = true);
+    try {
+      await ref.read(habitActionsProvider.notifier).logToday([
+        widget.habit.id,
+      ], status: LogStatus.done);
+    } catch (_) {
+      if (mounted) setState(() => _pendingDone = false);
+    }
   }
 
   @override

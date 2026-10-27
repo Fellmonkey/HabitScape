@@ -84,6 +84,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   List<_BoardEntry> _entries = const [];
   List<_BoardEntry>? _pendingNext;
 
+  /// Above this many row changes in one frame the diff is applied instantly —
+  /// animating dozens of insert/remove animations at once (e.g. toggling
+  /// "hide completed" on a 30-habit board) stalls the frame and makes the UI
+  /// feel like it "collects" changes before showing them.
+  static const _bulkChangeThreshold = 8;
+
   @override
   String get tourScope => AppTourIds.greenhouse;
 
@@ -337,7 +343,20 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       return;
     }
 
+    // Bulk changes (many rows appearing/disappearing at once, e.g. toggling
+    // "hide completed" on a large board) are applied with zero-duration
+    // animations — animating dozens of rows at once stalls the frame and
+    // makes the UI feel like it "collects" changes before showing them. The
+    // list is still told about every row via its own API, so it never
+    // desyncs; it just doesn't animate.
+    final currentIds = {for (final e in _entries) e.id};
     final nextIds = {for (final e in next) e.id};
+    final shared = currentIds.intersection(nextIds).length;
+    final changeCount = (_entries.length - shared) + (next.length - shared);
+    final duration = changeCount > _bulkChangeThreshold
+        ? Duration.zero
+        : AppMotion.base;
+
     var work = List<_BoardEntry>.of(_entries);
 
     // Removals first, back to front so indices stay valid mid-animation.
@@ -347,7 +366,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       list.removeItem(
         i,
         (context, animation) => _entryRow(removed, animation, removing: true),
-        duration: AppMotion.base,
+        duration: duration,
       );
       work.removeAt(i);
     }
@@ -359,7 +378,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         wi++;
         continue;
       }
-      list.insertItem(wi, duration: AppMotion.base);
+      list.insertItem(wi, duration: duration);
       work.insert(wi, next[ni]);
       wi++;
     }

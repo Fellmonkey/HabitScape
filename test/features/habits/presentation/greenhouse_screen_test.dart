@@ -13,6 +13,7 @@ import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
 import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
+import 'package:rythm/features/habits/presentation/widgets/habit_card.dart';
 import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
@@ -232,6 +233,98 @@ void main() {
       ),
     );
     expect(prefs.getInt(echoTopKey()), 1);
+    await disposeTree(tester);
+  });
+
+  testWidgets('tapping the check marks the habit done instantly', (
+    tester,
+  ) async {
+    final today = todayTimestamp();
+    // The habit must exist in the database for the log's foreign key.
+    await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Сделано', timeOfDay: 'morning'),
+    );
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Сделано', timeOfDay: 'morning')],
+    );
+
+    final check = find.byKey(K.habitCheck(1));
+    // Before the tap: no check mark inside the circle, no strikethrough.
+    expect(
+      find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+      findsNothing,
+    );
+    final before = tester.widget<Text>(find.text('Сделано'));
+    expect(before.style?.decoration, isNot(TextDecoration.lineThrough));
+
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+
+    // The write really reached the database.
+    final logs = await db.habitLogsDao.getAllLogs();
+    expect(logs, hasLength(1));
+    expect(logs.single.status, LogStatus.done);
+    expect(logs.single.date, today);
+
+    // The check fills in (optimistic) and the title is struck through.
+    expect(
+      find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+      findsOneWidget,
+    );
+    final after = tester.widget<Text>(find.text('Сделано'));
+    expect(after.style?.decoration, TextDecoration.lineThrough);
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('hide-completed applies a large board instantly', (tester) async {
+    // Tall viewport so all twelve rows are built (slivers are lazy).
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final today = todayTimestamp();
+    final habits = [
+      for (var id = 1; id <= 12; id++)
+        makeHabit(id: id, name: 'Привычка $id', timeOfDay: 'morning'),
+    ];
+    final logs = [
+      for (var id = 1; id <= 6; id++)
+        makeLog(
+          id: id,
+          habitId: id,
+          date: today,
+          status: LogStatus.done,
+          loggedHour: 8,
+        ),
+    ];
+    // All twelve must exist in the database (logs reference them by FK).
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        for (final h in habits)
+          makeHabitCompanion(name: h.name, timeOfDay: 'morning'),
+      ]);
+    });
+    await pumpGreenhouse(tester, habits: habits, logs: logs);
+
+    // All twelve are visible before toggling.
+    expect(find.byType(HabitCard), findsNWidgets(12));
+    for (var id = 1; id <= 12; id++) {
+      expect(find.text('Привычка $id'), findsOneWidget);
+    }
+
+    await tester.tap(find.byKey(K.hideCompletedToggle));
+    await tester.pumpAndSettle();
+
+    // Six cards remain — the done ones are gone.
+    expect(find.byType(HabitCard), findsNWidgets(6));
+    for (var id = 1; id <= 6; id++) {
+      expect(find.text('Привычка $id'), findsNothing);
+    }
+    for (var id = 7; id <= 12; id++) {
+      expect(find.text('Привычка $id'), findsOneWidget);
+    }
+
     await disposeTree(tester);
   });
 }
