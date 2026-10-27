@@ -7,7 +7,6 @@ import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/router/app_router.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Creates an in-memory [AppDatabase] for integration tests (FK enabled).
@@ -47,11 +46,9 @@ Future<AppDatabase> pumpApp(
   final prefsValues =
       sharedPrefsValues ??
       {
-        'onboarding_seen': [
-          AppTourIds.greenhouse,
-          AppTourIds.spread,
-          AppTourIds.settings,
-        ],
+        'hintful.greenhouse': 'true',
+        'hintful.spread': 'true',
+        'hintful.settings': 'true',
       };
   SharedPreferences.setMockInitialValues(prefsValues);
   final prefs = await SharedPreferences.getInstance();

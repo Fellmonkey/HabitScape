@@ -21,36 +21,44 @@ abstract final class AppTourIds {
 }
 
 abstract final class AppTours {
+  /// Missing targets skip their step — hintful's tour-level default, so it is
+  /// not restated per tour.
   static HintTour greenhouse() => HintTour(
     id: AppTourIds.greenhouse,
-    missingTargetPolicy: HintMissingTargetPolicy.skipStep,
     steps: [
       HintStep(
         targetId: AppHintIds.greenhouseMoment,
-        title: TourContent.greenhouseMoment.title,
-        description: TourContent.greenhouseMoment.description,
+        content: HintStepContent(
+          title: TourContent.greenhouseMoment.title,
+          description: TourContent.greenhouseMoment.description,
+        ),
       ),
       HintStep(
         targetId: AppHintIds.greenhouseSpread,
-        title: TourContent.greenhouseSpread.title,
-        description: TourContent.greenhouseSpread.description,
+        content: HintStepContent(
+          title: TourContent.greenhouseSpread.title,
+          description: TourContent.greenhouseSpread.description,
+        ),
       ),
     ],
   );
 
   static HintTour spread() => HintTour(
     id: AppTourIds.spread,
-    missingTargetPolicy: HintMissingTargetPolicy.skipStep,
     steps: [
       HintStep(
         targetId: AppHintIds.spreadGrid,
-        title: TourContent.spreadSwipe.title,
-        description: TourContent.spreadSwipe.description,
+        content: HintStepContent(
+          title: TourContent.spreadSwipe.title,
+          description: TourContent.spreadSwipe.description,
+        ),
       ),
       HintStep(
         targetId: AppHintIds.spreadDay,
-        title: TourContent.spreadDay.title,
-        description: TourContent.spreadDay.description,
+        content: HintStepContent(
+          title: TourContent.spreadDay.title,
+          description: TourContent.spreadDay.description,
+        ),
       ),
     ],
   );
@@ -60,8 +68,10 @@ abstract final class AppTours {
     steps: [
       HintStep(
         targetId: AppHintIds.settingsExport,
-        title: TourContent.settingsHere.title,
-        description: TourContent.settingsHere.description,
+        content: HintStepContent(
+          title: TourContent.settingsHere.title,
+          description: TourContent.settingsHere.description,
+        ),
       ),
     ],
   );

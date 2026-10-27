@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -12,40 +11,6 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     prefs = await SharedPreferences.getInstance();
-  });
-
-  group('tours', () {
-    test('defaults to no seen tours', () {
-      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
-
-      expect(exposure.seenTours, isEmpty);
-      expect(exposure.hasSeenTour(AppTourIds.greenhouse), isFalse);
-    });
-
-    test('marks a tour seen once and persists it', () async {
-      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
-      await exposure.markTourSeen(AppTourIds.greenhouse);
-      await exposure.markTourSeen(AppTourIds.greenhouse);
-
-      expect(exposure.hasSeenTour(AppTourIds.greenhouse), isTrue);
-      expect(prefs.getStringList(Exposure.tourSeenKey), [
-        AppTourIds.greenhouse,
-      ]);
-
-      final later = Exposure(prefs, today: DateTime.utc(2026, 1, 2));
-      expect(later.hasSeenTour(AppTourIds.greenhouse), isTrue);
-    });
-
-    test('resetTours clears every flag and the persisted value', () async {
-      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
-      await exposure.markTourSeen(AppTourIds.greenhouse);
-      await exposure.markTourSeen(AppTourIds.settings);
-
-      await exposure.resetTours();
-
-      expect(exposure.seenTours, isEmpty);
-      expect(prefs.getStringList(Exposure.tourSeenKey), isNull);
-    });
   });
 
   group('echo placement', () {

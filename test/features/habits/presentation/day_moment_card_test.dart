@@ -33,7 +33,7 @@ void main() {
     List<String> onboardingSeen = const [],
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
-      'onboarding_seen': onboardingSeen,
+      for (final tour in onboardingSeen) 'hintful.$tour': 'true',
     });
     prefs = await SharedPreferences.getInstance();
 

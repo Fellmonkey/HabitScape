@@ -8,11 +8,12 @@ import 'today.dart';
 
 /// One policy for everything the app chooses to show, and when.
 ///
-/// Owns every piece of exposure state — tours already seen, hints dismissed,
-/// echo placement and cooldown, and seen memories — on top of one preferences
-/// store. Feature code asks questions ([hasSeenTour], [hintVisible],
-/// [echoAtTop], [echoCardVisible]) and records exposure only after the thing
-/// actually appeared; it never invents its own keys or cadence.
+/// Owns every piece of exposure state — hints dismissed, echo placement and
+/// cooldown, and seen memories — on top of one preferences store. Tour
+/// bookkeeping lives in the hintful store (`core/settings/hintful.dart`), not
+/// here. Feature code asks questions ([hintVisible], [echoAtTop],
+/// [echoCardVisible]) and records exposure only after the thing actually
+/// appeared; it never invents its own keys or cadence.
 class Exposure {
   Exposure(this._prefs, {required DateTime today}) : today = today.toMidnight;
 
@@ -21,7 +22,6 @@ class Exposure {
   /// The day this snapshot is for.
   final DateTime today;
 
-  static const tourSeenKey = 'onboarding_seen';
   static const echoSeenDatesKey = 'echo_seen_dates';
   static const echoLastShownKey = 'echo_last_shown_date';
   static const firstUseKey = 'first_use_date';
@@ -44,17 +44,6 @@ class Exposure {
     current.add(value);
     await _prefs.setStringList(key, current);
   }
-
-  /// Tours already shown. The ids live in `AppTourIds`.
-  Set<String> get seenTours => _stringSet(tourSeenKey);
-
-  bool hasSeenTour(String tour) => seenTours.contains(tour);
-
-  /// Marks [tour] as seen. Repeated calls keep one entry.
-  Future<void> markTourSeen(String tour) => _addToStringSet(tourSeenKey, tour);
-
-  /// Clears every tour flag — Settings and the debug menu.
-  Future<void> resetTours() => _prefs.remove(tourSeenKey);
 
   /// Hint keys the user closed for good.
   Set<String> get dismissedHints => _stringSet(dismissedHintsKey);
@@ -185,13 +174,6 @@ class ExposureActions extends Notifier<void> {
   /// Remembers [date] as shown and refreshes the snapshot.
   Future<void> recordEchoSeen(int date) =>
       _mutate((e) => e.recordEchoSeen(date));
-
-  /// Marks [tour] as seen and refreshes the snapshot.
-  Future<void> markTourSeen(String tour) =>
-      _mutate((e) => e.markTourSeen(tour));
-
-  /// Clears every tour flag and refreshes the snapshot.
-  Future<void> resetTours() => _mutate((e) => e.resetTours());
 
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));

@@ -3,7 +3,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/onboarding/tour_content.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,12 +66,9 @@ void main() {
     expect(find.text(TourContent.greenhouseMoment.description), findsNothing);
     expect(find.text(TourContent.greenhouseSpread.description), findsNothing);
 
-    // The flag was persisted as soon as the tour started.
+    // The tour was recorded in the hintful store once it ran.
     final prefs = await SharedPreferences.getInstance();
-    expect(
-      prefs.getStringList('onboarding_seen'),
-      contains(AppTourIds.greenhouse),
-    );
+    expect(prefs.getString('hintful.greenhouse'), 'true');
   });
 
   testWidgets('spread tour shows on first open and a day tap finishes it', (
@@ -119,11 +115,9 @@ void main() {
     db = await pumpApp(
       tester,
       sharedPrefsValues: {
-        'onboarding_seen': [
-          AppTourIds.greenhouse,
-          AppTourIds.spread,
-          AppTourIds.settings,
-        ],
+        'hintful.greenhouse': 'true',
+        'hintful.spread': 'true',
+        'hintful.settings': 'true',
       },
     );
 

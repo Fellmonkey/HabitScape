@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
@@ -144,7 +143,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     ],
                   ),
                 ),
-                hintTarget(
+                tourTarget(
                   AppHintIds.greenhouseSpread,
                   OutlinedButton.icon(
                     key: K.openMonthSpread,
@@ -179,7 +178,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         // ── Day moment ──
         SliverToBoxAdapter(
-          child: hintTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
+          child: tourTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
         if (echoAtTop) const SliverToBoxAdapter(child: EchoCard(atTop: true)),

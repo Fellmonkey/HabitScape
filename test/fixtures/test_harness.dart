@@ -21,13 +21,13 @@ class FauxClock implements Clock {
   DateTime now() => _now;
 }
 
-/// Prefs bootstrap that marks the standard onboarding tours as seen — the map
-/// previously copy-pasted across widget tests so tour tooltips never block
-/// `pumpAndSettle`.
+/// Prefs bootstrap that marks the standard onboarding tours as seen in the
+/// hintful store — the map previously copy-pasted across widget tests so tour
+/// tooltips never block `pumpAndSettle`.
 Map<String, Object> onboardingSeenPrefs({
   List<String> tours = const [
     AppTourIds.greenhouse,
     AppTourIds.spread,
     AppTourIds.settings,
   ],
-}) => {'onboarding_seen': tours};
+}) => {for (final tour in tours) 'hintful.$tour': 'true'};

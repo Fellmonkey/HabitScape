@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/settings/exposure.dart';
+import '../../../../core/settings/hintful.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../domain/backup_flow.dart';
@@ -38,7 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── Backup section ──────────────────────────────────────
           SectionHeader(title: 'Резервное копирование'),
           const SizedBox(height: 8),
-          hintTarget(
+          tourTarget(
             AppHintIds.settingsExport,
             SettingsTile(
               key: K.settingsExport,
@@ -152,7 +152,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _resetOnboarding(WidgetRef ref) async {
-    await ref.read(exposureActionsProvider.notifier).resetTours();
+    final store = await ref.read(hintfulStoreProvider.future);
+    store.clear();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }

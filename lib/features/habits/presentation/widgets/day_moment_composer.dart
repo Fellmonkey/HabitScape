@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/hintful.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -42,9 +42,11 @@ class _DayMomentComposerState extends ConsumerState<DayMomentComposer> {
 
   Future<void> _autofocusIfReady() async {
     if (!mounted || _controller.text.isNotEmpty) return;
-    final exposure = await ref.read(exposureProvider.future);
+    final store = await ref.read(hintfulStoreProvider.future);
     if (!mounted || _controller.text.isNotEmpty || _focusNode.hasFocus) return;
-    if (!exposure.hasSeenTour(AppTourIds.greenhouse)) return;
+    // Autofocus only once the greenhouse tour has been seen (recorded in the
+    // hintful store). `shouldShow` is the inverse: true = not seen yet.
+    if (store.shouldShow(AppTourIds.greenhouse)) return;
     _focusNode.requestFocus();
   }
 

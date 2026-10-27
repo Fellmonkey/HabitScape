@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hintful/hintful.dart';
 
-import '../../core/settings/exposure.dart';
+import '../../core/settings/hintful.dart';
 import 'app_tours.dart';
 
+/// Wraps [child] as a tour target for hintful. The only facade screens need:
+/// the hintful import itself stays inside the onboarding layer, so a screen
+/// that wants to be pointed at writes `tourTarget(AppHintIds.xxx, child)`.
+Widget tourTarget(String id, Widget child) => HintTarget(id: id, child: child);
+
 /// One-time onboarding tour for a screen: `with OnboardingTourMixin`,
-/// `tourScope` + `hintTarget(AppHintIds.xxx, child)`.
+/// `tourScope`, and `tourTarget(AppHintIds.xxx, child)` around the widgets
+/// the tour points at.
 mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     on ConsumerState<T> {
   /// Tour id from [AppTourIds].
@@ -22,13 +28,10 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
   HintController? _hintController;
   bool _starting = false;
 
-  Widget hintTarget(String id, Widget child) =>
-      HintTarget(id: id, child: child);
-
   @override
   void initState() {
     super.initState();
-    _hintController = HintController(overlayHostBuilder: defaultOverlayHost());
+    _hintController = HintController();
     WidgetsBinding.instance.addPostFrameCallback((_) => _startWhenReady());
   }
 
@@ -36,14 +39,16 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
     final controller = _hintController;
     if (controller == null || _starting) return;
     _starting = true;
-    final exposure = await ref.read(exposureProvider.future);
+    // The hintful store is the single "already shown" record. Creating it
+    // installs it as the app-wide Hintful store; `tryShowTour` then gates
+    // atomically on it and records the tour on any exit (finish / skip /
+    // abort) — no second flag, no manual bookkeeping.
+    await ref.read(hintfulStoreProvider.future);
     if (!mounted || _hintController == null) return;
-    if (exposure.hasSeenTour(tourScope)) return;
-    // Start the tour first — mark it seen only once it actually begins, so a
-    // failed start never permanently consumes the tour.
-    await _hintController!.start(hintTour);
-    if (!mounted || _hintController == null) return;
-    await ref.read(exposureActionsProvider.notifier).markTourSeen(tourScope);
+    await _hintController!.tryShowTour(
+      hintTour,
+      mark: HintMarkPolicy.onAnyExit,
+    );
   }
 
   @override

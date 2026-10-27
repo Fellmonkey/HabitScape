@@ -16,7 +16,6 @@ import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
 import 'package:rythm/features/week/domain/week_summary.dart';
 import 'package:rythm/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +30,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{
-      'onboarding_seen': [AppTourIds.greenhouse],
+      'hintful.greenhouse': 'true',
     });
     db = createTestDatabase();
   });

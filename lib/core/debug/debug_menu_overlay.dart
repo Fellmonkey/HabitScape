@@ -6,7 +6,7 @@ import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
 import '../database/database_reset.dart';
 import '../router/app_router.dart';
-import '../settings/exposure.dart';
+import '../settings/hintful.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'debug_data_seeder.dart';
@@ -197,7 +197,8 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
 
   Future<void> _resetOnboarding() async {
     try {
-      await ref.read(exposureActionsProvider.notifier).resetTours();
+      final store = await ref.read(hintfulStoreProvider.future);
+      store.clear();
       if (!mounted) return;
       setState(() {
         _lastResult = '👋 Подсказки появятся снова при открытии экранов';
