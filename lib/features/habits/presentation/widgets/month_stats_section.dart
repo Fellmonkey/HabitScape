@@ -57,7 +57,12 @@ class CompletionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = progressColor(pct);
+    final color = progressColor(
+      pct,
+      good: context.palette.sage,
+      okay: context.palette.amber,
+      bad: context.palette.rose,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

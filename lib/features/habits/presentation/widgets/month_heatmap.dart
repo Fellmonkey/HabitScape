@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
@@ -140,9 +139,9 @@ class DayCell extends StatelessWidget {
     } else if (status != null) {
       switch (status!) {
         case LogStatus.done:
-          bgColor = AppColors.sageGreen.withValues(alpha: 0.35);
+          bgColor = context.palette.sage.withValues(alpha: 0.35);
         case LogStatus.skip:
-          bgColor = AppColors.coolGreyBlue.withValues(alpha: 0.25);
+          bgColor = context.palette.greyBlue.withValues(alpha: 0.25);
         case LogStatus.pending:
           bgColor = theme.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.15,

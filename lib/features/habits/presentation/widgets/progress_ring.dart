@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 
 /// Today's completion ring in the greenhouse header. Pulses when today's
@@ -66,7 +66,7 @@ class _ProgressRingState extends State<ProgressRing>
               ),
               valueColor: AlwaysStoppedAnimation(
                 widget.progress >= 1.0
-                    ? AppColors.emeraldGlow
+                    ? context.palette.emerald
                     : theme.colorScheme.primary,
               ),
               strokeCap: StrokeCap.round,

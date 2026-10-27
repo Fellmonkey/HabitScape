@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hintful/hintful.dart';
 
 import 'app_colors.dart';
+import 'app_palette.dart';
 import 'motion_tokens.dart';
+
+export 'app_palette.dart';
 
 /// Border radius scale used across the app.
 abstract final class AppRadius {
@@ -52,7 +55,7 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.lightBackground,
       colorScheme: scheme,
       textTheme: _textTheme(AppColors.lightText),
-      extensions: [_hintTheme(scheme)],
+      extensions: [_hintTheme(scheme), AppPalette.light],
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.lightSurface,
@@ -117,14 +120,14 @@ abstract final class AppTheme {
     );
   }
 
-  // ── Dark Theme (Bioluminescence) ────────────────────────────
+  // ── Dark Theme (Ink & candlelight) ─────────────────────────
   static ThemeData get dark {
     const scheme = ColorScheme.dark(
       surface: AppColors.darkSurface,
-      primary: AppColors.glowCyan,
-      secondary: AppColors.glowViolet,
-      tertiary: AppColors.glowEmerald,
-      error: AppColors.dustyRose,
+      primary: AppColors.darkSage,
+      secondary: AppColors.darkAmber,
+      tertiary: AppColors.darkLavender,
+      error: AppColors.darkRose,
       onSurface: AppColors.darkText,
       onPrimary: AppColors.darkBackground,
     );
@@ -134,7 +137,7 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.darkBackground,
       colorScheme: scheme,
       textTheme: _textTheme(AppColors.darkText),
-      extensions: [_hintTheme(scheme)],
+      extensions: [_hintTheme(scheme), AppPalette.dark],
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.darkSurface,
@@ -167,7 +170,7 @@ abstract final class AppTheme {
         iconTheme: IconThemeData(color: AppColors.darkText),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.glowCyan,
+        backgroundColor: scheme.primary,
         foregroundColor: AppColors.darkBackground,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
         elevation: 0,
@@ -175,12 +178,12 @@ abstract final class AppTheme {
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.glowEmerald;
+            return AppPalette.dark.emerald;
           }
           return Colors.transparent;
         }),
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderS),
-        side: const BorderSide(color: AppColors.coolGreyBlue, width: 2),
+        side: const BorderSide(color: AppColors.darkGreyBlue, width: 2),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: Colors.transparent,

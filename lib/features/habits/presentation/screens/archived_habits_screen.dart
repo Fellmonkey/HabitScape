@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -217,7 +216,7 @@ class _ArchivedHabitTile extends ConsumerWidget {
           children: [
             IconButton(
               tooltip: 'Восстановить',
-              icon: Icon(Icons.restore_rounded, color: AppColors.sageGreen),
+              icon: Icon(Icons.restore_rounded, color: context.palette.sage),
               onPressed: () => _restore(context, ref),
             ),
             IconButton(

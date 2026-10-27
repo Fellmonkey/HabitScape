@@ -8,7 +8,7 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -416,20 +416,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           background: Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(left: 20),
-            color: AppColors.emeraldGlow.withValues(alpha: 0.18),
-            child: const Icon(
-              Icons.check_rounded,
-              color: AppColors.emeraldGlow,
-            ),
+            color: context.palette.emerald.withValues(alpha: 0.18),
+            child: Icon(Icons.check_rounded, color: context.palette.emerald),
           ),
           secondaryBackground: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
-            color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
-            child: const Icon(
-              Icons.pause_rounded,
-              color: AppColors.coolGreyBlue,
-            ),
+            color: context.palette.greyBlue.withValues(alpha: 0.18),
+            child: Icon(Icons.pause_rounded, color: context.palette.greyBlue),
           ),
           movementDuration: const Duration(milliseconds: 220),
           resizeDuration: const Duration(milliseconds: 220),

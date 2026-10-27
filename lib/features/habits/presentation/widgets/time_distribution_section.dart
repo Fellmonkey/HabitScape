@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/habit_engine.dart';
 
@@ -24,25 +23,25 @@ class TimeDistributionSection extends StatelessWidget {
             TimeBar(
               label: 'Утро',
               ratio: metrics.morningRatio,
-              color: AppColors.sageGreen,
+              color: context.palette.sage,
             ),
             const SizedBox(width: 8),
             TimeBar(
               label: 'День',
               ratio: metrics.afternoonRatio,
-              color: AppColors.warmAmber,
+              color: context.palette.amber,
             ),
             const SizedBox(width: 8),
             TimeBar(
               label: 'Вечер',
               ratio: metrics.eveningRatio,
-              color: AppColors.softLavender,
+              color: context.palette.lavender,
             ),
             const SizedBox(width: 8),
             TimeBar(
               label: 'Ночь',
               ratio: metrics.nightRatio,
-              color: AppColors.fadedPlum,
+              color: context.palette.plum,
             ),
           ],
         ),

@@ -6,7 +6,6 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -199,7 +198,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: ChoiceChip(
                       avatar: CircleAvatar(
-                        backgroundColor: mood.color,
+                        backgroundColor: mood.color(context),
                         radius: 6,
                       ),
                       label: Text(mood.localizedName),
@@ -264,7 +263,7 @@ class _DayMomentHelpSheet extends StatelessWidget {
           const SizedBox(height: 16),
           _HelpItem(
             icon: Icons.auto_awesome_rounded,
-            color: AppColors.sageGreen,
+            color: context.palette.sage,
             title: 'Одна строка о дне',
             text:
                 'Прокрути день в голове и запиши самое запоминающееся: '
@@ -273,7 +272,7 @@ class _DayMomentHelpSheet extends StatelessWidget {
           const SizedBox(height: 12),
           _HelpItem(
             icon: Icons.palette_outlined,
-            color: AppColors.warmAmber,
+            color: context.palette.amber,
             title: 'Цвет настроения',
             text:
                 '🟢 день был хорошим · 🟡 так себе · 🔴 плохим. '
@@ -282,7 +281,7 @@ class _DayMomentHelpSheet extends StatelessWidget {
           const SizedBox(height: 12),
           _HelpItem(
             icon: Icons.memory_rounded,
-            color: AppColors.softLavender,
+            color: context.palette.lavender,
             title: 'Память на годы',
             text:
                 'Через год ты сможешь открыть любой день и вспомнить, что '

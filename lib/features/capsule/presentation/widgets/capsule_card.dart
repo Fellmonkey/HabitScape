@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../domain/capsule.dart';
@@ -53,7 +52,7 @@ class _DueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = AppColors.warmAmber;
+    final accent = context.palette.amber;
 
     return Material(
       key: K.capsuleCardDue,
@@ -144,12 +143,12 @@ class _UpcomingCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.softLavender.withValues(alpha: 0.16),
+                  color: context.palette.lavender.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.inventory_2_outlined,
-                  color: AppColors.softLavender,
+                  color: context.palette.lavender,
                 ),
               ),
               const SizedBox(width: 12),
@@ -195,7 +194,7 @@ class _InviteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = AppColors.sageGreen;
+    final accent = context.palette.sage;
 
     return Material(
       key: K.capsuleCardInvite,

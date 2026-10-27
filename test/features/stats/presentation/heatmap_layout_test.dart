@@ -57,52 +57,104 @@ void main() {
 
   group('heatmapCellColor', () {
     const onSurface = Colors.black;
+    const doneColor = AppColors.emeraldGlow;
+    const sageColor = AppColors.sageGreen;
 
     test('thresholds map to the five tiers', () {
       expect(
-        heatmapCellColor(0.0, onSurface: onSurface),
+        heatmapCellColor(
+          0.0,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         onSurface.withValues(alpha: 0.08),
       );
       expect(
-        heatmapCellColor(0.2, onSurface: onSurface),
+        heatmapCellColor(
+          0.2,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.35),
       );
       expect(
-        heatmapCellColor(0.4, onSurface: onSurface),
+        heatmapCellColor(
+          0.4,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.6),
       );
       expect(
-        heatmapCellColor(0.7, onSurface: onSurface),
+        heatmapCellColor(
+          0.7,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.85),
       );
       expect(
-        heatmapCellColor(1.0, onSurface: onSurface),
+        heatmapCellColor(
+          1.0,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.emeraldGlow,
       );
     });
 
     test('band boundaries land on the next tier, not the previous one', () {
       expect(
-        heatmapCellColor(0.25, onSurface: onSurface),
+        heatmapCellColor(
+          0.25,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.6),
       );
       expect(
-        heatmapCellColor(0.5, onSurface: onSurface),
+        heatmapCellColor(
+          0.5,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.85),
       );
       expect(
-        heatmapCellColor(0.75, onSurface: onSurface),
+        heatmapCellColor(
+          0.75,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.emeraldGlow,
       );
       expect(
-        heatmapCellColor(0.1, onSurface: onSurface),
+        heatmapCellColor(
+          0.1,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         AppColors.sageGreen.withValues(alpha: 0.35),
       );
     });
 
     test('negative ratios read as empty (first tier)', () {
       expect(
-        heatmapCellColor(-0.5, onSurface: onSurface),
+        heatmapCellColor(
+          -0.5,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        ),
         onSurface.withValues(alpha: 0.08),
       );
     });

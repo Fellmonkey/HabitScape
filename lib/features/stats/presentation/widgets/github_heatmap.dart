@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
 import '../../../../core/domain/completion.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/localized_dates.dart';
@@ -134,6 +135,8 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
                 layout: layout,
                 today: widget.today,
                 todayColor: theme.colorScheme.primary,
+                doneColor: context.palette.emerald,
+                sageColor: context.palette.sage,
                 weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 10,
                 ),
@@ -157,6 +160,8 @@ class _HeatmapPainter extends CustomPainter {
     required this.layout,
     required this.today,
     required this.todayColor,
+    required this.doneColor,
+    required this.sageColor,
     required this.weekdayLabelStyle,
     required this.monthLabelStyle,
     required this.onSurface,
@@ -167,6 +172,8 @@ class _HeatmapPainter extends CustomPainter {
   final HeatmapLayout layout;
   final DateTime? today;
   final Color todayColor;
+  final Color doneColor;
+  final Color sageColor;
   final TextStyle? weekdayLabelStyle;
   final TextStyle? monthLabelStyle;
   final Color onSurface;
@@ -218,7 +225,12 @@ class _HeatmapPainter extends CustomPainter {
         if (cell == null) continue;
         final comp = _dayByDate[cell.date];
         if (comp == null) continue;
-        paint.color = heatmapCellColor(comp.ratio, onSurface: onSurface);
+        paint.color = heatmapCellColor(
+          comp.ratio,
+          onSurface: onSurface,
+          doneColor: doneColor,
+          sageColor: sageColor,
+        );
         final origin = layout.cellOffset(week, dow);
         final rect = Rect.fromLTWH(
           origin.dx,
@@ -258,6 +270,8 @@ class _HeatmapPainter extends CustomPainter {
         !identical(oldDelegate.grid, grid) ||
         !identical(oldDelegate.layout, layout) ||
         oldDelegate.onSurface != onSurface ||
+        oldDelegate.doneColor != doneColor ||
+        oldDelegate.sageColor != sageColor ||
         oldDelegate.weekdayLabelStyle != weekdayLabelStyle ||
         oldDelegate.monthLabelStyle != monthLabelStyle ||
         oldDelegate.today != today ||
@@ -283,7 +297,12 @@ class HeatmapLegend extends StatelessWidget {
             height: 12,
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
-              color: heatmapTierFill(i, onSurface: theme.colorScheme.onSurface),
+              color: heatmapTierFill(
+                i,
+                onSurface: theme.colorScheme.onSurface,
+                doneColor: context.palette.emerald,
+                sageColor: context.palette.sage,
+              ),
               borderRadius: BorderRadius.circular(2.5),
             ),
           ),

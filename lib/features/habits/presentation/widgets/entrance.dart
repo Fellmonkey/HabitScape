@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 
 /// One-shot entrance for a newly created habit: fade + rise + a water ring
@@ -81,7 +81,7 @@ class _EntranceState extends State<Entrance>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.emeraldGlow.withValues(
+                        color: context.palette.emerald.withValues(
                           alpha: _ringOpacity.value,
                         ),
                         width: 2.5,

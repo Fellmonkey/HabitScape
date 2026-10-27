@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/mood_correlation.dart';
@@ -35,7 +34,7 @@ class MoodCorrelationCard extends StatelessWidget {
                 _CorrRow(
                   label: 'В дни, когда всё выполнено',
                   icon: Icons.check_circle_rounded,
-                  color: AppColors.emeraldGlow,
+                  color: context.palette.emerald,
                   value: corr.goodShareOnFull != null
                       ? '${corr.goodShareOnFull!.round()}%'
                       : 'пока мало таких дней',
@@ -44,7 +43,7 @@ class MoodCorrelationCard extends StatelessWidget {
                 _CorrRow(
                   label: 'В дни без отметок',
                   icon: Icons.inbox_outlined,
-                  color: AppColors.coolGreyBlue,
+                  color: context.palette.greyBlue,
                   value: corr.badShareOnEmpty != null
                       ? '${corr.badShareOnEmpty!.round()}%'
                       : 'пока мало таких дней',

@@ -1,16 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:rythm/core/formatting/formatting.dart';
-import 'package:rythm/core/theme/app_colors.dart';
 
 void main() {
   group('progressColor', () {
+    const good = Colors.green;
+    const okay = Colors.amber;
+    const bad = Colors.red;
+
     test('uses one set of 80/40 bands', () {
-      expect(progressColor(100), AppColors.sageGreen);
-      expect(progressColor(80), AppColors.sageGreen);
-      expect(progressColor(79), AppColors.warmAmber);
-      expect(progressColor(40), AppColors.warmAmber);
-      expect(progressColor(39), AppColors.dustyRose);
-      expect(progressColor(0), AppColors.dustyRose);
+      expect(progressColor(100, good: good, okay: okay, bad: bad), good);
+      expect(progressColor(80, good: good, okay: okay, bad: bad), good);
+      expect(progressColor(79, good: good, okay: okay, bad: bad), okay);
+      expect(progressColor(40, good: good, okay: okay, bad: bad), okay);
+      expect(progressColor(39, good: good, okay: okay, bad: bad), bad);
+      expect(progressColor(0, good: good, okay: okay, bad: bad), bad);
     });
   });
 

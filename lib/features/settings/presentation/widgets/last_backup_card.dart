@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -46,7 +45,7 @@ class _BackupStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = old ? AppColors.warmAmber : theme.colorScheme.primary;
+    final accent = old ? context.palette.amber : theme.colorScheme.primary;
 
     return GlassCard(
       child: ListTile(

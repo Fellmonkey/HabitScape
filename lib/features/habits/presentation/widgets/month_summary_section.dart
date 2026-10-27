@@ -53,7 +53,12 @@ class MonthSummarySection extends StatelessWidget {
                 '${progress.round()}%',
                 key: K.monthSpreadProgress,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: progressColor(progress),
+                  color: progressColor(
+                    progress,
+                    good: context.palette.sage,
+                    okay: context.palette.amber,
+                    bad: context.palette.rose,
+                  ),
                 ),
               ),
             ],
@@ -66,7 +71,14 @@ class MonthSummarySection extends StatelessWidget {
               minHeight: 6,
               backgroundColor: theme.colorScheme.surfaceContainerHighest
                   .withValues(alpha: 0.4),
-              valueColor: AlwaysStoppedAnimation(progressColor(progress)),
+              valueColor: AlwaysStoppedAnimation(
+                progressColor(
+                  progress,
+                  good: context.palette.sage,
+                  okay: context.palette.amber,
+                  bad: context.palette.rose,
+                ),
+              ),
             ),
           ),
         ],
@@ -88,7 +100,7 @@ class MonthMoodCount extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: mood.color.withValues(alpha: 0.14),
+        color: mood.color(context).withValues(alpha: 0.14),
         borderRadius: AppRadius.borderM,
       ),
       child: Row(
@@ -98,7 +110,7 @@ class MonthMoodCount extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: mood.color,
+              color: mood.color(context),
               shape: BoxShape.circle,
             ),
           ),

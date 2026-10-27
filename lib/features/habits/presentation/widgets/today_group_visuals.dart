@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
 import '../../../../core/database/enums.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../domain/today_board.dart';
 
@@ -13,7 +13,11 @@ import '../../domain/today_board.dart';
   BuildContext context,
 ) {
   return switch (kind) {
-    TodayGroupKind.focus => ('Фокус', Icons.star_rounded, AppColors.warmAmber),
+    TodayGroupKind.focus => (
+      'Фокус',
+      Icons.star_rounded,
+      context.palette.amber,
+    ),
     TodayGroupKind.morning => (
       TimeOfDay.morning.localizedName,
       TimeOfDay.morning.icon,

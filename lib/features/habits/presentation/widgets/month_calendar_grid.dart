@@ -3,7 +3,6 @@ import 'package:hintful/hintful.dart';
 
 import '../../../../core/domain/completion.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -139,7 +138,7 @@ class MonthDayCell extends StatelessWidget {
     final theme = Theme.of(context);
     final mood = day.mood;
     final bg =
-        mood?.color.withValues(alpha: 0.3) ??
+        mood?.color(context).withValues(alpha: 0.3) ??
         theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
     final hasHabits = day.expected > 0 && !isFuture;
 
@@ -179,7 +178,8 @@ class MonthDayCell extends StatelessWidget {
                         Icon(
                           Icons.auto_awesome_rounded,
                           size: 13,
-                          color: mood?.color ?? theme.colorScheme.primary,
+                          color:
+                              mood?.color(context) ?? theme.colorScheme.primary,
                         ),
                     ],
                   ),
@@ -197,7 +197,7 @@ class MonthDayCell extends StatelessWidget {
                     ),
                     valueColor: AlwaysStoppedAnimation(
                       day.ratio >= 1.0
-                          ? AppColors.emeraldGlow
+                          ? context.palette.emerald
                           : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),

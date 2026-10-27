@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/formatting/formatting.dart';
@@ -75,7 +74,7 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
     final capsule =
         ref.watch(letterProvider(widget.capsule.id)).value ?? widget.capsule;
     final created = dateFromUnix(capsule.createdAt);
-    final accent = AppColors.warmAmber;
+    final accent = context.palette.amber;
 
     return Scaffold(
       key: K.letterScreen,

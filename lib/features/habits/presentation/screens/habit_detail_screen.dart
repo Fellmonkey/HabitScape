@@ -6,7 +6,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/confirm_delete_dialog.dart';
 
@@ -93,7 +93,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: Icon(
                         Icons.star_rounded,
-                        color: AppColors.warmAmber,
+                        color: context.palette.amber,
                       ),
                     ),
                   PopupMenuButton<HabitDetailAction>(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/utils/time_bucket.dart';
@@ -75,19 +74,19 @@ class RhythmCard extends StatelessWidget {
           if (best != null)
             _RhythmRow(
               icon: Icons.thumb_up_alt_rounded,
-              color: AppColors.sageGreen,
+              color: context.palette.sage,
               text: 'Лучший день: ${weekdayNames[best]} — ${_pctOf(best)}%',
             ),
           if (worst != null)
             _RhythmRow(
               icon: Icons.thumb_down_alt_rounded,
-              color: AppColors.dustyRose,
+              color: context.palette.rose,
               text: 'Худший день: ${weekdayNames[worst]} — ${_pctOf(worst)}%',
             ),
           if (timeBucket != null)
             _RhythmRow(
               icon: Icons.schedule_rounded,
-              color: AppColors.warmAmber,
+              color: context.palette.amber,
               text:
                   'Пик активности: ${_timeLabel(timeBucket)} — ${rhythm.timeShare.round()}%',
             ),

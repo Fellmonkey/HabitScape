@@ -12,7 +12,7 @@ import '../database/enums.dart';
 import '../domain/scheduling.dart';
 import '../formatting/russian_plural.dart';
 import '../utils/localized_dates.dart';
-import 'app_colors.dart';
+import 'app_palette.dart';
 
 extension FrequencyTypeVisuals on FrequencyType {
   String get localizedName => switch (this) {
@@ -40,9 +40,9 @@ extension TimeOfDayVisuals on TimeOfDay {
   };
 
   Color color(BuildContext context) => switch (this) {
-    TimeOfDay.morning => AppColors.sageGreen,
-    TimeOfDay.afternoon => AppColors.warmAmber,
-    TimeOfDay.evening => AppColors.softLavender,
+    TimeOfDay.morning => context.palette.sage,
+    TimeOfDay.afternoon => context.palette.amber,
+    TimeOfDay.evening => context.palette.lavender,
     TimeOfDay.anytime => Theme.of(
       context,
     ).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -62,10 +62,10 @@ extension LogStatusVisuals on LogStatus {
     LogStatus.pending => Icons.radio_button_unchecked,
   };
 
-  Color get color => switch (this) {
-    LogStatus.done => AppColors.sageGreen,
-    LogStatus.skip => AppColors.coolGreyBlue,
-    LogStatus.pending => AppColors.coolGreyBlue,
+  Color color(BuildContext context) => switch (this) {
+    LogStatus.done => context.palette.sage,
+    LogStatus.skip => context.palette.greyBlue,
+    LogStatus.pending => context.palette.greyBlue,
   };
 }
 
@@ -76,10 +76,10 @@ extension DayMoodVisuals on DayMood {
     DayMood.bad => 'Плохой день',
   };
 
-  Color get color => switch (this) {
-    DayMood.good => AppColors.sageGreen,
-    DayMood.ok => AppColors.warmAmber,
-    DayMood.bad => AppColors.dustyRose,
+  Color color(BuildContext context) => switch (this) {
+    DayMood.good => context.palette.sage,
+    DayMood.ok => context.palette.amber,
+    DayMood.bad => context.palette.rose,
   };
 }
 

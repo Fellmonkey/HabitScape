@@ -145,13 +145,13 @@ class _HabitCardState extends ConsumerState<HabitCard>
                               Icon(
                                 Icons.star_rounded,
                                 size: 14,
-                                color: AppColors.warmAmber,
+                                color: context.palette.amber,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 'Фокус',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.warmAmber,
+                                  color: context.palette.amber,
                                 ),
                               ),
                             ],
@@ -250,12 +250,12 @@ class _CheckCircleState extends State<_CheckCircle>
     IconData? icon;
 
     if (widget.isDone) {
-      borderColor = AppColors.emeraldGlow;
-      fillColor = AppColors.emeraldGlow;
+      borderColor = context.palette.emerald;
+      fillColor = context.palette.emerald;
       icon = Icons.check_rounded;
     } else if (widget.isSkip) {
-      borderColor = AppColors.coolGreyBlue;
-      fillColor = AppColors.coolGreyBlue.withValues(alpha: 0.3);
+      borderColor = context.palette.greyBlue;
+      fillColor = context.palette.greyBlue.withValues(alpha: 0.3);
       icon = Icons.pause_rounded;
     } else {
       borderColor = Theme.of(
@@ -284,7 +284,7 @@ class _CheckCircleState extends State<_CheckCircle>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.emeraldGlow.withValues(
+                      color: context.palette.emerald.withValues(
                         alpha: _ringOpacity.value,
                       ),
                       width: 2.5,

@@ -5,7 +5,6 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../domain/echo.dart';
@@ -146,15 +145,14 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: (mood?.color ?? AppColors.softLavender).withValues(
-                      alpha: 0.14,
-                    ),
+                    color: (mood?.color(context) ?? context.palette.lavender)
+                        .withValues(alpha: 0.14),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.history_rounded,
                     size: 18,
-                    color: mood?.color ?? AppColors.softLavender,
+                    color: mood?.color(context) ?? context.palette.lavender,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -208,7 +206,7 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: mood.color,
+                                color: mood.color(context),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -216,7 +214,7 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
                             Text(
                               mood.localizedName,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: mood.color,
+                                color: mood.color(context),
                               ),
                             ),
                           ],

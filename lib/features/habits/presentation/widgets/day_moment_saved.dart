@@ -2,7 +2,6 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../shared/widgets/app_sheets.dart';
@@ -36,16 +35,15 @@ class DayMomentSaved extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: (mood?.color ?? AppColors.sageGreen).withValues(
-                    alpha: 0.15,
-                  ),
+                  color: (mood?.color(context) ?? context.palette.sage)
+                      .withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.auto_awesome_rounded,
                   size: 20,
                   color:
-                      mood?.color ??
+                      mood?.color(context) ??
                       theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ),
@@ -78,7 +76,7 @@ class DayMomentSaved extends StatelessWidget {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: mood.color,
+                              color: mood.color(context),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -86,7 +84,7 @@ class DayMomentSaved extends StatelessWidget {
                           Text(
                             mood.localizedName,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: mood.color,
+                              color: mood.color(context),
                             ),
                           ),
                         ],

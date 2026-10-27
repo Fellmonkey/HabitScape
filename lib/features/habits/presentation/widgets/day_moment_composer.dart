@@ -221,10 +221,10 @@ class MoodChoice extends StatelessWidget {
         duration: AppMotion.quick,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
-          color: mood.color.withValues(alpha: selected ? 0.22 : 0.08),
+          color: mood.color(context).withValues(alpha: selected ? 0.22 : 0.08),
           borderRadius: AppRadius.borderS,
           border: Border.all(
-            color: mood.color.withValues(alpha: selected ? 0.9 : 0.15),
+            color: mood.color(context).withValues(alpha: selected ? 0.9 : 0.15),
           ),
         ),
         child: Row(
@@ -234,7 +234,7 @@ class MoodChoice extends StatelessWidget {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: mood.color,
+                color: mood.color(context),
                 shape: BoxShape.circle,
               ),
             ),
@@ -245,7 +245,9 @@ class MoodChoice extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: selected ? mood.color : theme.colorScheme.onSurface,
+                  color: selected
+                      ? mood.color(context)
+                      : theme.colorScheme.onSurface,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),

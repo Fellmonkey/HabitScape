@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_card_header.dart';
@@ -22,9 +21,9 @@ class WeekTrendCard extends StatelessWidget {
     final rising = delta > 0.5;
     final falling = delta < -0.5;
     final deltaColor = rising
-        ? AppColors.sageGreen
+        ? context.palette.sage
         : falling
-        ? AppColors.dustyRose
+        ? context.palette.rose
         : theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final deltaIcon = rising
         ? Icons.trending_up_rounded
@@ -112,7 +111,12 @@ class _WeekRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final pctInt = pct.round();
-    final color = progressColor(pctInt);
+    final color = progressColor(
+      pctInt,
+      good: context.palette.sage,
+      okay: context.palette.amber,
+      bad: context.palette.rose,
+    );
 
     return Row(
       children: [

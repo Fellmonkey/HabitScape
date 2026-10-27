@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
@@ -105,14 +105,14 @@ class MonthHeader extends StatelessWidget {
           if (done > 0)
             LogBadge(
               icon: Icons.check_circle_outline,
-              color: AppColors.sageGreen,
+              color: context.palette.sage,
               count: done,
             ),
           if (skip > 0) ...[
             const SizedBox(width: 6),
             LogBadge(
               icon: Icons.pause_circle_outline,
-              color: AppColors.coolGreyBlue,
+              color: context.palette.greyBlue,
               count: skip,
             ),
           ],
@@ -164,12 +164,11 @@ class LogTile extends StatelessWidget {
     final icon = status.icon;
     final color = status == LogStatus.pending
         ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
-        : status.color;
+        : status.color(context);
 
     final statusLabel = status.localizedName;
 
     final hourStr = log.loggedHour != null ? '  ${log.loggedHour}:00' : '';
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(

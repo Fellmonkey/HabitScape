@@ -54,7 +54,7 @@ class MonthMomentRow extends StatelessWidget {
               margin: const EdgeInsets.only(top: 6),
               decoration: BoxDecoration(
                 color:
-                    mood?.color ??
+                    mood?.color(context) ??
                     theme.colorScheme.onSurface.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),

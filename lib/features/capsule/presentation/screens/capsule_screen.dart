@@ -7,7 +7,6 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
@@ -269,7 +268,7 @@ class _CapsuleTile extends StatelessWidget {
     if (due) {
       subtitle = 'Готово · это написал ты ${wroteAgoLabel(capsule)}';
       icon = Icons.markunread_mailbox_rounded;
-      color = AppColors.warmAmber;
+      color = context.palette.amber;
     } else if (opened) {
       subtitle = 'Открыто · ${wroteAgoLabel(capsule)}';
       icon = Icons.mark_email_read_outlined;
@@ -281,7 +280,7 @@ class _CapsuleTile extends StatelessWidget {
       );
       subtitle = 'Откроется $opensAt · осталось $left ${pluralDays(left)}';
       icon = Icons.inventory_2_outlined;
-      color = AppColors.softLavender;
+      color = context.palette.lavender;
     }
 
     return Material(

@@ -7,7 +7,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../utils/localized_dates.dart';
 
 export 'russian_plural.dart';
@@ -18,11 +17,17 @@ export 'russian_plural.dart';
 const progressGoodThreshold = 80;
 const progressOkayThreshold = 40;
 
-/// Green from 80%, amber from 40%, rose below.
-Color progressColor(num percent) {
-  if (percent >= progressGoodThreshold) return AppColors.sageGreen;
-  if (percent >= progressOkayThreshold) return AppColors.warmAmber;
-  return AppColors.dustyRose;
+/// Green from 80%, amber from 40%, rose below. Colors come from the caller —
+/// the theme-scoped palette — so the same band reads correctly on both themes.
+Color progressColor(
+  num percent, {
+  required Color good,
+  required Color okay,
+  required Color bad,
+}) {
+  if (percent >= progressGoodThreshold) return good;
+  if (percent >= progressOkayThreshold) return okay;
+  return bad;
 }
 
 // ── Russian dates ────────────────────────────────────────────

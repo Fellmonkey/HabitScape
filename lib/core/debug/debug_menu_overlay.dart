@@ -40,7 +40,7 @@ class _DebugMenuOverlayState extends State<DebugMenuOverlay> {
             },
             child: FloatingActionButton.small(
               heroTag: '__debug_fab__',
-              backgroundColor: AppColors.glowViolet.withValues(alpha: 0.85),
+              backgroundColor: AppColors.darkLavender.withValues(alpha: 0.85),
               onPressed: _openDebugMenu,
               child: const Icon(
                 Icons.bug_report,
@@ -100,7 +100,7 @@ class _DebugSheet extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.bug_report,
-                      color: AppColors.glowViolet,
+                      color: AppColors.darkLavender,
                       size: 22,
                     ),
                     const SizedBox(width: 8),

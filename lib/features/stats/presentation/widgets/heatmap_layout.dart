@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-
 /// One geometry authority for the heatmap: the painter, the hit-test and
 /// the scroll-size math all derive from this object instead of re-deriving
 /// the same constants in three places.
@@ -75,8 +73,13 @@ const heatmapIntensityTiers = <HeatmapIntensityStep>[
 /// Cell color for a day's completion [ratio] — derived from the single tier
 /// list, so the painter can never disagree with the legend about how many
 /// steps exist. The empty tier paints [onSurface] faintly; the top tier
-/// switches to the full glow; everything in between tints sage green.
-Color heatmapCellColor(double ratio, {required Color onSurface}) {
+/// switches to the full glow; everything in between tints the sage accent.
+Color heatmapCellColor(
+  double ratio, {
+  required Color onSurface,
+  required Color doneColor,
+  required Color sageColor,
+}) {
   var tierIndex = 0;
   while (tierIndex < heatmapIntensityTiers.length - 1) {
     final step = heatmapIntensityTiers[tierIndex];
@@ -84,16 +87,24 @@ Color heatmapCellColor(double ratio, {required Color onSurface}) {
     if (occupies) break;
     tierIndex++;
   }
-  return heatmapTierFill(tierIndex, onSurface: onSurface);
+  return heatmapTierFill(
+    tierIndex,
+    onSurface: onSurface,
+    doneColor: doneColor,
+    sageColor: sageColor,
+  );
 }
 
 /// The fill for one tier index — shared by the painter and the legend, so a
 /// legend swatch can never disagree with the painted cell.
-Color heatmapTierFill(int tierIndex, {required Color onSurface}) {
+Color heatmapTierFill(
+  int tierIndex, {
+  required Color onSurface,
+  required Color doneColor,
+  required Color sageColor,
+}) {
   final alpha = heatmapIntensityTiers[tierIndex].alpha;
   if (tierIndex == 0) return onSurface.withValues(alpha: alpha);
-  if (tierIndex == heatmapIntensityTiers.length - 1) {
-    return AppColors.emeraldGlow;
-  }
-  return AppColors.sageGreen.withValues(alpha: alpha);
+  if (tierIndex == heatmapIntensityTiers.length - 1) return doneColor;
+  return sageColor.withValues(alpha: alpha);
 }

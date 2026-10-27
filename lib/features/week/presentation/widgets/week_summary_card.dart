@@ -5,7 +5,6 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../domain/week_summary.dart';
@@ -81,7 +80,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
   ) {
     final summary = view.summary;
     final theme = Theme.of(context);
-    final accent = AppColors.sageGreen;
+    final accent = context.palette.sage;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
@@ -95,7 +94,7 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
                           '$doneCount/${goals.length}',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: doneCount == goals.length
-                                ? AppColors.emeraldGlow
+                                ? context.palette.emerald
                                 : theme.colorScheme.onSurface.withValues(
                                     alpha: 0.5,
                                   ),
