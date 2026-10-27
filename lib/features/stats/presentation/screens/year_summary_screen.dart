@@ -5,6 +5,7 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/year_summary.dart';
@@ -118,6 +119,56 @@ class YearSummaryScreen extends ConsumerWidget {
             ],
           ),
         ),
+        if (year.frequencyInsights.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: AppRadius.borderL,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppCardHeader(
+                  icon: Icons.schedule_rounded,
+                  title: 'Расписания',
+                ),
+                const SizedBox(height: 12),
+                ..._frequencyRows(context, year.frequencyInsights),
+                const SizedBox(height: 8),
+                Text(
+                  'Частота настройки не причина, а наблюдение: что чаще '
+                  'выполняется в твоём расписании.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (year.intentions.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: AppRadius.borderL,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppCardHeader(
+                  icon: Icons.trending_up_rounded,
+                  title: 'Намерения недель',
+                ),
+                const SizedBox(height: 12),
+                ..._intentionRows(context, year),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -187,6 +238,15 @@ class YearSummaryScreen extends ConsumerWidget {
         'Лучше всего — ${h.name}: ${h.done} из ${h.expected}',
       );
     }
+    if (year.weakestHabit != null &&
+        year.weakestHabit!.habitId != year.bestHabit?.habitId) {
+      final w = year.weakestHabit!;
+      line(
+        Icons.spa_outlined,
+        muted,
+        'Слабее всего — ${w.name}: ${w.done} из ${w.expected}',
+      );
+    }
     if (year.goals != null) {
       final done = year.goals!.done == year.goals!.total;
       line(
@@ -197,5 +257,104 @@ class YearSummaryScreen extends ConsumerWidget {
     }
 
     return lines;
+  }
+
+  List<Widget> _frequencyRows(BuildContext context, List<FrequencyStat> stats) {
+    final theme = Theme.of(context);
+    return [
+      for (final stat in stats)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 110,
+                child: Text(
+                  stat.type.localizedName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: AppRadius.borderS,
+                  child: LinearProgressIndicator(
+                    value: (stat.pct / 100).clamp(0.0, 1.0),
+                    minHeight: 8,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
+                    valueColor: AlwaysStoppedAnimation(
+                      progressColor(
+                        stat.pct.round(),
+                        good: context.palette.sage,
+                        okay: context.palette.amber,
+                        bad: context.palette.rose,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 56,
+                child: Text(
+                  '${stat.pct.round()}% · n=${stat.expected}',
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
+  List<Widget> _intentionRows(BuildContext context, YearSummary year) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    return [
+      for (final record in year.intentions.take(6))
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 92,
+                child: Text(
+                  formatShortDate(record.weekStart, today: year.today),
+                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '«${record.intention}»',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    if (record.followingWeekPct != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Следующая неделя: '
+                        '${record.followingWeekPct!.round()}%',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 }

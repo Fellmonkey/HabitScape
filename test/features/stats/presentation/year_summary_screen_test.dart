@@ -90,5 +90,6 @@ void main() {
     expect(find.textContaining('Лучше всего — Бег'), findsOneWidget);
     expect(find.textContaining('Лучший месяц'), findsOneWidget);
     expect(find.textContaining('1 день с моментом'), findsOneWidget);
+    expect(find.text('Расписания'), findsOneWidget);
   });
 }

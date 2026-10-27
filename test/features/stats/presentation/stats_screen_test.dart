@@ -118,6 +118,7 @@ void main() {
 
     expect(find.byKey(K.yearSummaryOpen), findsOneWidget);
     expect(find.text('Итоги года'), findsOneWidget);
+    expect(find.byKey(K.statsMonthlyTrend), findsOneWidget);
   });
 
   testWidgets('correlation reads as an insight with a sample size', (

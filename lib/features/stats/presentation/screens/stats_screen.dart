@@ -11,6 +11,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../providers/stats_providers.dart';
 import '../widgets/heatmap_card.dart';
 import '../widgets/mood_correlation_card.dart';
+import '../widgets/month_trend_card.dart';
 import '../widgets/rhythm_card.dart';
 import '../widgets/week_trend_card.dart';
 
@@ -154,6 +155,15 @@ class StatsScreen extends ConsumerWidget {
                   today: today,
                   onDayTap: showDayDetail,
                 ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Month trend ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: MonthlyTrendCard(),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

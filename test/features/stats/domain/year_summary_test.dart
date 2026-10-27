@@ -133,5 +133,97 @@ void main() {
       // Nothing done at all → 0%, not penalized beyond the elapsed days.
       expect(year.completionPct, 0.0);
     });
+
+    test('weakest habit is the lowest engaged ratio', () {
+      final logs = [
+        ...doneLogs(1, DateTime.utc(2026, 10, 1), DateTime.utc(2026, 10, 31)),
+        ...doneLogs(2, DateTime.utc(2026, 10, 1), DateTime.utc(2026, 10, 10)),
+      ];
+
+      final year = computeYearSummary(
+        habits: [habit, weaker],
+        logs: logs,
+        notes: const [],
+        goals: const [],
+        start: start,
+        end: end,
+        now: now,
+      );
+
+      expect(year.bestHabit!.name, 'Бег');
+      expect(year.weakestHabit!.name, 'Чтение');
+      expect(year.weakestHabit!.done, 10);
+    });
+
+    test('frequency insights pool per schedule type', () {
+      final weekdays = makeHabit(
+        id: 3,
+        name: 'Йога',
+        createdAt: createdAt.unixSeconds,
+        frequencyType: 'weekdays',
+        frequencyValue: '{"days":[1,2,3,4,5]}',
+      );
+      final logs = doneLogs(
+        1,
+        DateTime.utc(2026, 10, 1),
+        DateTime.utc(2026, 10, 31),
+      );
+
+      final year = computeYearSummary(
+        habits: [habit, weekdays],
+        logs: logs,
+        notes: const [],
+        goals: const [],
+        start: start,
+        end: end,
+        now: now,
+      );
+
+      expect(year.frequencyInsights, hasLength(2));
+      // Daily (31 of ~349 expected days) ranks above the untouched weekdays
+      // schedule of the same year window.
+      expect(year.frequencyInsights.first.type, FrequencyType.daily);
+      expect(year.frequencyInsights.first.pct, closeTo(8.88, 0.01));
+      expect(year.frequencyInsights.last.type, FrequencyType.weekdays);
+      expect(year.frequencyInsights.last.pct, 0.0);
+      expect(year.frequencyInsights.last.expected, greaterThan(0));
+    });
+
+    test('intentions carry the reality of the following week', () {
+      final oct = DateTime.utc(2026, 10, 1);
+      final logs = [...doneLogs(1, oct, DateTime.utc(2026, 10, 31))];
+      // Intentions written before October — the following week is fully done.
+      final intentions = [
+        WeeklyIntention(
+          id: 1,
+          weekStart: DateTime.utc(2026, 9, 28).unixSeconds,
+          intention: 'Бег по вторникам',
+        ),
+        // This week hasn't even started yet — no reality to report.
+        WeeklyIntention(
+          id: 2,
+          weekStart: DateTime.utc(2026, 12, 21).unixSeconds,
+          intention: 'Будущее намерение',
+        ),
+      ];
+
+      final year = computeYearSummary(
+        habits: [habit],
+        logs: logs,
+        notes: const [],
+        goals: const [],
+        intentions: intentions,
+        start: start,
+        end: end,
+        now: now,
+      );
+
+      // Newest first; the future intention has no reality yet.
+      expect(year.intentions, hasLength(2));
+      expect(year.intentions.first.weekStart, DateTime.utc(2026, 12, 21));
+      expect(year.intentions.first.followingWeekPct, isNull);
+      expect(year.intentions.last.intention, 'Бег по вторникам');
+      expect(year.intentions.last.followingWeekPct, 100.0);
+    });
   });
 }

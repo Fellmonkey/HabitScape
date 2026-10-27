@@ -2,10 +2,42 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/moment.dart';
+import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
 
+/// One frequency type's pooled completion over the window — the "which
+/// schedules work" insight.
+class FrequencyStat {
+  const FrequencyStat({required this.type, required this.completion});
+
+  final FrequencyType type;
+  final Completion completion;
+
+  double get pct => completion.percentOrZero;
+  int get done => completion.numerator;
+  int get expected => completion.denominator;
+}
+
+/// One stored weekly intention plus the reality that followed: the completion
+/// of the week right after it was written.
+class WeekIntentionRecord {
+  const WeekIntentionRecord({
+    required this.weekStart,
+    required this.intention,
+    this.followingWeekPct,
+  });
+
+  final DateTime weekStart;
+  final String intention;
+
+  /// Pooled completion of the week after [weekStart] (null when that week
+  /// hasn't started yet).
+  final double? followingWeekPct;
+}
+
 /// The year's closing summary: one pooled completion figure, the mood year in
-/// pixels data, and the anchor facts (best month, best habit, goals).
+/// pixels data, and the anchor facts (best month, best/worst habit, goals,
+/// schedule insights, intentions).
 ///
 /// Everything derives from the same 365-day window the stats heatmap uses, so
 /// the "year" here is the trailing year, not the calendar year.
@@ -21,7 +53,10 @@ class YearSummary {
     required this.moodByDay,
     this.bestMonth,
     this.bestHabit,
+    this.weakestHabit,
     this.goals,
+    this.frequencyInsights = const [],
+    this.intentions = const [],
   });
 
   /// The oldest day of the trailing year — the left edge of the pixels grid.
@@ -55,8 +90,18 @@ class YearSummary {
   /// The habit with the highest scheduled-completion ratio over the year.
   final ({int habitId, String name, int done, int expected})? bestHabit;
 
+  /// The habit with the lowest ratio among habits that were actually engaged.
+  final ({int habitId, String name, int done, int expected})? weakestHabit;
+
   /// Done/total across all goals set inside the window.
   final ({int done, int total})? goals;
+
+  /// Pooled completion per frequency type (sorted by pct, descending).
+  final List<FrequencyStat> frequencyInsights;
+
+  /// The most recent stored weekly intentions with their following-week
+  /// reality (newest first).
+  final List<WeekIntentionRecord> intentions;
 
   bool get hasData =>
       (completionPct ?? 0) > 0 ||
@@ -80,6 +125,7 @@ YearSummary computeYearSummary({
   required DateTime start,
   required DateTime end,
   required DateTime now,
+  List<WeeklyIntention> intentions = const [],
 }) {
   final days = computeDailyCompletion(
     habits: habits,
@@ -123,10 +169,12 @@ YearSummary computeYearSummary({
     moodCounts[mood] = moodCounts[mood]! + 1;
   }
 
-  // ── Best habit over the elapsed year ──────────────────────
-  // A habit with zero completions is not a "best" anything — it would only
-  // turn a quiet year into a "0%" card.
+  // ── Best / weakest habit over the elapsed year ─────────────
+  // A habit with zero completions is not a "best" anything; the weakest only
+  // counts habits the user actually engaged (done or skipped), so a habit
+  // that was never touched never reads as a failure.
   ({int habitId, String name, int done, int expected})? bestHabit;
+  ({int habitId, String name, int done, int expected})? weakestHabit;
   for (final habit in habits) {
     final measure = habitCompletion(
       habit: habit,
@@ -134,15 +182,28 @@ YearSummary computeYearSummary({
       start: start,
       end: cutoff,
     );
-    if (!measure.hasExpectation || measure.numerator == 0) continue;
-    if (bestHabit == null ||
-        measure.ratioOrZero > bestHabit.done / bestHabit.expected) {
-      bestHabit = (
-        habitId: habit.id,
-        name: habit.name,
-        done: measure.numerator,
-        expected: measure.denominator,
-      );
+    if (!measure.hasExpectation) continue;
+    if (measure.numerator > 0) {
+      if (bestHabit == null ||
+          measure.ratioOrZero > bestHabit.done / bestHabit.expected) {
+        bestHabit = (
+          habitId: habit.id,
+          name: habit.name,
+          done: measure.numerator,
+          expected: measure.denominator,
+        );
+      }
+    }
+    if (measure.numerator > 0 || measure.skipped > 0) {
+      if (weakestHabit == null ||
+          measure.ratioOrZero < weakestHabit.done / weakestHabit.expected) {
+        weakestHabit = (
+          habitId: habit.id,
+          name: habit.name,
+          done: measure.numerator,
+          expected: measure.denominator,
+        );
+      }
     }
   }
 
@@ -157,6 +218,53 @@ YearSummary computeYearSummary({
       ? null
       : (done: doneGoals, total: inWindow.length);
 
+  // ── Frequency-type insights ────────────────────────────────
+  final byFrequency = <FrequencyType, List<Completion>>{};
+  for (final habit in habits) {
+    final type = HabitFrequency.fromHabit(habit).type;
+    final measure = habitCompletion(
+      habit: habit,
+      logs: logs,
+      start: start,
+      end: cutoff,
+    );
+    if (!measure.hasExpectation) continue;
+    byFrequency.putIfAbsent(type, () => []).add(measure);
+  }
+  final frequencyInsights = [
+    for (final entry in byFrequency.entries)
+      FrequencyStat(type: entry.key, completion: Completion.pool(entry.value)),
+  ]..sort((a, b) => b.pct.compareTo(a.pct));
+
+  // ── Weekly intentions with their following-week reality ────
+  final records = <WeekIntentionRecord>[];
+  final withText =
+      intentions.where((i) => i.intention?.trim().isNotEmpty ?? false).toList()
+        ..sort((a, b) => b.weekStart.compareTo(a.weekStart));
+  for (final intention in withText.take(8)) {
+    final weekStart = dateFromUnix(intention.weekStart).toMidnight;
+    final followingStart = weekStart.add(const Duration(days: 7));
+    final followingEnd = followingStart.add(const Duration(days: 7));
+
+    double? followingPct;
+    if (followingStart.isBefore(cutoff)) {
+      final followingDays = computeDailyCompletion(
+        habits: habits,
+        logs: logs,
+        start: followingStart,
+        end: followingEnd,
+      );
+      followingPct = Completion.overDays(followingDays).percent;
+    }
+    records.add(
+      WeekIntentionRecord(
+        weekStart: weekStart,
+        intention: intention.intention!.trim(),
+        followingWeekPct: followingPct,
+      ),
+    );
+  }
+
   return YearSummary(
     windowStart: start.toMidnight,
     today: now.toMidnight,
@@ -168,6 +276,9 @@ YearSummary computeYearSummary({
     moodByDay: moodByDay,
     bestMonth: bestMonth,
     bestHabit: bestHabit,
+    weakestHabit: weakestHabit,
     goals: goalsStats,
+    frequencyInsights: frequencyInsights,
+    intentions: records,
   );
 }

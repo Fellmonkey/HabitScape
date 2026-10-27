@@ -7,19 +7,23 @@ import '../../../core/utils/date_helpers.dart';
 import '../domain/year_summary.dart';
 
 /// The year's summary over the same trailing 365-day window as the stats
-/// heatmap. One snapshot fetch + one goal read, then a pure computation.
+/// heatmap. One snapshot fetch + goal/intention reads, then a pure
+/// computation.
 final yearSummaryProvider = FutureProvider.autoDispose<YearSummary>((
   ref,
 ) async {
   final now = dateFromUnix(ref.watch(todayProvider));
   final snapshot = await ref.watch(historyStoreProvider).stats(now);
-  final goals = await ref.watch(databaseProvider).monthlyGoalsDao.getAllGoals();
+  final db = ref.watch(databaseProvider);
+  final goals = await db.monthlyGoalsDao.getAllGoals();
+  final intentions = await db.weeklyIntentionsDao.getAllIntentions();
 
   return computeYearSummary(
     habits: snapshot.habits,
     logs: snapshot.logs,
     notes: snapshot.notes,
     goals: goals,
+    intentions: intentions,
     start: snapshot.start,
     end: snapshot.end,
     now: now,

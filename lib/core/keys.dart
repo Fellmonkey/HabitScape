@@ -15,6 +15,7 @@ abstract final class K {
   static const statsWeekTrend = Key('stats_week_trend');
   static const statsCorrelation = Key('stats_correlation');
   static const statsRhythm = Key('stats_rhythm');
+  static const statsMonthlyTrend = Key('stats_monthly_trend');
 
   // ── Greenhouse screen ──────────────────────────────────────
   static const fabCreateHabit = Key('fab_create_habit');
