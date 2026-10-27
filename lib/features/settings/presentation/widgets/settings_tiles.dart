@@ -1,28 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/glass_card.dart';
-
-/// Section header label used across the settings screen.
-class SectionHeader extends StatelessWidget {
-  const SectionHeader({required this.title, super.key});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
-      ),
-    );
-  }
-}
 
 /// One tappable settings row inside a glass card.
 class SettingsTile extends StatelessWidget {
@@ -48,7 +26,6 @@ class SettingsTile extends StatelessWidget {
         title: Text(title, style: theme.textTheme.titleSmall),
         subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
       ),
     );
   }

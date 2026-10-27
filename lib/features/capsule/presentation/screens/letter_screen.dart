@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
@@ -45,6 +46,7 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
     if (!mounted || widget.capsule.isOpened) return;
     final actions = ref.read(letterActionsProvider.notifier);
     await actions.markOpened(widget.capsule.id);
+    if (mounted) Haptics.tap(ref.read(hapticsEnabledProvider));
   }
 
   Future<void> _saveReply() async {
@@ -60,6 +62,7 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
         .setReply(widget.capsule.id, text);
     if (!mounted) return;
     FocusScope.of(context).unfocus();
+    Haptics.tap(ref.read(hapticsEnabledProvider));
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Ответ сохранён')));
@@ -152,12 +155,6 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('Создать новую капсулу'),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                key: K.letterCloseText,
-                onPressed: () => context.pop(),
-                child: const Text('Закрыть'),
               ),
             ],
           ),

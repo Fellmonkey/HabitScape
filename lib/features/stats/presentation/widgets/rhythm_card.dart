@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
 import '../../../../core/utils/time_bucket.dart';
+import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/rhythm_stats.dart';
 
 /// Weekly rhythm card: best/worst weekday and peak activity time.
@@ -32,23 +33,33 @@ class RhythmCard extends StatelessWidget {
     if (best == null && timeBucket == null) {
       return Container(
         key: K.statsRhythm,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: AppRadius.borderL,
         ),
-        child: Text(
-          'Пока мало данных — веди привычки несколько дней.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppCardHeader(
+              icon: Icons.schedule_rounded,
+              title: 'Ритм недели',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Пока мало данных — веди привычки несколько дней.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Container(
       key: K.statsRhythm,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderL,
@@ -56,18 +67,23 @@ class RhythmCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (best != null && worst != null) ...[
+          const AppCardHeader(
+            icon: Icons.schedule_rounded,
+            title: 'Ритм недели',
+          ),
+          const SizedBox(height: 10),
+          if (best != null)
             _RhythmRow(
               icon: Icons.thumb_up_alt_rounded,
               color: AppColors.sageGreen,
               text: 'Лучший день: ${weekdayNames[best]} — ${_pctOf(best)}%',
             ),
+          if (worst != null)
             _RhythmRow(
               icon: Icons.thumb_down_alt_rounded,
               color: AppColors.dustyRose,
               text: 'Худший день: ${weekdayNames[worst]} — ${_pctOf(worst)}%',
             ),
-          ],
           if (timeBucket != null)
             _RhythmRow(
               icon: Icons.schedule_rounded,

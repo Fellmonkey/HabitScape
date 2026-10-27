@@ -64,7 +64,7 @@ List<Widget> buildSpreadSections(
           'Моменты месяца',
           key: style.momentsKey,
           style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.primary,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
           ),
         ),
       ),

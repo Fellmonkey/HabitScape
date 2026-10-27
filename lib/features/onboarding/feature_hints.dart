@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings/exposure.dart';
+import '../../core/settings/haptics.dart';
 import '../../core/theme/app_theme.dart';
 
 class FeatureHint {
@@ -83,7 +84,9 @@ class _FeatureHintBannerState extends ConsumerState<FeatureHintBanner> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 16),
+                    tooltip: 'Скрыть подсказку',
                     onPressed: () async {
+                      Haptics.tap(ref.read(hapticsEnabledProvider));
                       await ref
                           .read(exposureActionsProvider.notifier)
                           .dismissHint(hint.key);

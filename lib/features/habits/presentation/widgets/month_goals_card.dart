@@ -62,91 +62,98 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
         color: theme.colorScheme.surface,
         borderRadius: AppRadius.borderL,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            // collapsed header — tap anywhere to expand
-            borderRadius: AppRadius.borderS,
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Цели · ${monthNamesGenitive[month.month]}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                  if (goals.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
+      child: AnimatedSize(
+        duration: AppMotion.base,
+        curve: AppMotion.easeInOutStrong,
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              // collapsed header — tap anywhere to expand
+              borderRadius: AppRadius.borderS,
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        '$doneCount/${goals.length}',
+                        'Цели · ${monthNamesGenitive[month.month]}',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: doneCount == goals.length
-                              ? AppColors.emeraldGlow
-                              : theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
-                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
-                  IconButton(
-                    key: K.monthGoalsAdd,
-                    tooltip: 'Добавить цель',
-                    onPressed: () => _openAddGoalSheet(ts),
-                    icon: Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 20,
-                      color: theme.colorScheme.primary,
+                    if (goals.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Text(
+                          '$doneCount/${goals.length}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: doneCount == goals.length
+                                ? AppColors.emeraldGlow
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    IconButton(
+                      key: K.monthGoalsAdd,
+                      tooltip: 'Добавить цель',
+                      onPressed: () => _openAddGoalSheet(ts),
+                      icon: Icon(
+                        Icons.add_circle_outline_rounded,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  Icon(
-                    _expanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                ],
+                    Icon(
+                      _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 20,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (_expanded) ...[
-            if (goals.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 4, right: 12, bottom: 6),
-                child: Text(
-                  'Чего достичь через привычки в этом месяце?',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            if (_expanded) ...[
+              if (goals.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 12, bottom: 6),
+                  child: Text(
+                    'Чего достичь через привычки в этом месяце?',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
                   ),
-                ),
-              )
-            else
-              for (final goal in goals)
-                _GoalRow(
-                  goal: goal,
-                  onToggle: () {
-                    Haptics.tap(ref.read(hapticsEnabledProvider));
-                    ref
+                )
+              else
+                for (final goal in goals)
+                  _GoalRow(
+                    goal: goal,
+                    onToggle: () {
+                      Haptics.tap(ref.read(hapticsEnabledProvider));
+                      ref
+                          .read(monthGoalActionsProvider.notifier)
+                          .setMonthGoalDone(goal.id, isDone: !goal.isDone);
+                    },
+                    onDelete: () => ref
                         .read(monthGoalActionsProvider.notifier)
-                        .setMonthGoalDone(goal.id, isDone: !goal.isDone);
-                  },
-                  onDelete: () => ref
-                      .read(monthGoalActionsProvider.notifier)
-                      .deleteMonthGoal(goal.id),
-                ),
+                        .deleteMonthGoal(goal.id),
+                  ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -56,6 +56,11 @@ class Exposure {
   Future<void> dismissHint(String key) =>
       _addToStringSet(dismissedHintsKey, key);
 
+  /// Back to the first-run slate: every feature hint can appear again.
+  Future<void> clearDismissedHints() async {
+    await _prefs.remove(dismissedHintsKey);
+  }
+
   // ── Echo placement ─────────────────────────────────────────
 
   String get _echoTopKey => 'echo_top_count_${weekStartOf(today).unixSeconds}';
@@ -177,6 +182,9 @@ class ExposureActions extends Notifier<void> {
 
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
+
+  /// Clears all dismissed feature hints and refreshes the snapshot.
+  Future<void> resetDismissedHints() => _mutate((e) => e.clearDismissedHints());
 }
 
 final exposureActionsProvider = NotifierProvider<ExposureActions, void>(

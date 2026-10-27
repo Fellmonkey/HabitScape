@@ -18,30 +18,70 @@ class LastBackupCard extends ConsumerWidget {
     final statusAsync = ref.watch(backupStatusProvider);
     final today = dateFromUnix(ref.watch(todayProvider));
     return statusAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const _BackupStatusCard(loading: true),
+      error: (_, _) => const _BackupStatusCard(loading: true),
       data: (status) {
         final last = status.lastBackup;
-        final theme = Theme.of(context);
         final label = last == null
             ? 'Резервная копия ещё не создавалась'
             : 'Последний экспорт: ${formatFullDate(last)}';
         final old = status.isStale(today);
-        return GlassCard(
-          child: ListTile(
-            leading: Icon(
-              old ? Icons.warning_amber_rounded : Icons.cloud_done_outlined,
-              color: old ? AppColors.warmAmber : theme.colorScheme.primary,
-            ),
-            title: Text(
-              old ? 'Давно не было бэкапа' : 'Резервная копия',
-              style: theme.textTheme.titleSmall,
-            ),
-            subtitle: Text(label, style: theme.textTheme.bodySmall),
-            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
-          ),
-        );
+        return _BackupStatusCard(old: old, label: label);
       },
+    );
+  }
+}
+
+class _BackupStatusCard extends StatelessWidget {
+  const _BackupStatusCard({
+    this.old = false,
+    this.label = '',
+    this.loading = false,
+  });
+
+  final bool old;
+  final String label;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = old ? AppColors.warmAmber : theme.colorScheme.primary;
+
+    return GlassCard(
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.14),
+            borderRadius: AppRadius.borderS,
+          ),
+          child: Icon(
+            old ? Icons.warning_amber_rounded : Icons.cloud_done_outlined,
+            size: 20,
+            color: accent,
+          ),
+        ),
+        title: Text(
+          old ? 'Давно не было бэкапа' : 'Резервная копия',
+          style: theme.textTheme.titleSmall,
+        ),
+        subtitle: loading
+            ? Text('Проверяем…', style: theme.textTheme.bodySmall)
+            : Text(label, style: theme.textTheme.bodySmall),
+        trailing: loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(
+                Icons.schedule_rounded,
+                size: 18,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
+      ),
     );
   }
 }

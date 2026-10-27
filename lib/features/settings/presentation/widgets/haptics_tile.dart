@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
 /// Haptics on/off switch.
@@ -26,7 +25,6 @@ class HapticsTile extends ConsumerWidget {
         value: enabled,
         onChanged: (value) =>
             ref.read(hapticsEnabledProvider.notifier).setEnabled(value),
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
       ),
     );
   }

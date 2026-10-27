@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/keys.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/theme_mode.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
@@ -45,9 +46,10 @@ class ThemeTile extends ConsumerWidget {
                   ButtonSegment(value: ThemeMode.dark, label: Text('Тёмная')),
                 ],
                 selected: {mode},
-                onSelectionChanged: (selection) => ref
-                    .read(themeModeProvider.notifier)
-                    .setMode(selection.first),
+                onSelectionChanged: (selection) {
+                  Haptics.tap(ref.read(hapticsEnabledProvider));
+                  ref.read(themeModeProvider.notifier).setMode(selection.first);
+                },
               ),
             ),
           ],

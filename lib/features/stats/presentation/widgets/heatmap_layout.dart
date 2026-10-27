@@ -7,8 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 /// the same constants in three places.
 class HeatmapLayout {
   const HeatmapLayout({
-    this.cellSize = 12,
-    this.gap = 3,
+    this.cellSize = 14,
+    this.gap = 2,
     this.labelWidth = 18,
     this.monthLabelHeight = 14,
     this.labelGap = 2,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
 import '../../../../core/domain/completion.dart';
+import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/localized_dates.dart';
 import 'heatmap_layout.dart';
@@ -11,14 +12,18 @@ import 'heatmap_layout.dart';
 class GithubHeatmap extends StatefulWidget {
   const GithubHeatmap({
     required this.days,
-    this.cellSize = 12,
-    this.gap = 3,
+    this.today,
+    this.cellSize = 14,
+    this.gap = 2,
     this.onDayTap,
     super.key,
   });
 
   /// Last 365 days, oldest first.
   final List<DayCompletion> days;
+
+  /// The day that gets the "today" marker on the grid.
+  final DateTime? today;
   final double cellSize;
   final double gap;
   final ValueChanged<DayCompletion>? onDayTap;
@@ -31,6 +36,7 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
   /// Built during the first layout — the viewport width is known then, so the
   /// view opens on the most recent weeks instead of a year-old January.
   ScrollController? _controller;
+  bool _didTravel = false;
 
   @override
   void dispose() {
@@ -42,7 +48,28 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
   Widget build(BuildContext context) {
     final days = widget.days;
     if (days.isEmpty) {
-      return const SizedBox.shrink();
+      final theme = Theme.of(context);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              Icons.insights_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Пока нет данных за год — отмечай привычки, и здесь появится карта активности.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final cellSize = widget.cellSize;
@@ -64,9 +91,22 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
         final endOffset = viewport.isFinite && viewport < totalSize.width
             ? totalSize.width - viewport
             : 0.0;
-        final controller = _controller ??= ScrollController(
-          initialScrollOffset: endOffset,
-        );
+        final controller = _controller ??= ScrollController();
+        if (!_didTravel) {
+          _didTravel = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !controller.hasClients) return;
+            if (endOffset > 0 && !AppMotion.mayDisable(context)) {
+              controller.animateTo(
+                endOffset,
+                duration: AppMotion.travel,
+                curve: AppMotion.easeOutStrong,
+              );
+            } else {
+              controller.jumpTo(endOffset);
+            }
+          });
+        }
 
         return SingleChildScrollView(
           controller: controller,
@@ -92,11 +132,13 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
                 days: days,
                 grid: grid,
                 layout: layout,
+                today: widget.today,
+                todayColor: theme.colorScheme.primary,
                 weekdayLabelStyle: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 8,
+                  fontSize: 10,
                 ),
                 monthLabelStyle: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 9,
+                  fontSize: 11,
                 ),
                 onSurface: theme.colorScheme.onSurface,
               ),
@@ -113,6 +155,8 @@ class _HeatmapPainter extends CustomPainter {
     required this.days,
     required this.grid,
     required this.layout,
+    required this.today,
+    required this.todayColor,
     required this.weekdayLabelStyle,
     required this.monthLabelStyle,
     required this.onSurface,
@@ -121,6 +165,8 @@ class _HeatmapPainter extends CustomPainter {
   final List<DayCompletion> days;
   final CalendarGrid grid;
   final HeatmapLayout layout;
+  final DateTime? today;
+  final Color todayColor;
   final TextStyle? weekdayLabelStyle;
   final TextStyle? monthLabelStyle;
   final Color onSurface;
@@ -165,6 +211,7 @@ class _HeatmapPainter extends CustomPainter {
 
     // ── Cells ─────────────────────────────────────────────────
     final paint = Paint();
+    final today = this.today;
     for (var week = 0; week < grid.weeks.length; week++) {
       for (var dow = 0; dow < 7; dow++) {
         final cell = grid.weeks[week][dow];
@@ -183,6 +230,24 @@ class _HeatmapPainter extends CustomPainter {
           RRect.fromRectAndRadius(rect, const Radius.circular(2.5)),
           paint,
         );
+
+        // ── "Today" marker ─────────────────────────────────────
+        if (today != null && cell.date == today) {
+          final marker = Rect.fromLTWH(
+            origin.dx - 1.5,
+            origin.dy - 1.5,
+            layout.cellSize + 3,
+            layout.cellSize + 3,
+          );
+          final borderPaint = Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5
+            ..color = todayColor;
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(marker, const Radius.circular(4)),
+            borderPaint,
+          );
+        }
       }
     }
   }
@@ -194,7 +259,9 @@ class _HeatmapPainter extends CustomPainter {
         !identical(oldDelegate.layout, layout) ||
         oldDelegate.onSurface != onSurface ||
         oldDelegate.weekdayLabelStyle != weekdayLabelStyle ||
-        oldDelegate.monthLabelStyle != monthLabelStyle;
+        oldDelegate.monthLabelStyle != monthLabelStyle ||
+        oldDelegate.today != today ||
+        oldDelegate.todayColor != todayColor;
   }
 }
 
@@ -212,12 +279,12 @@ class HeatmapLegend extends StatelessWidget {
         const SizedBox(width: 6),
         for (var i = 0; i < heatmapIntensityTiers.length; i++) ...[
           Container(
-            width: 10,
-            height: 10,
+            width: 12,
+            height: 12,
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
               color: heatmapTierFill(i, onSurface: theme.colorScheme.onSurface),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(2.5),
             ),
           ),
         ],

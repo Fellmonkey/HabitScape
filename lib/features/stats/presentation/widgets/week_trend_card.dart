@@ -4,6 +4,8 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
+import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/stats_engine.dart';
 
 /// Week-over-week trend card: how this week compares to the previous one.
@@ -40,8 +42,11 @@ class WeekTrendCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Эта неделя', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
+          const AppCardHeader(
+            icon: Icons.insights_rounded,
+            title: 'Эта неделя',
+          ),
+          const SizedBox(height: 14),
           if (!trend.hasData)
             Text(
               'Отмечай привычки — здесь появится сравнение с прошлой неделей.',
@@ -54,21 +59,28 @@ class WeekTrendCard extends StatelessWidget {
             const SizedBox(height: 10),
             _WeekRow(label: 'Прошлая', pct: trend.lastWeekPct),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Icon(deltaIcon, size: 18, color: deltaColor),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    delta.abs() < 0.5
-                        ? 'Так же, как на прошлой неделе'
-                        : 'На ${delta.abs().round()}% ${rising ? 'лучше' : 'хуже'}, чем на прошлой неделе',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: deltaColor,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: AppMotion.travel,
+              curve: AppMotion.easeOutStrong,
+              builder: (context, value, child) =>
+                  Opacity(opacity: value, child: child),
+              child: Row(
+                children: [
+                  Icon(deltaIcon, size: 18, color: deltaColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      delta.abs() < 0.5
+                          ? 'Так же, как на прошлой неделе'
+                          : 'На ${delta.abs().round()}% ${rising ? 'лучше' : 'хуже'}, чем на прошлой неделе',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: deltaColor,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 14),
             Row(
@@ -106,18 +118,28 @@ class _WeekRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 92,
-          child: Text(label, style: theme.textTheme.bodyMedium),
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: ClipRRect(
-            borderRadius: AppRadius.borderS,
-            child: LinearProgressIndicator(
-              value: pct / 100.0,
-              minHeight: 8,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.3),
-              valueColor: AlwaysStoppedAnimation(color),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: pct.clamp(0, 100) / 100),
+            duration: AppMotion.travel,
+            curve: AppMotion.easeOutStrong,
+            builder: (context, value, _) => ClipRRect(
+              borderRadius: AppRadius.borderS,
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 8,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
             ),
           ),
         ),

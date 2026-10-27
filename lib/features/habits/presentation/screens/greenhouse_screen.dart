@@ -9,6 +9,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../shared/widgets/app_sheets.dart';
@@ -33,6 +34,32 @@ import '../../../week/presentation/widgets/week_summary_card.dart';
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
+/// One animated row of the Greenhouse board: either a group header or one
+/// habit card. The id is the diff key between the current and the next set
+/// of rows (section kinds are unique on the board).
+sealed class _BoardEntry {
+  String get id;
+}
+
+final class _GroupHeaderEntry extends _BoardEntry {
+  _GroupHeaderEntry(this.group);
+
+  final TodayGroup group;
+
+  @override
+  String get id => 'g:${group.kind.name}';
+}
+
+final class _HabitEntry extends _BoardEntry {
+  _HabitEntry(this.habit, this.log);
+
+  final Habit habit;
+  final HabitLog? log;
+
+  @override
+  String get id => 'h:${habit.id}';
+}
+
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
 
@@ -46,6 +73,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   /// Habit ids created in this session — they get a one-shot entrance.
   final Set<int> _enteringIds = <int>{};
+
+  /// The board's visible rows (group headers + habit cards) rendered by the
+  /// animated sliver list. Kept in sync with [groupToday]'s output; when the
+  /// two differ, the difference is applied as insert/remove animations.
+  final GlobalKey<SliverAnimatedListState> _groupListKey =
+      GlobalKey<SliverAnimatedListState>();
+  List<_BoardEntry> _entries = const [];
+  List<_BoardEntry>? _pendingNext;
 
   @override
   String get tourScope => AppTourIds.greenhouse;
@@ -114,6 +149,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       hideCompleted: _hideCompleted,
       logByHabit: logByHabit,
     );
+
+    // Feed the animated list: rows are derived here and diffed against the
+    // current rows post-frame (build itself must not mutate the list).
+    _syncEntries(_buildEntries(groups, logByHabit));
 
     return CustomScrollView(
       slivers: [
@@ -191,16 +230,45 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: Text(
-                'Нажмите + чтобы создать первую привычку',
-                key: K.emptyHabitsMessage,
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_florist_outlined,
+                      size: 64,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Здесь будет твой день',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Нажмите + чтобы создать первую привычку',
+                      key: K.emptyHabitsMessage,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           )
         else
           // ── Grouped habit lists ──
-          for (final group in groups)
-            ..._buildGroup(context, theme, group, logByHabit),
+          SliverAnimatedList(
+            key: _groupListKey,
+            initialItemCount: _entries.length,
+            itemBuilder: (context, index, animation) =>
+                _entryRow(_entries[index], animation),
+          ),
 
         // -- Reflection block (bottom): goals first --
         const SliverToBoxAdapter(child: MonthGoalsCard()),
@@ -210,111 +278,184 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     );
   }
 
-  List<Widget> _buildGroup(
-    BuildContext context,
-    ThemeData theme,
-    TodayGroup group,
+  /// Flattens the board into animated-list rows: one header entry per group,
+  /// then one card entry per habit. The ids are the diff keys.
+  List<_BoardEntry> _buildEntries(
+    List<TodayGroup> groups,
     Map<int, HabitLog> logByHabit,
   ) {
-    final items = group.habits;
+    final out = <_BoardEntry>[];
+    for (final group in groups) {
+      if (group.habits.isEmpty) continue;
+      out.add(_GroupHeaderEntry(group));
+      for (final habit in group.habits) {
+        out.add(_HabitEntry(habit, logByHabit[habit.id]));
+      }
+    }
+    return out;
+  }
+
+  bool _sameEntries(List<_BoardEntry> next) {
+    final current = _entries;
+    if (next.length != current.length) return false;
+    for (var i = 0; i < next.length; i++) {
+      if (next[i].id != current[i].id) return false;
+    }
+    return true;
+  }
+
+  /// Schedules one post-frame apply of [next]. Build may run many times per
+  /// frame; only the latest pending list is applied, and only when it
+  /// actually differs from what the animated list shows.
+  void _syncEntries(List<_BoardEntry> next) {
+    if (_sameEntries(next)) return;
+    _pendingNext = next;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyPendingEntries());
+  }
+
+  void _applyPendingEntries() {
+    final next = _pendingNext;
+    if (!mounted || next == null) return;
+    _pendingNext = null;
+
+    final list = _groupListKey.currentState;
+    if (list == null || AppMotion.mayDisable(context)) {
+      setState(() => _entries = next);
+      return;
+    }
+
+    final nextIds = {for (final e in next) e.id};
+    var work = List<_BoardEntry>.of(_entries);
+
+    // Removals first, back to front so indices stay valid mid-animation.
+    for (var i = work.length - 1; i >= 0; i--) {
+      if (nextIds.contains(work[i].id)) continue;
+      final removed = work[i];
+      list.removeItem(
+        i,
+        (context, animation) => _entryRow(removed, animation, removing: true),
+        duration: AppMotion.base,
+      );
+      work.removeAt(i);
+    }
+
+    // Then insertions in order, matching ids positionally.
+    var wi = 0;
+    for (var ni = 0; ni < next.length; ni++) {
+      if (wi < work.length && work[wi].id == next[ni].id) {
+        wi++;
+        continue;
+      }
+      list.insertItem(wi, duration: AppMotion.base);
+      work.insert(wi, next[ni]);
+      wi++;
+    }
+
+    _entries = next;
+  }
+
+  /// One animated-list row: header or card. Inserts grow from zero height
+  /// with a fade; removals collapse the same way (symmetric exit). Reduced
+  /// motion renders the row plainly.
+  Widget _entryRow(
+    _BoardEntry entry,
+    Animation<double> animation, {
+    bool removing = false,
+  }) {
+    final child = switch (entry) {
+      _GroupHeaderEntry(:final group) => _buildGroupHeader(group),
+      _HabitEntry(:final habit, :final log) => _buildHabitRow(habit, log),
+    };
+    if (AppMotion.mayDisable(context)) return child;
+    return SizeTransition(
+      sizeFactor: animation,
+      alignment: Alignment.topCenter,
+      child: FadeTransition(opacity: animation, child: child),
+    );
+  }
+
+  Widget _buildGroupHeader(TodayGroup group) {
+    final theme = Theme.of(context);
     final (label, icon, color) = todayGroupVisuals(group.kind, context);
 
-    if (items.isEmpty) return [];
-
-    return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelLarge?.copyWith(color: color),
-                ),
-              ),
-              // "Mark all" button (only for scheduled groups)
-              if (group.canMarkAll)
-                TextButton.icon(
-                  key: K.markAllGroup(label),
-                  onPressed: () => _markAllInGroup(items),
-                  icon: Icon(Icons.done_all_rounded, size: 16, color: color),
-                  label: Text(
-                    'Выполнить все',
-                    style: theme.textTheme.labelSmall?.copyWith(color: color),
-                  ),
-                ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(color: color),
+            ),
           ),
-        ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        sliver: SliverList.builder(
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final habit = items[index];
-            final log = logByHabit[habit.id];
-            // Isolates card animations so one card doesn't repaint the sliver.
-            return RepaintBoundary(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Dismissible(
-                  key: K.habitCard(habit.id),
-                  direction: DismissDirection.horizontal,
-                  background: Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 20),
-                    color: AppColors.emeraldGlow.withValues(alpha: 0.18),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: AppColors.emeraldGlow,
-                    ),
-                  ),
-                  secondaryBackground: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
-                    child: const Icon(
-                      Icons.pause_rounded,
-                      color: AppColors.coolGreyBlue,
-                    ),
-                  ),
-                  movementDuration: const Duration(milliseconds: 220),
-                  resizeDuration: const Duration(milliseconds: 220),
-                  dismissThresholds: const {DismissDirection.horizontal: 0.35},
-                  confirmDismiss: (direction) async {
-                    final actions = ref.read(habitActionsProvider.notifier);
-                    if (direction == DismissDirection.startToEnd) {
-                      await actions.logToday([
-                        habit.id,
-                      ], status: LogStatus.done);
-                    } else {
-                      await actions.logToday([
-                        habit.id,
-                      ], status: LogStatus.skip);
-                    }
-                    return false;
-                  },
-                  child: _enteringIds.contains(habit.id)
-                      ? Entrance(
-                          onComplete: () {
-                            if (mounted) {
-                              setState(() => _enteringIds.remove(habit.id));
-                            }
-                          },
-                          child: HabitCard(habit: habit, log: log),
-                        )
-                      : HabitCard(habit: habit, log: log),
-                ),
+          // "Mark all" button (only for scheduled groups)
+          if (group.canMarkAll)
+            TextButton.icon(
+              key: K.markAllGroup(label),
+              onPressed: () => _markAllInGroup(group.habits),
+              icon: Icon(Icons.done_all_rounded, size: 16, color: color),
+              label: Text(
+                'Выполнить все',
+                style: theme.textTheme.labelSmall?.copyWith(color: color),
               ),
-            );
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitRow(Habit habit, HabitLog? log) {
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        child: Dismissible(
+          key: K.habitCard(habit.id),
+          direction: DismissDirection.horizontal,
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            color: AppColors.emeraldGlow.withValues(alpha: 0.18),
+            child: const Icon(
+              Icons.check_rounded,
+              color: AppColors.emeraldGlow,
+            ),
+          ),
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            color: AppColors.coolGreyBlue.withValues(alpha: 0.18),
+            child: const Icon(
+              Icons.pause_rounded,
+              color: AppColors.coolGreyBlue,
+            ),
+          ),
+          movementDuration: const Duration(milliseconds: 220),
+          resizeDuration: const Duration(milliseconds: 220),
+          dismissThresholds: const {DismissDirection.horizontal: 0.35},
+          confirmDismiss: (direction) async {
+            final actions = ref.read(habitActionsProvider.notifier);
+            if (direction == DismissDirection.startToEnd) {
+              await actions.logToday([habit.id], status: LogStatus.done);
+            } else {
+              await actions.logToday([habit.id], status: LogStatus.skip);
+            }
+            return false;
           },
+          child: _enteringIds.contains(habit.id)
+              ? Entrance(
+                  onComplete: () {
+                    if (mounted) {
+                      setState(() => _enteringIds.remove(habit.id));
+                    }
+                  },
+                  child: HabitCard(habit: habit, log: log),
+                )
+              : HabitCard(habit: habit, log: log),
         ),
       ),
-    ];
+    );
   }
 
   void _markAllInGroup(List<Habit> habits) {

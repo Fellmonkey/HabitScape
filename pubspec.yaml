@@ -45,3 +45,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Nunito & Inter (variable fonts, OFL) — the app's typography system.
+  # Both ship as a single variable TTF; TextStyle.fontWeight drives the
+  # `wght` variation axis.
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-VariableFont_wght.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-VariableFont_opsz_wght.ttf

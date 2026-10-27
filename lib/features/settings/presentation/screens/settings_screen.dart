@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
+import '../../../../core/settings/exposure.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/hintful.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../shared/widgets/app_section_header.dart';
 import '../../domain/backup_flow.dart';
 import '../../providers/settings_providers.dart';
 import '../widgets/about_card.dart';
@@ -36,7 +39,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           // ── Backup section ──────────────────────────────────────
-          SectionHeader(title: 'Резервное копирование'),
+          AppSectionHeader(title: 'Резервное копирование'),
           const SizedBox(height: 8),
           tourTarget(
             AppHintIds.settingsExport,
@@ -62,7 +65,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── Archive section ─────────────────────────────────────
           LastBackupCard(),
 
-          SectionHeader(title: 'Архив'),
+          AppSectionHeader(title: 'Архив'),
           const SizedBox(height: 8),
           SettingsTile(
             icon: Icons.inventory_2_outlined,
@@ -82,14 +85,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 24),
 
           // ── Appearance section ─────────────────────────────────
-          SectionHeader(title: 'Внешний вид'),
+          AppSectionHeader(title: 'Внешний вид'),
           const SizedBox(height: 8),
           ThemeTile(),
 
           const SizedBox(height: 24),
 
           // ── Experience section ───────────────────────────────────
-          SectionHeader(title: 'Ощущения'),
+          AppSectionHeader(title: 'Ощущения'),
           const SizedBox(height: 8),
           HapticsTile(),
           const SizedBox(height: 8),
@@ -104,7 +107,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────────────
-          SectionHeader(title: 'О приложении'),
+          AppSectionHeader(title: 'О приложении'),
           const SizedBox(height: 8),
           AboutCard(onOpenSource: () => _openSource(context)),
 
@@ -123,6 +126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     switch (outcome) {
       case BackupExported():
+        Haptics.medium(ref.read(hapticsEnabledProvider));
         ref.invalidate(backupStatusProvider);
       case BackupExportFailed(:final error):
         _showSnackBar(context, 'Ошибка экспорта: $error');
@@ -141,6 +145,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     switch (outcome) {
       case BackupImported(:final habitCount):
+        Haptics.medium(ref.read(hapticsEnabledProvider));
         _showSnackBar(context, 'Импортировано привычек: $habitCount');
       case BackupImportCancelled():
         break;
@@ -154,6 +159,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Future<void> _resetOnboarding(WidgetRef ref) async {
     final store = await ref.read(hintfulStoreProvider.future);
     store.clear();
+    // Feature-hint banners are exposure-owned, not tour-owned — clear both so
+    // the setting really shows every hint again.
+    await ref.read(exposureActionsProvider.notifier).resetDismissedHints();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }

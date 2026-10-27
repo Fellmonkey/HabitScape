@@ -10,6 +10,7 @@ abstract final class AppRadius {
   static const double m = 16;
   static const double l = 24;
   static const double xl = 32;
+  static const double pill = 999;
 
   static const BorderRadius borderS = BorderRadius.all(Radius.circular(s));
   static const BorderRadius borderM = BorderRadius.all(Radius.circular(m));
@@ -52,6 +53,18 @@ abstract final class AppTheme {
       colorScheme: scheme,
       textTheme: _textTheme(AppColors.lightText),
       extensions: [_hintTheme(scheme)],
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.lightSurface,
+        contentTextStyle: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: AppColors.lightText,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+        elevation: 2,
+      ),
       cardTheme: CardThemeData(
         color: AppColors.lightSurface,
         elevation: 0,
@@ -122,6 +135,18 @@ abstract final class AppTheme {
       colorScheme: scheme,
       textTheme: _textTheme(AppColors.darkText),
       extensions: [_hintTheme(scheme)],
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.darkSurface,
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: AppColors.darkText,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+        elevation: 2,
+      ),
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
         elevation: 0,
@@ -194,6 +219,12 @@ abstract final class AppTheme {
       fontWeight: FontWeight.w600,
       color: color,
     ),
+    headlineSmall: TextStyle(
+      fontFamily: 'Nunito',
+      fontSize: 28,
+      fontWeight: FontWeight.w700,
+      color: color,
+    ),
     titleLarge: TextStyle(
       fontFamily: 'Nunito',
       fontSize: 18,
@@ -203,6 +234,12 @@ abstract final class AppTheme {
     titleMedium: TextStyle(
       fontFamily: 'Nunito',
       fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: color,
+    ),
+    titleSmall: TextStyle(
+      fontFamily: 'Nunito',
+      fontSize: 15,
       fontWeight: FontWeight.w600,
       color: color,
     ),

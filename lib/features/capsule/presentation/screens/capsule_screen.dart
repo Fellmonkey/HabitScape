@@ -9,7 +9,9 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
+import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';
 import '../../providers/letter_providers.dart';
@@ -97,7 +99,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
     return [
       if (feed.due.isNotEmpty) ...[
         const SizedBox(height: 24),
-        _SectionHeader(title: 'Готово к прочтению'),
+        const AppSectionHeader(title: 'Готово к прочтению'),
         const SizedBox(height: 8),
         for (final letter in feed.due) ...[
           _CapsuleTile(capsule: letter, today: feed.today, due: true),
@@ -106,7 +108,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
       ],
       if (feed.upcoming.isNotEmpty) ...[
         const SizedBox(height: 24),
-        _SectionHeader(title: 'Закрыто'),
+        const AppSectionHeader(title: 'Закрыто'),
         const SizedBox(height: 8),
         for (final letter in feed.upcoming) ...[
           _CapsuleTile(capsule: letter, today: feed.today),
@@ -115,7 +117,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
       ],
       if (feed.opened.isNotEmpty) ...[
         const SizedBox(height: 24),
-        _SectionHeader(title: 'Прочитанные'),
+        const AppSectionHeader(title: 'Прочитанные'),
         const SizedBox(height: 8),
         for (final letter in feed.opened) ...[
           _CapsuleTile(capsule: letter, today: feed.today, opened: true),
@@ -156,34 +158,41 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            TextField(
-              key: K.capsuleField,
-              controller: _controller,
-              focusNode: _fieldFocusNode,
-              minLines: _expanded ? 4 : 1,
-              maxLines: _expanded ? 8 : 1,
-              maxLength: 2000,
-              textCapitalization: TextCapitalization.sentences,
-              onChanged: (_) => setState(() {}),
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Что скажешь себе через месяц?',
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                ),
-                counterText: '',
-                filled: true,
-                fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.04),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: border,
-                enabledBorder: border,
-                focusedBorder: border.copyWith(
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 1.6,
+            AnimatedSize(
+              duration: AppMotion.base,
+              curve: AppMotion.easeInOutStrong,
+              alignment: Alignment.topCenter,
+              child: TextField(
+                key: K.capsuleField,
+                controller: _controller,
+                focusNode: _fieldFocusNode,
+                minLines: _expanded ? 4 : 1,
+                maxLines: _expanded ? 8 : 1,
+                maxLength: 2000,
+                textCapitalization: TextCapitalization.sentences,
+                onChanged: (_) => setState(() {}),
+                style: theme.textTheme.bodyMedium,
+                decoration: InputDecoration(
+                  hintText: 'Что скажешь себе через месяц?',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  ),
+                  counterText: '',
+                  filled: true,
+                  fillColor: theme.colorScheme.onSurface.withValues(
+                    alpha: 0.04,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  border: border,
+                  enabledBorder: border,
+                  focusedBorder: border.copyWith(
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.primary,
+                      width: 1.6,
+                    ),
                   ),
                 ),
               ),
@@ -216,29 +225,21 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
               child: FilledButton.icon(
                 key: K.capsuleSave,
                 onPressed: _canSave ? _save : null,
-                icon: const Icon(Icons.send_rounded, size: 18),
-                label: const Text('Отправить'),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded, size: 18),
+                label: Text(_saving ? 'Отправляем…' : 'Отправить'),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      title,
-      style: theme.textTheme.titleMedium?.copyWith(
-        color: theme.colorScheme.primary,
       ),
     );
   }
