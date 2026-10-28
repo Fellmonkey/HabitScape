@@ -29,6 +29,7 @@ class Exposure {
   static const seenUxKey = 'seen_ux_hints';
   static const lastSeenKey = 'last_seen_date';
   static const welcomeShownKey = 'welcome_shown_date';
+  static const pendingBannersKey = 'pending_banners';
 
   /// Absence (in days) after which the return welcome may appear.
   static const absentReturnDays = 7;
@@ -181,6 +182,28 @@ class Exposure {
   /// no older than the visit, so the card stays hidden until a new absence.
   Future<void> markWelcomeShown() =>
       _prefs.setInt(welcomeShownKey, today.unixSeconds);
+
+  // ── Deferred banner queue ─────────────────────────────────
+
+  /// Banners that were available but lost the single-banner arbitration (e.g.
+  /// the week summary suppressed by a time suggestion). They are shown on
+  /// later visits, in FIFO order, so nothing is lost to prioritisation.
+  List<String> get pendingBanners =>
+      _prefs.getStringList(pendingBannersKey) ?? const [];
+
+  /// Adds [id] to the deferred queue unless it is already there.
+  Future<void> pushPendingBanner(String id) async {
+    if (pendingBanners.contains(id)) return;
+    await _prefs.setStringList(pendingBannersKey, [...pendingBanners, id]);
+  }
+
+  /// Removes the first occurrence of [id] (once it has been displayed).
+  Future<void> removePendingBanner(String id) async {
+    final list = pendingBanners;
+    if (!list.contains(id)) return;
+    final next = [...list]..remove(id);
+    await _prefs.setStringList(pendingBannersKey, next);
+  }
 }
 
 /// An [Exposure] snapshot for today, with the first-use date recorded once.
@@ -230,6 +253,14 @@ class ExposureActions extends Notifier<void> {
 
   /// Marks the return welcome as shown for this episode and refreshes.
   Future<void> markWelcomeShown() => _mutate((e) => e.markWelcomeShown());
+
+  /// Adds a banner id to the deferred queue and refreshes the snapshot.
+  Future<void> pushPendingBanner(String id) =>
+      _mutate((e) => e.pushPendingBanner(id));
+
+  /// Removes a banner id from the deferred queue and refreshes the snapshot.
+  Future<void> removePendingBanner(String id) =>
+      _mutate((e) => e.removePendingBanner(id));
 }
 
 final exposureActionsProvider = NotifierProvider<ExposureActions, void>(

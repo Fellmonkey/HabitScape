@@ -7,10 +7,13 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
+import 'package:rythm/core/domain/time_suggestion.dart';
+import 'package:rythm/core/providers/time_suggestions_provider.dart';
 import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/features/capsule/domain/capsule.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
@@ -606,6 +609,109 @@ void main() {
     // Same day, another pump — the episode was already welcomed.
     await pumpGreenhouse(tester, habits: const []);
     expect(find.text('С возвращением!'), findsNothing);
+
+    await disposeTree(tester);
+  });
+
+  /// Pumps the greenhouse with a controllable single-banner arbitration:
+  /// [suggest] controls the time-suggestion availability, [week] the week
+  /// summary window.
+  Future<void> pumpQueueBanners(
+    WidgetTester tester, {
+    required bool suggest,
+    required bool week,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+          activeHabitsProvider.overrideWith((ref) => Stream.value(const [])),
+          todayLogsProvider.overrideWith((ref) => Stream.value(const [])),
+          timeSuggestionsProvider.overrideWith(
+            (ref) => Future.value(
+              suggest
+                  ? [
+                      TimeSuggestion(
+                        habit: makeHabit(
+                          id: 1,
+                          name: 'Бег',
+                          timeOfDay: 'evening',
+                        ),
+                        actualBucket: TimeBucket.morning,
+                        sampleSize: 12,
+                      ),
+                    ]
+                  : const <TimeSuggestion>[],
+            ),
+          ),
+          todayDayNoteProvider.overrideWith(
+            (ref) => Stream<DayNote?>.value(null),
+          ),
+          echoFeedProvider.overrideWith(
+            (ref) =>
+                Stream.value(const EchoFeed(memories: [], hasAnyNote: false)),
+          ),
+          weekSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              WeekSummaryView(
+                weekStart: DateTime.now(),
+                summary: WeekSummary(
+                  greenDays: 4,
+                  totalDays: 6,
+                  bestDay: DateTime(2026, 10, 26),
+                  completionPct: 62,
+                  weakest: null,
+                ),
+                isWindowOpen: week,
+                isAnswered: false,
+              ),
+            ),
+          ),
+          monthSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              MonthSummaryView(monthStart: DateTime.now().toMidnight),
+            ),
+          ),
+          monthGoalsProvider.overrideWith(
+            (ref, monthTs) => Stream.value(const <MonthlyGoal>[]),
+          ),
+          capsuleFeedProvider.overrideWith(
+            (ref) => Stream.value(
+              CapsuleFeed(
+                today: DateTime.now().toMidnight,
+                upcoming: const [],
+                due: const [],
+                opened: const [],
+              ),
+            ),
+          ),
+          hasOldNoteProvider.overrideWith((ref) => Stream.value(false)),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const GreenhouseScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a queued week summary is shown once it becomes available', (
+    tester,
+  ) async {
+    // Seed the deferred queue as if a previous visit had lost the
+    // arbitration.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(Exposure.pendingBannersKey, ['week-summary']);
+
+    // No time suggestion now → the queued week summary is shown and consumed.
+    await pumpQueueBanners(tester, suggest: false, week: true);
+    expect(find.byKey(K.weekSummaryCard), findsOneWidget);
+
+    final after = prefs.getStringList(Exposure.pendingBannersKey) ?? const [];
+    expect(after, isNot(contains('week-summary')));
 
     await disposeTree(tester);
   });

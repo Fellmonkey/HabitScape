@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
+import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
@@ -11,6 +12,8 @@ import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
 import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
+import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
+import 'package:rythm/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
@@ -23,6 +26,7 @@ import 'package:rythm/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../fixtures/test_db.dart';
+import '../../fixtures/test_factories.dart';
 
 /// Guards L-04: the main screens must survive a large system font scale
 /// (1.3–2.0) without rendering exceptions (mainly RenderFlex overflows).
@@ -36,6 +40,7 @@ void main() {
       // Tours are "seen" so they never run over the large-scale screens.
       'hintful.greenhouse': 'true',
       'hintful.settings': 'true',
+      'hintful.spread': 'true',
     });
     db = createTestDatabase();
   });
@@ -137,5 +142,31 @@ void main() {
     // a 2.0 scale (lazy ListView) — the guard is "no overflow/exception".
     expect(find.text('Экспорт данных'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('month spread survives a 2.0 font scale', (tester) async {
+    await pumpWithLargeText(tester, const MonthSpreadScreen());
+
+    expect(find.byKey(K.monthSpreadTitle), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Flush drift-stream cleanup timers before the test ends.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('habit detail survives a 2.0 font scale', (tester) async {
+    final id = await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Чтение книг', timeOfDay: 'evening'),
+    );
+    await pumpWithLargeText(tester, HabitDetailScreen(habitId: id));
+
+    expect(find.text('Чтение книг'), findsOneWidget);
+    expect(find.text('Обзор'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Flush drift-stream cleanup timers before the test ends.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 }

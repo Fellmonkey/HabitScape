@@ -210,21 +210,53 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     );
     final canSeeToggle = maxGroupSize >= greenhouseToggleMinGroupHabits;
 
-    // ── Single-banner arbitration ──
+    // ── Single-banner arbitration with a deferred queue ──
+    // At most one block per visit. If an item with a limited window (week /
+    // month summary) loses today's arbitration, it is enqueued and shown on
+    // a later visit instead of being lost.
     final suggestionsAsync = ref.watch(timeSuggestionsProvider);
     final weekAsync = ref.watch(weekSummaryProvider);
     final monthAsync = ref.watch(monthSummaryProvider);
 
-    final _HomeBanner? banner;
-    if ((suggestionsAsync.value ?? const []).isNotEmpty) {
+    final timeAvailable = (suggestionsAsync.value ?? const []).isNotEmpty;
+    final weekAvailable = weekAsync.value?.shouldShow == true;
+    final monthAvailable = monthAsync.value?.shouldShow == true;
+
+    _HomeBanner? banner;
+    if (timeAvailable) {
       banner = _HomeBanner.timeSuggestion;
-    } else if (weekAsync.value?.shouldShow == true) {
+    } else if (weekAvailable) {
       banner = _HomeBanner.weekSummary;
-    } else if (monthAsync.value?.shouldShow == true) {
+    } else if (monthAvailable) {
       banner = _HomeBanner.monthSummary;
-    } else {
-      banner = null;
     }
+
+    // Deferred queue: consume the oldest entry that is still available.
+    final exposureNow = ref.read(exposureProvider).value;
+    if (exposureNow != null && exposureNow.pendingBanners.isNotEmpty) {
+      for (final pendingId in exposureNow.pendingBanners) {
+        if (pendingId == 'week-summary' && weekAvailable) {
+          banner = _HomeBanner.weekSummary;
+          _consumePendingBanner('week-summary');
+          break;
+        } else if (pendingId == 'month-summary' && monthAvailable) {
+          banner = _HomeBanner.monthSummary;
+          _consumePendingBanner('month-summary');
+          break;
+        }
+        // Stale entries (window already closed) are dropped on a later
+        // clean-up pass — see the post-frame bookkeeping below.
+      }
+    }
+
+    // Post-frame bookkeeping: enqueue what lost today, drop stale queue
+    // entries. Never mutates during build.
+    _scheduleBannerBookkeeping(
+      timeAvailable: timeAvailable,
+      weekAvailable: weekAvailable,
+      monthAvailable: monthAvailable,
+      chosen: banner,
+    );
 
     final Widget? bannerWidget = switch (banner) {
       _HomeBanner.timeSuggestion => const TimeSuggestionBanner(),
@@ -456,6 +488,80 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             'Когда привычек много — скрывай выполненные, чтобы видеть только то, что осталось.',
         id: 'greenhouse-hide-toggle',
       );
+    });
+  }
+
+  /// Deferred-banner bookkeeping: one post-frame pass per frame, so build
+  /// never mutates preferences.
+  bool _bannerBookkeepingScheduled = false;
+  int _bannerBookkeepingRetries = 0;
+
+  void _scheduleBannerBookkeeping({
+    required bool timeAvailable,
+    required bool weekAvailable,
+    required bool monthAvailable,
+    required _HomeBanner? chosen,
+  }) {
+    if (_bannerBookkeepingScheduled) return;
+    _bannerBookkeepingScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final exposureState = ref.read(exposureProvider);
+      final exposure = exposureState.value;
+      if (exposure == null) {
+        // Exposure is not ready yet — retry a few frames, then give up (a
+        // stuck provider must never spin forever).
+        if (_bannerBookkeepingRetries < 10) {
+          _bannerBookkeepingRetries++;
+          _bannerBookkeepingScheduled = false;
+          _scheduleBannerBookkeeping(
+            timeAvailable: timeAvailable,
+            weekAvailable: weekAvailable,
+            monthAvailable: monthAvailable,
+            chosen: chosen,
+          );
+        } else {
+          _bannerBookkeepingScheduled = false;
+          _bannerBookkeepingRetries = 0;
+        }
+        return;
+      }
+      _bannerBookkeepingScheduled = false;
+      _bannerBookkeepingRetries = 0;
+
+      // Enqueue limited-window banners that lost today's arbitration — except
+      // ones already consumed this session (a just-shown queued item must not
+      // re-enter on a later frame of the same visit).
+      if (weekAvailable &&
+          chosen != _HomeBanner.weekSummary &&
+          !_consumedPendingBanners.contains('week-summary')) {
+        ref
+            .read(exposureActionsProvider.notifier)
+            .pushPendingBanner('week-summary');
+      }
+      if (monthAvailable &&
+          chosen != _HomeBanner.monthSummary &&
+          !_consumedPendingBanners.contains('month-summary')) {
+        ref
+            .read(exposureActionsProvider.notifier)
+            .pushPendingBanner('month-summary');
+      }
+      // Stale entries are left alone: they are skipped while unavailable and
+      // removed only once actually shown (auto-cleaning here would race with
+      // providers still loading).
+    });
+  }
+
+  /// Banners already pulled from the queue this visit — they must not be
+  /// re-enqueued by later frames of the same visit.
+  final Set<String> _consumedPendingBanners = {};
+
+  /// Removes a queue entry after it has actually been displayed.
+  void _consumePendingBanner(String id) {
+    _consumedPendingBanners.add(id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(exposureActionsProvider.notifier).removePendingBanner(id);
     });
   }
 

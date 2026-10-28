@@ -87,7 +87,15 @@ class MonthCalendarGrid extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: AppRadius.borderL,
         ),
-        child: Column(children: [header, const SizedBox(height: 6), ...weeks]),
+        // The dense calendar clamps its own text scale so cells never
+        // overflow at large system fonts (the rest of the app follows the
+        // system scale fully).
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.4,
+          child: Column(
+            children: [header, const SizedBox(height: 6), ...weeks],
+          ),
+        ),
       ),
     );
   }

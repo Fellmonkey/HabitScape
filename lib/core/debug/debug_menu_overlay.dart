@@ -6,9 +6,12 @@ import '../../shared/widgets/sheet_handle.dart';
 import '../database/database_provider.dart';
 import '../database/database_reset.dart';
 import '../router/app_router.dart';
+import '../settings/exposure.dart';
 import '../settings/hintful.dart';
+import '../settings/shared_prefs.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import '../utils/date_helpers.dart';
 import 'debug_data_seeder.dart';
 import 'month_summary_preview.dart';
 import 'time_suggestions_preview.dart';
@@ -231,6 +234,41 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
         _lastResult = '✅ $label';
       });
       ref.invalidate(databaseProvider); // refresh the UI
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  /// Seeds a typical returning user: a few months of data plus an absence of
+  /// 10 days, so the «С возвращением!» welcome appears on next open.
+  Future<void> _seedReturningUser() async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+    try {
+      final db = ref.read(databaseProvider);
+      final seeder = DebugDataSeeder(db);
+      await seeder.seed(debugScenarioById('5-3m')!);
+
+      final prefs = await ref.read(sharedPrefsProvider.future);
+      final now = DateTime.now().toMidnight;
+      await prefs.setInt(
+        Exposure.lastSeenKey,
+        now.subtract(const Duration(days: 10)).unixSeconds,
+      );
+      await prefs.remove(Exposure.welcomeShownKey);
+
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '✅ UX: Вернувшийся — данные + отсутствие 10 дней';
+      });
+      ref.invalidate(databaseProvider);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -542,6 +580,18 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.softLavender,
               side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding ? null : _seedReturningUser,
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('UX: Вернувшийся (данные + отсутствие 10 дней)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.dustyRose,
+              side: const BorderSide(color: AppColors.dustyRose),
             ),
           ),
         ),
