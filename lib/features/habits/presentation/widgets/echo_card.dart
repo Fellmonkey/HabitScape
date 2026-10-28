@@ -26,20 +26,29 @@ class EchoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use `.value` (last known state) instead of `when(loading:)`: reloads
-    // happen on every exposure write, and unmounting the card during a reload
-    // re-runs [initState], which records a showing again — an infinite
-    // mount/write cycle that makes the card blink and hang.
-    final feed = ref.watch(echoFeedProvider).value;
-    if (feed == null) return const SizedBox.shrink();
-    if (!feed.hasAnyNote) return const SizedBox.shrink();
-    if (feed.isEmpty) return const _EchoHint();
+    final feedAsync = ref.watch(echoFeedProvider);
 
-    final exposure = ref.watch(exposureProvider).value;
-    if (exposure == null) return const SizedBox.shrink();
-    if (!exposure.echoCardVisible) return const SizedBox.shrink();
-
-    return _EchoMemoryCard(feed: feed, today: exposure.today, atTop: atTop);
+    return feedAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (feed) {
+        if (!feed.hasAnyNote) return const SizedBox.shrink();
+        if (feed.isEmpty) return const _EchoHint();
+        final exposureAsync = ref.watch(exposureProvider);
+        return exposureAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (exposure) {
+            if (!exposure.echoCardVisible) return const SizedBox.shrink();
+            return _EchoMemoryCard(
+              feed: feed,
+              today: exposure.today,
+              atTop: atTop,
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -99,18 +108,6 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   void initState() {
     super.initState();
     _recordShown();
-  }
-
-  /// When the feed recomputes (a seen date was recorded), start from the
-  /// first memory of the new list instead of continuing on stale indices —
-  /// keeps «Ещё» from showing a briefly-flashed memory twice.
-  @override
-  void didUpdateWidget(covariant _EchoMemoryCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.feed, widget.feed)) {
-      _index = 0;
-      _expanded = false;
-    }
   }
 
   Future<void> _recordShown() async {

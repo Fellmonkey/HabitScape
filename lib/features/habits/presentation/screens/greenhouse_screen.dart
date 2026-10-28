@@ -84,12 +84,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   List<_BoardEntry> _entries = const [];
   List<_BoardEntry>? _pendingNext;
 
-  /// Above this many row changes in one frame the diff is applied instantly —
-  /// animating dozens of insert/remove animations at once (e.g. toggling
-  /// "hide completed" on a 30-habit board) stalls the frame and makes the UI
-  /// feel like it "collects" changes before showing them.
-  static const _bulkChangeThreshold = 8;
-
   @override
   String get tourScope => AppTourIds.greenhouse;
 
@@ -332,7 +326,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _applyPendingEntries());
   }
 
-  void _applyPendingEntries() {
+  Future<void> _applyPendingEntries() async {
     final next = _pendingNext;
     if (!mounted || next == null) return;
     _pendingNext = null;
@@ -343,51 +337,59 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       return;
     }
 
-    // Bulk changes (many rows appearing/disappearing at once, e.g. toggling
-    // "hide completed" on a large board) are applied with zero-duration
-    // animations — animating dozens of rows at once stalls the frame and
-    // makes the UI feel like it "collects" changes before showing them. The
-    // list is still told about every row via its own API, so it never
-    // desyncs; it just doesn't animate.
+    // Split a large diff into roughly equal batches (about three waves), so
+    // a board with many habits updates continuously — a few rows appear or
+    // disappear at a time — instead of trying to animate everything in one
+    // frame and stalling. Small diffs (≤8 rows) apply in a single shot.
     final currentIds = {for (final e in _entries) e.id};
     final nextIds = {for (final e in next) e.id};
     final shared = currentIds.intersection(nextIds).length;
-    final changeCount = (_entries.length - shared) + (next.length - shared);
-    final duration = changeCount > _bulkChangeThreshold
-        ? Duration.zero
-        : AppMotion.base;
+    final totalChanges = (_entries.length - shared) + (next.length - shared);
+    final batchSize = totalChanges > 8 ? (totalChanges + 2) ~/ 3 : totalChanges;
 
+    // Apply the diff in batches: remove up to [batchSize] rows (back to
+    // front, so indices stay valid), insert up to the remaining batch
+    // capacity (positionally matching the target), then wait for those
+    // animations to finish before the next batch — the list stays in sync
+    // with [_entries] at every step because every mutation goes through the
+    // animated list's own API.
     var work = List<_BoardEntry>.of(_entries);
+    while (mounted && !_sameEntries(next)) {
+      var applied = 0;
 
-    // Removals first, back to front so indices stay valid mid-animation.
-    for (var i = work.length - 1; i >= 0; i--) {
-      if (nextIds.contains(work[i].id)) continue;
-      final removed = work[i];
-      list.removeItem(
-        i,
-        (context, animation) => _entryRow(removed, animation, removing: true),
-        duration: duration,
-      );
-      work.removeAt(i);
-    }
-
-    // Then insertions in order, matching ids positionally.
-    var wi = 0;
-    for (var ni = 0; ni < next.length; ni++) {
-      if (wi < work.length && work[wi].id == next[ni].id) {
-        wi++;
-        continue;
+      for (var i = work.length - 1; i >= 0 && applied < batchSize; i--) {
+        if (nextIds.contains(work[i].id)) continue;
+        final removed = work[i];
+        list.removeItem(
+          i,
+          (context, animation) => _entryRow(removed, animation, removing: true),
+          duration: AppMotion.base,
+        );
+        work.removeAt(i);
+        applied++;
       }
-      list.insertItem(wi, duration: duration);
-      work.insert(wi, next[ni]);
-      wi++;
-    }
 
-    _entries = next;
+      var wi = 0;
+      for (var ni = 0; ni < next.length && applied < batchSize; ni++) {
+        if (wi < work.length && work[wi].id == next[ni].id) {
+          wi++;
+          continue;
+        }
+        list.insertItem(wi, duration: AppMotion.base);
+        work.insert(wi, next[ni]);
+        wi++;
+        applied++;
+      }
+
+      _entries = work;
+      if (applied == 0) break;
+      await Future<void>.delayed(AppMotion.base);
+    }
   }
 
   /// One animated-list row: header or card. Inserts grow from zero height
-  /// with a fade; removals collapse the same way (symmetric exit). Reduced
+  /// with a fade, rise and slight scale — a living entrance instead of a
+  /// flat expand. Removals collapse with a fade only (no travel). Reduced
   /// motion renders the row plainly.
   Widget _entryRow(
     _BoardEntry entry,
@@ -399,10 +401,29 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       _HabitEntry(:final habit, :final log) => _buildHabitRow(habit, log),
     };
     if (AppMotion.mayDisable(context)) return child;
+
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: AppMotion.easeOutStrong,
+    );
     return SizeTransition(
       sizeFactor: animation,
       alignment: Alignment.topCenter,
-      child: FadeTransition(opacity: animation, child: child),
+      child: FadeTransition(
+        opacity: curved,
+        child: removing
+            ? child
+            : SlideTransition(
+                position: Tween(
+                  begin: const Offset(0, 0.07),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: ScaleTransition(
+                  scale: Tween(begin: 0.97, end: 1.0).animate(curved),
+                  child: child,
+                ),
+              ),
+      ),
     );
   }
 

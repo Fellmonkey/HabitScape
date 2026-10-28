@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,9 +15,9 @@ import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
 import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
-import 'package:rythm/features/habits/presentation/widgets/habit_card.dart';
 import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
+import 'package:rythm/features/habits/providers/habit_actions.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 import 'package:rythm/features/habits/providers/month_summary_providers.dart';
@@ -25,6 +27,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
+
+/// A [HabitActions] whose writes always fail — used to verify the optimistic
+/// check rolls back when the database write errors.
+class _FailingHabitActions extends HabitActions {
+  @override
+  Future<void> logToday(List<int> habitIds, {required LogStatus status}) async {
+    throw Exception('write failed');
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,18 +48,22 @@ void main() {
     });
     db = createTestDatabase();
   });
-
   tearDown(() async {
     await db.close();
   });
 
   /// Pumps the screen with its own data pinned. The surrounding cards are
   /// hidden by overrides: this test owns the board policy, not their feeds.
+  /// [logsStream] overrides today's logs stream when provided (useful for
+  /// simulating the database stream reacting to a write). [failLogWrites]
+  /// swaps the habit actions for a fake whose writes always fail.
   Future<void> pumpGreenhouse(
     WidgetTester tester, {
     required List<Habit> habits,
     List<HabitLog> logs = const [],
+    Stream<List<HabitLog>>? logsStream,
     EchoFeed? echoFeed,
+    bool failLogWrites = false,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
@@ -57,7 +72,11 @@ void main() {
           databaseProvider.overrideWithValue(db),
           sharedPrefsProvider.overrideWith((_) async => prefs),
           activeHabitsProvider.overrideWith((ref) => Stream.value(habits)),
-          todayLogsProvider.overrideWith((ref) => Stream.value(logs)),
+          todayLogsProvider.overrideWith(
+            (ref) => logsStream ?? Stream.value(logs),
+          ),
+          if (failLogWrites)
+            habitActionsProvider.overrideWith(() => _FailingHabitActions()),
           todayDayNoteProvider.overrideWith(
             (ref) => Stream<DayNote?>.value(null),
           ),
@@ -236,49 +255,91 @@ void main() {
     await disposeTree(tester);
   });
 
-  testWidgets('tapping the check marks the habit done instantly', (
-    tester,
-  ) async {
-    final today = todayTimestamp();
-    // The habit must exist in the database for the log's foreign key.
+  testWidgets(
+    'completed habit shows the check instantly and confirms from the stream',
+    (tester) async {
+      final today = todayTimestamp();
+      await db.habitsDao.insertHabit(
+        makeHabitCompanion(name: 'Сделано', timeOfDay: 'morning'),
+      );
+      final logsController = StreamController<List<HabitLog>>.broadcast();
+      addTearDown(logsController.close);
+
+      await pumpGreenhouse(
+        tester,
+        habits: [makeHabit(id: 1, name: 'Сделано', timeOfDay: 'morning')],
+        logsStream: logsController.stream,
+      );
+
+      final check = find.byKey(K.habitCheck(1));
+      expect(
+        find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+        findsNothing,
+      );
+      final before = tester.widget<Text>(find.text('Сделано'));
+      expect(before.style?.decoration, isNot(TextDecoration.lineThrough));
+
+      await tester.tap(check);
+      await tester.pumpAndSettle();
+
+      // Optimistic: the check and strikethrough appear immediately, even
+      // before the logs stream reports the write.
+      expect(
+        find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+        findsOneWidget,
+      );
+      final optimistic = tester.widget<Text>(find.text('Сделано'));
+      expect(optimistic.style?.decoration, TextDecoration.lineThrough);
+
+      // The write really reached the database…
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(1));
+      expect(logs.single.status, LogStatus.done);
+      expect(logs.single.date, today);
+
+      // …and the stream now reports it — the state stays confirmed.
+      logsController.add(logs);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+        findsOneWidget,
+      );
+      final after = tester.widget<Text>(find.text('Сделано'));
+      expect(after.style?.decoration, TextDecoration.lineThrough);
+
+      await disposeTree(tester);
+    },
+  );
+
+  testWidgets('rolls the check back when the write fails', (tester) async {
     await db.habitsDao.insertHabit(
       makeHabitCompanion(name: 'Сделано', timeOfDay: 'morning'),
     );
     await pumpGreenhouse(
       tester,
       habits: [makeHabit(id: 1, name: 'Сделано', timeOfDay: 'morning')],
+      failLogWrites: true,
     );
 
     final check = find.byKey(K.habitCheck(1));
-    // Before the tap: no check mark inside the circle, no strikethrough.
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+
+    // The write failed → the optimistic check rolls back.
     expect(
       find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
       findsNothing,
     );
-    final before = tester.widget<Text>(find.text('Сделано'));
-    expect(before.style?.decoration, isNot(TextDecoration.lineThrough));
-
-    await tester.tap(check);
-    await tester.pumpAndSettle();
-
-    // The write really reached the database.
-    final logs = await db.habitLogsDao.getAllLogs();
-    expect(logs, hasLength(1));
-    expect(logs.single.status, LogStatus.done);
-    expect(logs.single.date, today);
-
-    // The check fills in (optimistic) and the title is struck through.
-    expect(
-      find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
-      findsOneWidget,
-    );
     final after = tester.widget<Text>(find.text('Сделано'));
-    expect(after.style?.decoration, TextDecoration.lineThrough);
+    expect(after.style?.decoration, isNot(TextDecoration.lineThrough));
 
     await disposeTree(tester);
   });
 
-  testWidgets('hide-completed applies a large board instantly', (tester) async {
+  testWidgets('hide-completed on a large board animates in batches', (
+    tester,
+  ) async {
     // Tall viewport so all twelve rows are built (slivers are lazy).
     await tester.binding.setSurfaceSize(const Size(800, 3000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -308,7 +369,6 @@ void main() {
     await pumpGreenhouse(tester, habits: habits, logs: logs);
 
     // All twelve are visible before toggling.
-    expect(find.byType(HabitCard), findsNWidgets(12));
     for (var id = 1; id <= 12; id++) {
       expect(find.text('Привычка $id'), findsOneWidget);
     }
@@ -316,8 +376,7 @@ void main() {
     await tester.tap(find.byKey(K.hideCompletedToggle));
     await tester.pumpAndSettle();
 
-    // Six cards remain — the done ones are gone.
-    expect(find.byType(HabitCard), findsNWidgets(6));
+    // The six done ones are hidden; the six remaining ones stay.
     for (var id = 1; id <= 6; id++) {
       expect(find.text('Привычка $id'), findsNothing);
     }

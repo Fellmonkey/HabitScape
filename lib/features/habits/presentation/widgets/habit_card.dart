@@ -14,6 +14,7 @@ import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../core/domain/scheduling.dart';
 import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
+import '../../providers/habit_streams.dart';
 
 /// A single habit row in the Greenhouse list: tap the check circle to mark
 /// done, tap the card to open details.
@@ -32,12 +33,18 @@ class _HabitCardState extends ConsumerState<HabitCard>
   late final AnimationController _bounceController;
   late final Animation<double> _scaleAnim;
 
-  /// Optimistic done: set the moment the user taps, so the check fills in
-  /// instantly instead of waiting for the database stream round-trip. Cleared
-  /// if the write fails.
-  bool _pendingDone = false;
+  /// The habit's log status for today, refreshed live from the logs stream
+  /// (not just from the pinned [HabitCard.log] prop). The animated list keeps
+  /// row widgets alive even when their data changes, so the card has to
+  /// observe the stream itself — otherwise a completed habit only *looks*
+  /// done after the list fully rebuilds (e.g. after switching tabs).
+  LogStatus? _liveStatus;
 
-  bool get _isDone => widget.log?.status == LogStatus.done || _pendingDone;
+  /// Optimistic done: set the moment the user taps, so the check fills in
+  /// immediately. Cleared if the database write fails.
+  bool _optimisticDone = false;
+
+  bool get _isDone => _liveStatus == LogStatus.done || _optimisticDone;
 
   bool get _showFreqBadge {
     final type = FrequencyType.fromString(widget.habit.frequencyType);
@@ -89,13 +96,16 @@ class _HabitCardState extends ConsumerState<HabitCard>
     if (_isDone) return;
     Haptics.medium(ref.read(hapticsEnabledProvider));
     if (!AppMotion.mayDisable(context)) _bounceController.forward(from: 0);
-    setState(() => _pendingDone = true);
+
+    // Show the completed state immediately; confirm (or roll back) once the
+    // write round-trips through the database stream.
+    setState(() => _optimisticDone = true);
     try {
       await ref.read(habitActionsProvider.notifier).logToday([
         widget.habit.id,
       ], status: LogStatus.done);
     } catch (_) {
-      if (mounted) setState(() => _pendingDone = false);
+      if (mounted) setState(() => _optimisticDone = false);
     }
   }
 
@@ -103,7 +113,18 @@ class _HabitCardState extends ConsumerState<HabitCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final status = widget.log?.status;
+
+    // Keep the visible status in sync with the live logs stream. The board
+    // list may keep this row alive with a stale log prop, so the source of
+    // truth for "is it done" is the stream, not the prop.
+    final todayLogs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
+    _liveStatus =
+        todayLogs
+            .where((l) => l.habitId == widget.habit.id)
+            .firstOrNull
+            ?.status ??
+        widget.log?.status;
+    final status = _liveStatus;
     final today = ref.watch(todayDateProvider);
 
     return ScaleTransition(
