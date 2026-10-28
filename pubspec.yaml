@@ -33,6 +33,12 @@ dependencies:
   # Web DOM interop (PNG export download fallback on the Web PWA)
   web: ^1.1.0
 
+  # Local scheduled notifications (Android, offline, opt-in). No backend:
+  # the app is serverless by design, so FCM/Web Push are out of scope.
+  flutter_local_notifications: ^19.0.0
+  flutter_timezone: ^4.0.0
+  timezone: ^0.10.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

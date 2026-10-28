@@ -19,6 +19,7 @@ import '../widgets/about_card.dart';
 import '../widgets/haptics_tile.dart';
 import '../widgets/import_confirm_dialog.dart';
 import '../widgets/last_backup_card.dart';
+import '../widgets/notifications_tile.dart';
 import '../widgets/settings_tiles.dart';
 import '../widgets/text_scale_tile.dart';
 import '../widgets/theme_tile.dart';
@@ -138,6 +139,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ),
 
           const SizedBox(height: 24),
+
+          // ── Reminders section ────────────────────────────────────
+          // Local notifications exist only on native builds — hide on web
+          // (the PWA stays serverless; no Web Push without a backend).
+          if (!kIsWeb) ...[
+            AppSectionHeader(title: 'Напоминания'),
+            const SizedBox(height: 8),
+            const NotificationsTile(),
+            const SizedBox(height: 24),
+          ],
 
           // ── About section ───────────────────────────────────────
           AppSectionHeader(title: 'О приложении'),
