@@ -46,7 +46,8 @@ class TimeSuggestionBanner extends ConsumerWidget {
                     child: Text(
                       '${suggestion.habit.name}: чаще отмечаешь '
                       '${_timeLabel(suggestion.actualBucket)} — попробуй '
-                      'перенести время (n=${suggestion.sampleSize})',
+                      'перенести время (на основе '
+                      '${suggestion.sampleSize} отметок)',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.75,

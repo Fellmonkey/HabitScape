@@ -75,20 +75,25 @@ class RhythmCard extends StatelessWidget {
             _RhythmRow(
               icon: Icons.thumb_up_alt_rounded,
               color: context.palette.sage,
-              text: 'Лучший день: ${weekdayNames[best]} — ${_pctOf(best)}%',
+              text:
+                  'Лучший день: ${weekdayNames[best]} — '
+                  '${_pctOf(best)}% выполнения',
             ),
           if (worst != null)
             _RhythmRow(
               icon: Icons.thumb_down_alt_rounded,
               color: context.palette.rose,
-              text: 'Худший день: ${weekdayNames[worst]} — ${_pctOf(worst)}%',
+              text:
+                  'Худший день: ${weekdayNames[worst]} — '
+                  '${_pctOf(worst)}% выполнения',
             ),
           if (timeBucket != null)
             _RhythmRow(
               icon: Icons.schedule_rounded,
               color: context.palette.amber,
               text:
-                  'Пик активности: ${_timeLabel(timeBucket)} — ${rhythm.timeShare.round()}%',
+                  'Пик активности: ${_timeLabel(timeBucket)} — '
+                  '${rhythm.timeShare.round()}% всех отметок',
             ),
         ],
       ),

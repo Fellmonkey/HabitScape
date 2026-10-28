@@ -106,7 +106,8 @@ class _IntentionRow extends StatelessWidget {
                 if (record.followingWeekPct != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Следующая неделя: ${record.followingWeekPct!.round()}%',
+                    'Следующая неделя: '
+                    '${record.followingWeekPct!.round()}% выполнения',
                     style: theme.textTheme.bodySmall?.copyWith(color: muted),
                   ),
                 ],

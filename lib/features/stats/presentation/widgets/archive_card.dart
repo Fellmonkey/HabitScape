@@ -110,7 +110,7 @@ class _ArchivedRow extends StatelessWidget {
                   ),
                   Text(
                     'жила ${habitAgeLabel(lifecycle.ageDays)} · $pct% · '
-                    '${lifecycle.doneCount} ×',
+                    '${lifecycle.doneCount} выполнений',
                     style: theme.textTheme.bodySmall?.copyWith(color: muted),
                   ),
                 ],

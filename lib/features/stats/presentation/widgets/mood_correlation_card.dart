@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card_header.dart';
@@ -132,7 +133,7 @@ class _CorrBlock extends StatelessWidget {
             Expanded(child: Text(title, style: theme.textTheme.bodyMedium)),
             if (days > 0)
               Text(
-                'n = $days',
+                '$days ${pluralDays(days)}',
                 style: theme.textTheme.bodySmall?.copyWith(color: muted),
               ),
           ],

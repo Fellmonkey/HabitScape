@@ -202,7 +202,7 @@ void main() {
       findsNWidgets(2),
     );
     expect(
-      find.descendant(of: correlationCard, matching: find.text('n = 10')),
+      find.descendant(of: correlationCard, matching: find.text('10 дней')),
       findsNWidgets(2),
     );
     expect(find.textContaining('Это наблюдение, а не причина'), findsOneWidget);

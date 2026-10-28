@@ -74,7 +74,7 @@ void main() {
     expect(find.byKey(K.statsArchive), findsOneWidget);
     expect(find.text('Архив'), findsOneWidget);
     expect(find.text('Чтение'), findsOneWidget);
-    expect(find.text('жила 4 мес · 83% · 50 ×'), findsOneWidget);
+    expect(find.text('жила 4 мес · 83% · 50 выполнений'), findsOneWidget);
     expect(find.text('Бег'), findsNothing);
   });
 
