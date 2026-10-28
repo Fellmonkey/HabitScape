@@ -6,8 +6,17 @@ import '../../../../core/settings/text_scale.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
 /// In-app text scale picker: system-following or a fixed factor.
+/// Compact chips instead of a segmented control so labels never overflow or
+/// shift layout on narrow screens.
 class TextScaleTile extends ConsumerWidget {
   const TextScaleTile({super.key});
+
+  String _shortLabel(TextScaleOption option) => switch (option) {
+    TextScaleOption.system => 'Системная',
+    TextScaleOption.standard => '1.0',
+    TextScaleOption.larger => '1.15',
+    TextScaleOption.extraLarge => '1.3',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,18 +49,19 @@ class TextScaleTile extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<TextScaleOption>(
-                key: K.textScalePicker,
-                segments: [
-                  for (final option in TextScaleOption.values)
-                    ButtonSegment(value: option, label: Text(option.label)),
-                ],
-                selected: {current},
-                onSelectionChanged: (selection) =>
-                    ref.read(textScaleProvider.notifier).set(selection.first),
-              ),
+            Wrap(
+              key: K.textScalePicker,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final option in TextScaleOption.values)
+                  ChoiceChip(
+                    label: Text(_shortLabel(option)),
+                    selected: current == option,
+                    onSelected: (_) =>
+                        ref.read(textScaleProvider.notifier).set(option),
+                  ),
+              ],
             ),
           ],
         ),

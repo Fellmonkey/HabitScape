@@ -713,7 +713,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a queued week summary is shown and consumed by rotation', (
+  testWidgets('a single banner shows the pile without a rotation control', (
     tester,
   ) async {
     // Seed the deferred queue as if a previous visit had lost the
@@ -721,24 +721,16 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(Exposure.pendingBannersKey, ['week-summary']);
 
-    // The pile shows the queued summary…
+    // Only one banner is available: it renders, but there is nothing to
+    // rotate — and nothing counts as seen until rotation happens.
     await pumpQueueBanners(tester, suggest: false, week: true);
     expect(find.byKey(K.bannerStack), findsOneWidget);
     expect(find.byKey(K.weekSummaryCard), findsOneWidget);
-    // …but it counts as seen only after the user rotates past it.
+    expect(find.byKey(K.bannerRotate), findsNothing);
     expect(
       prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
       contains('week-summary'),
     );
-
-    await tester.tap(find.byKey(K.bannerRotate));
-    await tester.pumpAndSettle();
-
-    expect(
-      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      isNot(contains('week-summary')),
-    );
-    expect(find.byKey(K.bannerStack), findsNothing);
 
     await disposeTree(tester);
   });

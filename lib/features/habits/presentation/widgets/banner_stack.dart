@@ -84,7 +84,7 @@ class _BannerStackState extends ConsumerState<BannerStack> {
                 ),
               ),
             ),
-          if (top)
+          if (top && pile != null && pile > 1)
             Positioned(
               top: 6,
               right: 6,
@@ -107,11 +107,15 @@ class _BannerStackState extends ConsumerState<BannerStack> {
   }
 
   void _rotateTop() {
+    if (_rotating) return;
+    _rotating = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _rotating = false);
+
     final deck = _visibleDeck;
     if (deck.isEmpty) return;
     final consumed = deck.last;
     setState(() {
-      _pendingDeck.insert(0, _pendingDeck.removeLast());
+      _deck.insert(0, _deck.removeLast());
     });
     _seenSession.add(consumed);
     // If the rotated banner was waiting in the deferred queue, retire it.
@@ -121,10 +125,12 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     }
   }
 
-  List<String> _pendingDeck = [];
-  List<String> get _visibleDeck => _pendingDeck.length > _maxVisible
-      ? _pendingDeck.sublist(_pendingDeck.length - _maxVisible)
-      : _pendingDeck;
+  /// The session deck, kept in rotation order across rebuilds.
+  List<String> _deck = [];
+  bool _rotating = false;
+  List<String> get _visibleDeck => _deck.length > _maxVisible
+      ? _deck.sublist(_deck.length - _maxVisible)
+      : _deck;
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +160,12 @@ class _BannerStackState extends ConsumerState<BannerStack> {
       if (available) add(id);
     }
 
-    _pendingDeck = deck;
+    // Keep the rotation order across rebuilds: drop disappeared ids, append
+    // newly available ones at the end.
+    _deck = [
+      ..._deck.where((id) => deck.contains(id)),
+      ...deck.where((id) => !_deck.contains(id)),
+    ];
 
     // Persist overflow (beyond the visible stack) for later visits — only
     // limited-window summaries are worth keeping.
@@ -206,8 +217,8 @@ class _BannerStackState extends ConsumerState<BannerStack> {
       _bookkeepingScheduled = false;
       if (!mounted) return;
       final visible = _visibleDeck;
-      for (var i = 0; i < _pendingDeck.length; i++) {
-        final id = _pendingDeck[i];
+      for (var i = 0; i < _deck.length; i++) {
+        final id = _deck[i];
         if (i >= visible.length &&
             (id == 'week-summary' || id == 'month-summary')) {
           ref.read(exposureActionsProvider.notifier).pushPendingBanner(id);

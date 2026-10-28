@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
+import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../domain/echo.dart';
@@ -14,8 +15,9 @@ import '../../providers/echo_providers.dart';
 ///
 /// No input, one tap to expand, «Ещё» for the next memory. The card hides
 /// itself on a fresh install and shows a single-line promise after the first
-/// note — never a fake or empty card. Whether it may appear is a read from
-/// [exposureProvider]; the showing is recorded only once the memory mounts.
+/// note — never a fake or empty card. Visibility is driven ONLY by the feed
+/// (memories exist / promise after the first note) — the card never
+/// flickers based on exposure bookkeeping, so it reads as stable.
 class EchoCard extends ConsumerWidget {
   const EchoCard({this.atTop = false, super.key});
 
@@ -27,6 +29,7 @@ class EchoCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(echoFeedProvider);
+    final today = ref.watch(todayDateProvider);
 
     return feedAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -34,19 +37,7 @@ class EchoCard extends ConsumerWidget {
       data: (feed) {
         if (!feed.hasAnyNote) return const SizedBox.shrink();
         if (feed.isEmpty) return const _EchoHint();
-        final exposureAsync = ref.watch(exposureProvider);
-        return exposureAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (exposure) {
-            if (!exposure.echoCardVisible) return const SizedBox.shrink();
-            return _EchoMemoryCard(
-              feed: feed,
-              today: exposure.today,
-              atTop: atTop,
-            );
-          },
-        );
+        return _EchoMemoryCard(feed: feed, today: today, atTop: atTop);
       },
     );
   }
