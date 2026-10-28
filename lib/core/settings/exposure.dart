@@ -27,6 +27,11 @@ class Exposure {
   static const firstUseKey = 'first_use_date';
   static const dismissedHintsKey = 'dismissed_feature_hints';
   static const seenUxKey = 'seen_ux_hints';
+  static const lastSeenKey = 'last_seen_date';
+  static const welcomeShownKey = 'welcome_shown_date';
+
+  /// Absence (in days) after which the return welcome may appear.
+  static const absentReturnDays = 7;
 
   /// Days the echo card stays quiet after a showing.
   static const echoCooldownDays = 2;
@@ -143,6 +148,39 @@ class Exposure {
     if (_prefs.getInt(firstUseKey) != null) return;
     await _prefs.setInt(firstUseKey, today.unixSeconds);
   }
+
+  // ── Return-welcome ─────────────────────────────────────────
+
+  /// The last day the app was opened, or null on a fresh install.
+  DateTime? get lastSeenDate {
+    final v = _prefs.getInt(lastSeenKey);
+    return v == null ? null : dateFromUnix(v);
+  }
+
+  /// Whole days since the last visit (0 on a fresh install).
+  int get daysSinceLastSeen {
+    final last = lastSeenDate;
+    return last == null ? 0 : today.difference(last).inDays;
+  }
+
+  /// True exactly once per absence episode: absent for [absentReturnDays]
+  /// or more AND no welcome shown yet for this episode (the shown marker
+  /// must be older than the last visit or absent).
+  bool get shouldShowWelcomeBack {
+    if (daysSinceLastSeen < absentReturnDays) return false;
+    final last = lastSeenDate;
+    if (last == null) return false;
+    final shown = _prefs.getInt(welcomeShownKey);
+    return shown == null || dateFromUnix(shown).isBefore(last);
+  }
+
+  /// Remembers today as the last visit.
+  Future<void> recordVisit() => _prefs.setInt(lastSeenKey, today.unixSeconds);
+
+  /// Marks the current absence episode as welcomed— next day the marker is
+  /// no older than the visit, so the card stays hidden until a new absence.
+  Future<void> markWelcomeShown() =>
+      _prefs.setInt(welcomeShownKey, today.unixSeconds);
 }
 
 /// An [Exposure] snapshot for today, with the first-use date recorded once.
@@ -186,6 +224,12 @@ class ExposureActions extends Notifier<void> {
 
   /// Clears all dismissed feature hints and refreshes the snapshot.
   Future<void> resetDismissedHints() => _mutate((e) => e.clearDismissedHints());
+
+  /// Records a visit and refreshes the snapshot.
+  Future<void> recordVisit() => _mutate((e) => e.recordVisit());
+
+  /// Marks the return welcome as shown for this episode and refreshes.
+  Future<void> markWelcomeShown() => _mutate((e) => e.markWelcomeShown());
 }
 
 final exposureActionsProvider = NotifierProvider<ExposureActions, void>(

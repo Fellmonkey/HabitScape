@@ -7,6 +7,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
+import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
@@ -582,6 +583,29 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byType(HabitCard).evaluate().length, 12);
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('shows the return welcome once after an absence', (tester) async {
+    final today = DateTime.now().toMidnight;
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hintful.greenhouse': 'true',
+      Exposure.lastSeenKey: today
+          .subtract(const Duration(days: 10))
+          .unixSeconds,
+    });
+
+    await pumpGreenhouse(tester, habits: const []);
+    expect(find.text('С возвращением!'), findsOneWidget);
+
+    await tester.tap(find.text('Начать день'));
+    await tester.pumpAndSettle();
+    expect(find.text('С возвращением!'), findsNothing);
+
+    // Same day, another pump — the episode was already welcomed.
+    await pumpGreenhouse(tester, habits: const []);
+    expect(find.text('С возвращением!'), findsNothing);
 
     await disposeTree(tester);
   });

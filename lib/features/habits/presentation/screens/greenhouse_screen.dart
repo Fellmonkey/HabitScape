@@ -39,6 +39,7 @@ import '../widgets/progress_ring.dart';
 import '../widgets/swipe_hint_strip.dart';
 import '../widgets/time_suggestion_banner.dart';
 import '../widgets/today_group_visuals.dart';
+import '../widgets/welcome_back_gate.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../capsule/providers/letter_providers.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
@@ -131,22 +132,28 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
     return Scaffold(
       body: SafeArea(
-        child: habitsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Ошибка: $e')),
-          data: (habits) {
-            final logs = logsAsync.value ?? [];
-            return _buildContent(
-              context,
-              theme,
-              habits,
-              logs,
-              dayProgress,
-              today,
-              echoAtTop,
-              openedAnyCapsule,
-            );
-          },
+        child: Stack(
+          children: [
+            habitsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Ошибка: $e')),
+              data: (habits) {
+                final logs = logsAsync.value ?? [];
+                return _buildContent(
+                  context,
+                  theme,
+                  habits,
+                  logs,
+                  dayProgress,
+                  today,
+                  echoAtTop,
+                  openedAnyCapsule,
+                );
+              },
+            ),
+            // Renders nothing; owns the once-per-absence return welcome.
+            const WelcomeBackGate(),
+          ],
         ),
       ),
       floatingActionButton: PressableScale(
