@@ -10,11 +10,14 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/year_summary_providers.dart';
+import '../widgets/archive_card.dart';
+import '../widgets/habits_card.dart';
 import '../widgets/heatmap_card.dart';
 import '../widgets/intentions_card.dart';
 import '../widgets/mood_correlation_card.dart';
 import '../widgets/month_trend_card.dart';
 import '../widgets/rhythm_card.dart';
+import '../widgets/time_suggestion_card.dart';
 import '../widgets/week_trend_card.dart';
 
 /// Statistics screen — an informative dashboard across everything.
@@ -188,6 +191,33 @@ class StatsScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: RhythmCard(rhythm: stats.rhythm),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Habits (life span) ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: HabitsCard(),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Archive ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: ArchiveCard(),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Time suggestions ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: TimeSuggestionCard(),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

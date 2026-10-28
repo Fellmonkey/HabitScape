@@ -48,6 +48,33 @@ class HistoryStore {
     return _load(start, end);
   }
 
+  /// Everything, regardless of windows: all habits (active + archived), all
+  /// logs and all notes. Used by lifecycle/archive analytics that span a
+  /// habit's whole life, not just a calendar window.
+  Future<WindowSnapshot> every(DateTime now) async {
+    final habits = await habitsDao.getAllHabits();
+    final logs = await habitLogsDao.getAllLogs();
+    final notes = await dayNotesDao.getAllNotes();
+
+    final end = now.toMidnight.add(const Duration(days: 1));
+    var start = end;
+    for (final habit in habits) {
+      final created = dateFromUnix(habit.createdAt).toMidnight;
+      if (created.isBefore(start)) start = created;
+    }
+    for (final log in logs) {
+      final day = dateFromUnix(log.date).toMidnight;
+      if (day.isBefore(start)) start = day;
+    }
+    return WindowSnapshot(
+      start: start,
+      end: end,
+      habits: habits,
+      logs: logs,
+      notes: notes,
+    );
+  }
+
   /// The week containing [now]: Monday to the following Monday (exclusive).
   Future<WindowSnapshot> week(DateTime now) {
     final start = weekStartOf(now);

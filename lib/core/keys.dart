@@ -17,6 +17,12 @@ abstract final class K {
   static const statsRhythm = Key('stats_rhythm');
   static const statsMonthlyTrend = Key('stats_monthly_trend');
   static const statsIntentions = Key('stats_intentions');
+  static const statsHabits = Key('stats_habits');
+  static const statsArchive = Key('stats_archive');
+  static const statsSuggestion = Key('stats_suggestion');
+
+  /// Per-habit row inside the stats «Привычки» card: `stats_habit_row_$id`
+  static Key statsHabitRow(int id) => Key('stats_habit_row_$id');
 
   // ── Greenhouse screen ──────────────────────────────────────
   static const fabCreateHabit = Key('fab_create_habit');

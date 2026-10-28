@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../utils/localized_dates.dart';
+import 'russian_plural.dart';
 
 export 'russian_plural.dart';
 
@@ -41,3 +42,17 @@ String formatShortDate(DateTime date, {required DateTime today}) {
 /// Full Russian date, e.g. "Понедельник, 14 августа".
 String formatFullDate(DateTime date) =>
     '${weekdayNames[date.weekday]}, ${formatShortDate(date, today: date)}';
+
+// ── Habit age ───────────────────────────────────────────────
+
+/// Compact Russian duration label for a habit's age/life: «3 дня», «2 нед»,
+/// «4 мес».
+String habitAgeLabel(int days) {
+  if (days < 28) return '$days ${pluralDays(days)}';
+  if (days < 84) {
+    final weeks = (days / 7).round();
+    return '$weeks нед';
+  }
+  final months = (days / 30).round();
+  return '$months мес';
+}
