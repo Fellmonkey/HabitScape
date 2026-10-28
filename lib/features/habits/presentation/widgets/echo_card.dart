@@ -18,7 +18,12 @@ import '../../providers/echo_providers.dart';
 /// note — never a fake or empty card. Visibility is driven ONLY by the feed
 /// (memories exist / promise after the first note) — the card never
 /// flickers based on exposure bookkeeping, so it reads as stable.
-class EchoCard extends ConsumerWidget {
+///
+/// The card shell persists across feed refreshes: once a feed has arrived it
+/// is cached, so transient loading/error gaps (the feed provider rebuilds on
+/// every exposure write) keep showing the last data instead of unmounting
+/// the card — only the inner content updates.
+class EchoCard extends ConsumerStatefulWidget {
   const EchoCard({this.atTop = false, super.key});
 
   /// Whether this card sits at the top of the board. A top placement charges
@@ -27,19 +32,30 @@ class EchoCard extends ConsumerWidget {
   final bool atTop;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EchoCard> createState() => _EchoCardState();
+}
+
+class _EchoCardState extends ConsumerState<EchoCard> {
+  /// The last successfully delivered feed. Once set, it keeps the card
+  /// mounted through transient loading/error gaps of [echoFeedProvider].
+  EchoFeed? _lastFeed;
+
+  @override
+  Widget build(BuildContext context) {
     final feedAsync = ref.watch(echoFeedProvider);
     final today = ref.watch(todayDateProvider);
 
-    return feedAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (feed) {
-        if (!feed.hasAnyNote) return const SizedBox.shrink();
-        if (feed.isEmpty) return const _EchoHint();
-        return _EchoMemoryCard(feed: feed, today: today, atTop: atTop);
-      },
-    );
+    final current = feedAsync.value;
+    if (current != null) _lastFeed = current;
+    final feed = _lastFeed;
+    if (feed == null) return const SizedBox.shrink();
+
+    // A live empty feed means the notes are really gone — never resurrect
+    // stale memories. Only the transient null (loading/error) is bridged
+    // by the cached feed.
+    if (current != null && !feed.hasAnyNote) return const SizedBox.shrink();
+
+    return _EchoMemoryCard(feed: feed, today: today, atTop: widget.atTop);
   }
 }
 
@@ -95,20 +111,40 @@ class _EchoMemoryCardState extends ConsumerState<_EchoMemoryCard> {
   int _index = 0;
   bool _expanded = false;
 
+  /// Whether the current showing was recorded. Reset when the feed stops
+  /// offering memories (the promise hint), so the next real memory counts
+  /// as a new showing.
+  bool _shownRecorded = false;
+
   @override
   void initState() {
     super.initState();
-    _recordShown();
+    if (!widget.feed.isEmpty) _recordShown();
   }
 
-  Future<void> _recordShown() async {
-    await ref
+  @override
+  void didUpdateWidget(covariant _EchoMemoryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasEmpty = oldWidget.feed.isEmpty;
+    final isEmpty = widget.feed.isEmpty;
+    if (isEmpty) {
+      _shownRecorded = false;
+    } else if (wasEmpty && !_shownRecorded) {
+      _recordShown();
+    }
+  }
+
+  void _recordShown() {
+    if (_shownRecorded) return;
+    _shownRecorded = true;
+    ref
         .read(exposureActionsProvider.notifier)
         .recordEchoShown(atTop: widget.atTop);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.feed.isEmpty) return const _EchoHint();
     final memories = widget.feed.memories;
     final memory = memories[_index % memories.length];
     return _buildMemory(context, memories.length, memory);

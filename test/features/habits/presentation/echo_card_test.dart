@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -159,5 +161,118 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.widget<Text>(text).maxLines, isNull);
+  });
+
+  testWidgets('keeps the card and its state when the feed refreshes', (
+    tester,
+  ) async {
+    final yesterday = DateTime.now().toMidnight.subtract(
+      const Duration(days: 1),
+    );
+    final longMoment =
+        'Очень длинная история, которая раскрывается по тапу и должна '
+        'удержать состояние при обновлении данных фида.';
+    final feedCtrl = StreamController<EchoFeed>();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          echoFeedProvider.overrideWith((ref) => feedCtrl.stream),
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(body: EchoCard()),
+        ),
+      ),
+    );
+    feedCtrl.add(
+      EchoFeed(
+        memories: [_memory(date: yesterday, moment: longMoment)],
+        hasAnyNote: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(K.echoCard), findsOneWidget);
+    expect(tester.widget<Text>(find.text('«$longMoment»')).maxLines, 2);
+
+    // Expand, then deliver a refreshed feed with a different memory. The
+    // card must stay mounted and keep its expanded state — only the text
+    // changes.
+    await tester.tap(find.byKey(K.echoCard));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.text('«$longMoment»')).maxLines, isNull);
+
+    feedCtrl.add(
+      EchoFeed(
+        memories: [_memory(date: yesterday, moment: 'Другой момент', id: 2)],
+        hasAnyNote: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(K.echoCard), findsOneWidget);
+    expect(find.text('«Другой момент»'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('«Другой момент»')).maxLines, isNull);
+
+    await feedCtrl.close();
+  });
+
+  testWidgets('records a showing only when a memory renders, not for the '
+      'promise hint', (tester) async {
+    final yesterday = DateTime.now().toMidnight.subtract(
+      const Duration(days: 1),
+    );
+    final feedCtrl = StreamController<EchoFeed>();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          echoFeedProvider.overrideWith((ref) => feedCtrl.stream),
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const Scaffold(body: EchoCard()),
+        ),
+      ),
+    );
+
+    // Hint first: the promise line shows, but nothing is recorded yet.
+    feedCtrl.add(const EchoFeed(memories: [], hasAnyNote: true));
+    await tester.pumpAndSettle();
+    expect(find.byKey(K.echoHint), findsOneWidget);
+    expect(prefs.getInt(Exposure.echoLastShownKey), isNull);
+
+    // A real memory arrives: the card appears and records the showing.
+    feedCtrl.add(
+      EchoFeed(
+        memories: [_memory(date: yesterday, moment: 'Первый момент')],
+        hasAnyNote: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(K.echoCard), findsOneWidget);
+    expect(
+      prefs.getInt(Exposure.echoLastShownKey),
+      DateTime.now().toMidnight.unixSeconds,
+    );
+
+    // Feed refreshes with the same memory: no second record (same day).
+    feedCtrl.add(
+      EchoFeed(
+        memories: [_memory(date: yesterday, moment: 'Первый момент', id: 3)],
+        hasAnyNote: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(K.echoCard), findsOneWidget);
+    expect(
+      prefs.getInt(Exposure.echoLastShownKey),
+      DateTime.now().toMidnight.unixSeconds,
+    );
+
+    await feedCtrl.close();
   });
 }

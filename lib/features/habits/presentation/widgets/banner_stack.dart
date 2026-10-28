@@ -175,33 +175,46 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     if (visible.isEmpty) return const SizedBox.shrink();
 
     final pile = visible.length;
+    // The deck fans toward the top-right: each card sits `step` pixels
+    // higher and righter than the one before it. The FRONT card defines the
+    // pile's natural height — it is the only fully interactive, unclipped
+    // card. Back cards are masked to the front's box (ClipRect + OverflowBox
+    // let them lay out at their natural size), so a taller back card can
+    // never bleed over the sections below the pile (swipe hint, group
+    // headers). A single banner simply takes its natural height.
+    const step = 7.0;
+    final off = (pile - 1) * step;
     return Padding(
       key: K.bannerStack,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final overlap = (pile - 1) * 7.0;
-          final cardWidth = constraints.maxWidth - overlap;
-          return SizedBox(
-            height: 96.0 + overlap,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                for (var i = 0; i < pile; i++)
-                  Positioned(
-                    left: i * 7.0,
-                    top: i * 7.0,
-                    child: SizedBox(
-                      width: cardWidth,
-                      child: _cardFor(
-                        visible[i],
-                        top: i == pile - 1,
-                        pile: pile,
-                      ),
+          final cardWidth = constraints.maxWidth - off;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (var i = 0; i < pile - 1; i++)
+                Positioned(
+                  left: i * step,
+                  top: i * step,
+                  width: cardWidth,
+                  bottom: (pile - 1 - i) * step,
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.topCenter,
+                      maxHeight: double.infinity,
+                      child: _cardFor(visible[i], top: false, pile: pile),
                     ),
                   ),
-              ],
-            ),
+                ),
+              Padding(
+                padding: EdgeInsets.only(left: off, top: off),
+                child: SizedBox(
+                  width: cardWidth,
+                  child: _cardFor(visible[pile - 1], top: true, pile: pile),
+                ),
+              ),
+            ],
           );
         },
       ),

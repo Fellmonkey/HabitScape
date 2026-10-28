@@ -42,14 +42,19 @@ void main() {
 
   tearDown(() async => db.close());
 
-  Future<void> pumpGreenhouse(WidgetTester tester) async {
+  Future<void> pumpGreenhouse(
+    WidgetTester tester, {
+    List<Habit> habits = const [],
+    bool suggest = true,
+    bool month = true,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
           sharedPrefsProvider.overrideWith((_) async => prefs),
-          activeHabitsProvider.overrideWith((ref) => Stream.value(const [])),
+          activeHabitsProvider.overrideWith((ref) => Stream.value(habits)),
           todayLogsProvider.overrideWith((ref) => Stream.value(const [])),
           todayDayNoteProvider.overrideWith(
             (ref) => Stream<DayNote?>.value(null),
@@ -59,13 +64,21 @@ void main() {
                 Stream.value(const EchoFeed(memories: [], hasAnyNote: false)),
           ),
           timeSuggestionsProvider.overrideWith(
-            (ref) => Future.value([
-              TimeSuggestion(
-                habit: makeHabit(id: 1, name: 'Бег', timeOfDay: 'evening'),
-                actualBucket: TimeBucket.morning,
-                sampleSize: 12,
-              ),
-            ]),
+            (ref) => Future.value(
+              suggest
+                  ? [
+                      TimeSuggestion(
+                        habit: makeHabit(
+                          id: 1,
+                          name: 'Бег',
+                          timeOfDay: 'evening',
+                        ),
+                        actualBucket: TimeBucket.morning,
+                        sampleSize: 12,
+                      ),
+                    ]
+                  : const [],
+            ),
           ),
           weekSummaryProvider.overrideWith(
             (ref) => Future.value(
@@ -87,15 +100,17 @@ void main() {
             (ref) => Future.value(
               MonthSummaryView(
                 monthStart: DateTime.now().toMidnight,
-                summary: MonthSummary(
-                  spread: const MonthSpreadSummary(
-                    completionPct: 50,
-                    moodCounts: {DayMood.good: 3},
-                    momentsCount: 2,
-                  ),
-                  bestHabit: null,
-                  goals: null,
-                ),
+                summary: month
+                    ? MonthSummary(
+                        spread: const MonthSpreadSummary(
+                          completionPct: 50,
+                          moodCounts: {DayMood.good: 3},
+                          momentsCount: 2,
+                        ),
+                        bestHabit: null,
+                        goals: null,
+                      )
+                    : null,
               ),
             ),
           ),
@@ -172,6 +187,83 @@ void main() {
     expect(
       prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
       contains('week-summary'),
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('a single banner takes its natural height above the swipe hint', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(Exposure.pendingBannersKey, ['week-summary']);
+
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Бег', timeOfDay: 'evening')],
+      suggest: false,
+      month: false,
+    );
+
+    // The week card is tall (header + summary + intention input). It must
+    // render fully and push the swipe hint below it — never overlap it.
+    expect(find.byKey(K.weekSummaryCard), findsOneWidget);
+    expect(find.byKey(K.bannerRotate), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    final cardRect = tester.getRect(find.byKey(K.weekSummaryCard));
+    final swipeHint = find.text(
+      'Свайпни вправо — выполнить, влево — пропустить.',
+    );
+    expect(swipeHint, findsOneWidget);
+    expect(
+      tester.getRect(swipeHint).top,
+      greaterThanOrEqualTo(cardRect.bottom),
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('the pile never bleeds into the swipe hint', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(Exposure.pendingBannersKey, [
+      'week-summary',
+      'month-summary',
+    ]);
+
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Бег', timeOfDay: 'evening')],
+    );
+
+    // Time suggestion is the front card (short); the tall week/month cards
+    // are behind it and must be masked to the pile's box.
+    expect(find.byKey(K.bannerStack), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final stackRect = tester.getRect(find.byKey(K.bannerStack));
+    final swipeHint = find.text(
+      'Свайпни вправо — выполнить, влево — пропустить.',
+    );
+    expect(swipeHint, findsOneWidget);
+    expect(
+      tester.getRect(swipeHint).top,
+      greaterThanOrEqualTo(stackRect.bottom),
+    );
+
+    // Rotating through the pile keeps everything inside the box.
+    await tester.tap(find.byKey(K.bannerRotate));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(K.bannerRotate));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .getRect(find.text('Свайпни вправо — выполнить, влево — пропустить.'))
+          .top,
+      greaterThanOrEqualTo(tester.getRect(find.byKey(K.bannerStack)).bottom),
     );
 
     await tester.pumpWidget(const SizedBox());
