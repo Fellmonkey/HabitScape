@@ -136,6 +136,7 @@ abstract final class K {
   static const monthSummaryCard = Key('month_summary_card');
   static const monthSummaryTitle = Key('month_summary_title');
   static const debugMonthSummaryPreview = Key('debug_month_summary_preview');
+  static const debugSuggestionsPreview = Key('debug_suggestions_preview');
 
   // ── Year summary (Итоги года) ──────────────────────────────
   static const yearSummaryOpen = Key('year_summary_open');

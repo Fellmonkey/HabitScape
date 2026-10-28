@@ -742,6 +742,36 @@ class DebugDataSeeder {
     }
   }
 
+  /// Seeds a habit whose actual peak marking time disagrees with its
+  /// configured time-of-day — for verifying the stats «Подсказка» card.
+  Future<void> seedTimeSuggestion() async {
+    final now = _todayMidnight;
+    final habitId = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: const Value('Бег'),
+        createdAt: Value(now.subtract(const Duration(days: 120)).unixSeconds),
+        icon: const Value('run'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        // Configured for the evening, but every log below is morning — the
+        // suggestion should flag the mismatch.
+        timeOfDay: const Value('evening'),
+      ),
+    );
+
+    // 14 done-logs over the last 3 weeks, all in the morning (hour 8).
+    final logs = [
+      for (var i = 0; i < 14; i++)
+        HabitLogsCompanion.insert(
+          habitId: habitId,
+          date: now.subtract(Duration(days: 21 - i)).unixSeconds,
+          status: const Value(LogStatus.done),
+          loggedHour: const Value(8),
+        ),
+    ];
+    await db.habitLogsDao.upsertLogs(logs);
+  }
+
   /// Maps a day's completion ratio to a mood with noise — the shared
   /// generation curve in `core/domain/mood_rule.dart`, which mirrors the
   /// relationship the stats insight measures.

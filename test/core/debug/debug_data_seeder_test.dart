@@ -6,6 +6,7 @@ import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/core/domain/completion.dart';
+import 'package:rythm/features/stats/domain/time_suggestion.dart';
 
 import '../../fixtures/test_db.dart';
 
@@ -252,5 +253,30 @@ void main() {
         expect(intentions.every((i) => i.intention != null), isTrue);
       },
     );
+
+    test('seedTimeSuggestion creates a morning-logged evening habit', () async {
+      final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+      await seeder.seedTimeSuggestion();
+
+      final habits = await db.habitsDao.getActiveHabits();
+      expect(habits, hasLength(1));
+      expect(habits.single.name, 'Бег');
+      expect(habits.single.timeOfDay, 'evening');
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(14));
+      expect(logs.every((l) => l.status == LogStatus.done), isTrue);
+      expect(logs.every((l) => l.loggedHour == 8), isTrue);
+
+      // The stats domain should flag the mismatch.
+      final suggestions = computeTimeSuggestions(
+        habits: habits,
+        logs: logs,
+        now: pinned.toMidnight,
+      );
+      expect(suggestions, hasLength(1));
+      expect(suggestions.single.habit.id, habits.single.id);
+      expect(suggestions.single.actualBucket, TimeBucket.morning);
+    });
   });
 }
