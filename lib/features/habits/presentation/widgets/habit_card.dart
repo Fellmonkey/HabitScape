@@ -491,8 +491,37 @@ class _UndoPill extends StatelessWidget {
     }
 
     if (!visible) {
-      // Reduced motion: static gradient, no entrance transform, no pulse.
-      return pill(decorationFor(0));
+      // Reduced motion: plain flat pill — no gradient, no entrance transform,
+      // no pulse (animations are off, so nothing should look "animated").
+      return Material(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderM,
+        child: InkWell(
+          borderRadius: AppRadius.borderM,
+          onTap: onUndo,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.undo_rounded,
+                  size: 18,
+                  color: context.palette.emerald,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Отменить',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: context.palette.emerald,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final animated = AnimatedBuilder(

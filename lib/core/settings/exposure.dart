@@ -35,7 +35,7 @@ class Exposure {
   static const absentReturnDays = 7;
 
   /// Days the echo card stays quiet after a showing.
-  static const echoCooldownDays = 2;
+  static const echoCooldownDays = 1;
 
   /// How many times per week the echo may sit at the top of the board.
   static const maxEchoAtTopPerWeek = 2;
@@ -75,9 +75,10 @@ class Exposure {
   /// Showings at the top of the board this week.
   int get echoTopCount => _prefs.getInt(_echoTopKey) ?? 0;
 
-  /// Whether the echo may sit at the top; after the cap it moves to the
-  /// reflection block at the bottom.
-  bool get echoAtTop => echoTopCount < maxEchoAtTopPerWeek;
+  /// Whether the echo may sit at the top of the board. Always true: the card
+  /// is placed in one stable position (top of the board) and visibility is
+  /// governed only by the cooldown, so the feature reads as reliable.
+  bool get echoAtTop => true;
 
   /// Records one top placement. A no-op once the weekly cap is reached, so a
   /// repeated command can never inflate the count.

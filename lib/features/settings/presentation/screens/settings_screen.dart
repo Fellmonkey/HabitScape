@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,7 @@ import '../widgets/haptics_tile.dart';
 import '../widgets/import_confirm_dialog.dart';
 import '../widgets/last_backup_card.dart';
 import '../widgets/settings_tiles.dart';
+import '../widgets/text_scale_tile.dart';
 import '../widgets/theme_tile.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -117,14 +119,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           AppSectionHeader(title: 'Внешний вид'),
           const SizedBox(height: 8),
           ThemeTile(),
+          const SizedBox(height: 8),
+          TextScaleTile(),
 
           const SizedBox(height: 24),
 
           // ── Experience section ───────────────────────────────────
           AppSectionHeader(title: 'Ощущения'),
           const SizedBox(height: 8),
-          HapticsTile(),
-          const SizedBox(height: 8),
+          // Haptics exist only on native builds — hide the tile on web.
+          if (!kIsWeb) ...[HapticsTile(), const SizedBox(height: 8)],
           SettingsTile(
             key: K.settingsShowHints,
             icon: Icons.tips_and_updates_outlined,

@@ -14,29 +14,19 @@ void main() {
   });
 
   group('echo placement', () {
-    test('caps top showings per week and resets on Monday', () async {
-      final monday = DateTime.utc(2026, 10, 26);
-      final exposure = Exposure(prefs, today: monday);
+    test(
+      'is always placed at the top — stable, never moved by a quota',
+      () async {
+        final monday = DateTime.utc(2026, 10, 26);
+        final exposure = Exposure(prefs, today: monday);
 
-      expect(exposure.echoAtTop, isTrue);
-      await exposure.recordEchoTop();
-      expect(exposure.echoTopCount, 1);
-      expect(exposure.echoAtTop, isTrue);
-
-      await exposure.recordEchoTop();
-      expect(exposure.echoTopCount, 2);
-      expect(exposure.echoAtTop, isFalse);
-
-      await exposure.recordEchoTop(); // the cap is a no-op
-      expect(exposure.echoTopCount, 2);
-
-      final nextMonday = Exposure(
-        prefs,
-        today: monday.add(const Duration(days: 7)),
-      );
-      expect(nextMonday.echoTopCount, 0);
-      expect(nextMonday.echoAtTop, isTrue);
-    });
+        expect(exposure.echoAtTop, isTrue);
+        await exposure.recordEchoShown(atTop: true);
+        expect(exposure.echoAtTop, isTrue);
+        await exposure.recordEchoShown(atTop: true);
+        expect(exposure.echoAtTop, isTrue);
+      },
+    );
 
     test(
       'recordEchoShown charges the cooldown and optionally the top quota',
@@ -67,7 +57,7 @@ void main() {
   });
 
   group('echo cadence', () {
-    test('hides the card for the cooldown, then shows it again', () async {
+    test('stays available every day once recorded', () async {
       final day = DateTime.utc(2026, 1, 1);
       final exposure = Exposure(prefs, today: day);
 
@@ -77,13 +67,7 @@ void main() {
       expect(exposure.echoCardVisible, isTrue);
 
       final tomorrow = Exposure(prefs, today: day.add(const Duration(days: 1)));
-      expect(tomorrow.echoCardVisible, isFalse);
-
-      final afterCooldown = Exposure(
-        prefs,
-        today: day.add(const Duration(days: Exposure.echoCooldownDays)),
-      );
-      expect(afterCooldown.echoCardVisible, isTrue);
+      expect(tomorrow.echoCardVisible, isTrue);
     });
 
     test('records seen dates newest first, without duplicates', () async {

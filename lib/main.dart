@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/debug/debug_menu_overlay.dart';
 import 'core/router/app_router.dart';
+import 'core/settings/text_scale.dart';
 import 'core/settings/theme_mode.dart';
 import 'core/theme/app_theme.dart';
 
@@ -18,6 +19,7 @@ class RythmApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final textScale = ref.watch(textScaleProvider);
     return MaterialApp.router(
       title: 'HabitScape',
       debugShowCheckedModeBanner: false,
@@ -26,10 +28,20 @@ class RythmApp extends ConsumerWidget {
       themeMode: themeMode,
       routerConfig: appRouter,
       builder: (context, child) {
-        if (kDebugMode) {
-          return DebugMenuOverlay(child: child ?? const SizedBox.shrink());
+        Widget? result = child ?? const SizedBox.shrink();
+        // In-app text scale overrides the system scale when set.
+        if (textScale != TextScaleOption.system) {
+          result = MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale.factor)),
+            child: result,
+          );
         }
-        return child ?? const SizedBox.shrink();
+        if (kDebugMode) {
+          result = DebugMenuOverlay(child: result);
+        }
+        return result;
       },
     );
   }

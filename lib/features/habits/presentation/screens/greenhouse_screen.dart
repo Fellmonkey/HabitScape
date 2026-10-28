@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +8,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/providers/time_suggestions_provider.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/feature_intro_trigger.dart';
@@ -25,24 +22,20 @@ import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
-import '../../providers/month_summary_providers.dart';
-import '../../../week/providers/week_providers.dart';
 
+import '../widgets/banner_stack.dart';
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
 import '../widgets/entrance.dart';
 import '../widgets/habit_card.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
-import '../widgets/month_summary_card.dart';
 import '../widgets/progress_ring.dart';
 import '../widgets/swipe_hint_strip.dart';
-import '../widgets/time_suggestion_banner.dart';
 import '../widgets/today_group_visuals.dart';
 import '../widgets/welcome_back_gate.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../capsule/providers/letter_providers.dart';
-import '../../../week/presentation/widgets/week_summary_card.dart';
 
 /// Minimum active habits before the «История» shortcut appears in the header.
 const greenHouseHistoryMinHabits = 3;
@@ -77,11 +70,6 @@ final class _HabitEntry extends _BoardEntry {
   @override
   String get id => 'h:${habit.id}';
 }
-
-/// Which single banner the board may show today — at most one of the three
-/// competing blocks (time suggestion, week summary, month summary). Time
-/// suggestions win, then the summaries.
-enum _HomeBanner { timeSuggestion, weekSummary, monthSummary }
 
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
@@ -123,10 +111,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final today = ref.watch(todayDateProvider);
     final theme = Theme.of(context);
 
-    // Echo placement is a provider decision, not a post-mount setState: the
-    // weekly top quota drives it reactively, and the card charges the quota
-    // itself on mount (see [EchoCard.atTop]).
-    final echoAtTop = ref.watch(exposureProvider).value?.echoAtTop ?? true;
     final openedAnyCapsule =
         ref.watch(capsuleFeedProvider).value?.opened.isNotEmpty ?? false;
 
@@ -146,7 +130,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                   logs,
                   dayProgress,
                   today,
-                  echoAtTop,
                   openedAnyCapsule,
                 );
               },
@@ -173,7 +156,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     List<HabitLog> logs,
     double dayProgress,
     DateTime today,
-    bool echoAtTop,
     bool openedAnyCapsule,
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
@@ -202,76 +184,13 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
     // ── Header gating for newcomers ──
     // «История» only helps once there is something to look back on; the
-    // hide-completed toggle only earns its place in a big group.
+    // hide-completed toggle appears once the board is big enough (5+ habits
+    // total — spreading across groups shouldn't hide a useful control).
     final canSeeHistory = habits.length >= greenHouseHistoryMinHabits;
-    final maxGroupSize = groups.fold(
-      0,
-      (max, g) => math.max(max, g.habits.length),
-    );
-    final canSeeToggle = maxGroupSize >= greenhouseToggleMinGroupHabits;
+    final canSeeToggle = habits.length >= greenhouseToggleMinGroupHabits;
 
-    // ── Single-banner arbitration with a deferred queue ──
-    // At most one block per visit. If an item with a limited window (week /
-    // month summary) loses today's arbitration, it is enqueued and shown on
-    // a later visit instead of being lost.
-    final suggestionsAsync = ref.watch(timeSuggestionsProvider);
-    final weekAsync = ref.watch(weekSummaryProvider);
-    final monthAsync = ref.watch(monthSummaryProvider);
-
-    final timeAvailable = (suggestionsAsync.value ?? const []).isNotEmpty;
-    final weekAvailable = weekAsync.value?.shouldShow == true;
-    final monthAvailable = monthAsync.value?.shouldShow == true;
-
-    _HomeBanner? banner;
-    if (timeAvailable) {
-      banner = _HomeBanner.timeSuggestion;
-    } else if (weekAvailable) {
-      banner = _HomeBanner.weekSummary;
-    } else if (monthAvailable) {
-      banner = _HomeBanner.monthSummary;
-    }
-
-    // Deferred queue: consume the oldest entry that is still available.
-    final exposureNow = ref.read(exposureProvider).value;
-    if (exposureNow != null && exposureNow.pendingBanners.isNotEmpty) {
-      for (final pendingId in exposureNow.pendingBanners) {
-        if (pendingId == 'week-summary' && weekAvailable) {
-          banner = _HomeBanner.weekSummary;
-          _consumePendingBanner('week-summary');
-          break;
-        } else if (pendingId == 'month-summary' && monthAvailable) {
-          banner = _HomeBanner.monthSummary;
-          _consumePendingBanner('month-summary');
-          break;
-        }
-        // Stale entries (window already closed) are dropped on a later
-        // clean-up pass — see the post-frame bookkeeping below.
-      }
-    }
-
-    // Post-frame bookkeeping: enqueue what lost today, drop stale queue
-    // entries. Never mutates during build.
-    _scheduleBannerBookkeeping(
-      timeAvailable: timeAvailable,
-      weekAvailable: weekAvailable,
-      monthAvailable: monthAvailable,
-      chosen: banner,
-    );
-
-    final Widget? bannerWidget = switch (banner) {
-      _HomeBanner.timeSuggestion => const TimeSuggestionBanner(),
-      _HomeBanner.weekSummary => FeatureIntroTrigger(
-        targetId: 'feature-week-summary',
-        hintKey: 'feature-week-summary',
-        minDays: 7,
-        title: 'Итог недели',
-        description:
-            'По воскресеньям здесь мягкое резюме недели и намерение на следующую. Можно пропустить.',
-        child: tourTarget('feature-week-summary', const WeekSummaryCard()),
-      ),
-      _HomeBanner.monthSummary => const MonthSummaryCard(),
-      null => null,
-    };
+    // Banners are handled by the stacked [BannerStack] (visible pile with
+    // rotation), including deferred leftovers from previous visits.
 
     // First-appearance tooltip for the hide-completed toggle.
     _maybeShowToggleHint(canSeeToggle);
@@ -349,21 +268,22 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: tourTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        if (echoAtTop)
-          SliverToBoxAdapter(
-            child: FeatureIntroTrigger(
-              targetId: 'feature-echo',
-              hintKey: 'feature-echo',
-              minDays: 3,
-              title: 'Открылось Эхо',
-              description:
-                  'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
-              child: tourTarget('feature-echo', const EchoCard(atTop: true)),
-            ),
+        // Echo is always placed here — one stable position above the habit
+        // list, so the feature reads as reliable (visibility = cooldown).
+        SliverToBoxAdapter(
+          child: FeatureIntroTrigger(
+            targetId: 'feature-echo',
+            hintKey: 'feature-echo',
+            minDays: 3,
+            title: 'Открылось Эхо',
+            description:
+                'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
+            child: tourTarget('feature-echo', const EchoCard(atTop: true)),
           ),
+        ),
 
-        // ── Single banner (time suggestion → summaries) ──
-        if (bannerWidget != null) SliverToBoxAdapter(child: bannerWidget),
+        // ── Stacked banner pile (time suggestion + summaries) ──
+        const SliverToBoxAdapter(child: BannerStack()),
 
         // ── One-time swipe teaching strip ──
         if (habits.isNotEmpty)
@@ -456,18 +376,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             ),
           ),
         ),
-        if (!echoAtTop)
-          SliverToBoxAdapter(
-            child: FeatureIntroTrigger(
-              targetId: 'feature-echo',
-              hintKey: 'feature-echo',
-              minDays: 3,
-              title: 'Открылось Эхо',
-              description:
-                  'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
-              child: tourTarget('feature-echo', const EchoCard()),
-            ),
-          ),
       ],
     );
   }
@@ -488,80 +396,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             'Когда привычек много — скрывай выполненные, чтобы видеть только то, что осталось.',
         id: 'greenhouse-hide-toggle',
       );
-    });
-  }
-
-  /// Deferred-banner bookkeeping: one post-frame pass per frame, so build
-  /// never mutates preferences.
-  bool _bannerBookkeepingScheduled = false;
-  int _bannerBookkeepingRetries = 0;
-
-  void _scheduleBannerBookkeeping({
-    required bool timeAvailable,
-    required bool weekAvailable,
-    required bool monthAvailable,
-    required _HomeBanner? chosen,
-  }) {
-    if (_bannerBookkeepingScheduled) return;
-    _bannerBookkeepingScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final exposureState = ref.read(exposureProvider);
-      final exposure = exposureState.value;
-      if (exposure == null) {
-        // Exposure is not ready yet — retry a few frames, then give up (a
-        // stuck provider must never spin forever).
-        if (_bannerBookkeepingRetries < 10) {
-          _bannerBookkeepingRetries++;
-          _bannerBookkeepingScheduled = false;
-          _scheduleBannerBookkeeping(
-            timeAvailable: timeAvailable,
-            weekAvailable: weekAvailable,
-            monthAvailable: monthAvailable,
-            chosen: chosen,
-          );
-        } else {
-          _bannerBookkeepingScheduled = false;
-          _bannerBookkeepingRetries = 0;
-        }
-        return;
-      }
-      _bannerBookkeepingScheduled = false;
-      _bannerBookkeepingRetries = 0;
-
-      // Enqueue limited-window banners that lost today's arbitration — except
-      // ones already consumed this session (a just-shown queued item must not
-      // re-enter on a later frame of the same visit).
-      if (weekAvailable &&
-          chosen != _HomeBanner.weekSummary &&
-          !_consumedPendingBanners.contains('week-summary')) {
-        ref
-            .read(exposureActionsProvider.notifier)
-            .pushPendingBanner('week-summary');
-      }
-      if (monthAvailable &&
-          chosen != _HomeBanner.monthSummary &&
-          !_consumedPendingBanners.contains('month-summary')) {
-        ref
-            .read(exposureActionsProvider.notifier)
-            .pushPendingBanner('month-summary');
-      }
-      // Stale entries are left alone: they are skipped while unavailable and
-      // removed only once actually shown (auto-cleaning here would race with
-      // providers still loading).
-    });
-  }
-
-  /// Banners already pulled from the queue this visit — they must not be
-  /// re-enqueued by later frames of the same visit.
-  final Set<String> _consumedPendingBanners = {};
-
-  /// Removes a queue entry after it has actually been displayed.
-  void _consumePendingBanner(String id) {
-    _consumedPendingBanners.add(id);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(exposureActionsProvider.notifier).removePendingBanner(id);
     });
   }
 

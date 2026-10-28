@@ -109,6 +109,9 @@ abstract final class K {
   /// Per-preset chip: `capsule_preset_$name`
   static Key capsulePreset(String name) => Key('capsule_preset_$name');
 
+  /// In-app text scale picker.
+  static const textScalePicker = Key('text_scale_picker');
+
   /// Per-capsule row on the screen: `capsule_item_$id`
   static Key capsuleItem(int id) => Key('capsule_item_$id');
 
@@ -133,6 +136,10 @@ abstract final class K {
   static const debugMonthSummaryPreview = Key('debug_month_summary_preview');
   static const debugSuggestionsPreview = Key('debug_suggestions_preview');
   static const greenhouseSuggestionBanner = Key('greenhouse_suggestion_banner');
+
+  // ── Stacked banner pile ────────────────────────────────────
+  static const bannerStack = Key('banner_stack');
+  static const bannerRotate = Key('banner_rotate');
 
   // ── Year summary (Итоги года) ──────────────────────────────
   static const yearSummaryOpen = Key('year_summary_open');

@@ -249,19 +249,16 @@ void main() {
     await disposeTree(tester);
   });
 
-  testWidgets('echo top quota charges only when a memory really renders', (
-    tester,
-  ) async {
+  testWidgets('echo shows reliably once a memory exists', (tester) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toMidnight;
-    String echoTopKey() => 'echo_top_count_${weekStartOf(today).unixSeconds}';
 
-    // No notes at all → the card hides → no weekly top quota is charged.
+    // No notes at all → the card hides and nothing is recorded.
     await pumpGreenhouse(tester, habits: const []);
-    expect(prefs.getInt(echoTopKey()), isNull);
+    expect(prefs.getInt(Exposure.echoLastShownKey), isNull);
     await disposeTree(tester);
 
-    // A memory exists → the top card mounts and charges exactly once.
+    // A memory exists → the single top card mounts and records today.
     await pumpGreenhouse(
       tester,
       habits: const [],
@@ -275,7 +272,25 @@ void main() {
         hasAnyNote: true,
       ),
     );
-    expect(prefs.getInt(echoTopKey()), 1);
+    expect(find.byKey(K.echoCard), findsOneWidget);
+    expect(prefs.getInt(Exposure.echoLastShownKey), today.unixSeconds);
+    await disposeTree(tester);
+
+    // The same day stays visible (cooldown starts tomorrow).
+    await pumpGreenhouse(
+      tester,
+      habits: const [],
+      echoFeed: const EchoFeed(
+        memories: [
+          EchoMemory(
+            note: DayNote(id: 1, date: 0, moment: 'Память'),
+            horizon: EchoHorizon.yesterday,
+          ),
+        ],
+        hasAnyNote: true,
+      ),
+    );
+    expect(find.byKey(K.echoCard), findsOneWidget);
     await disposeTree(tester);
   });
 
@@ -698,7 +713,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('a queued week summary is shown once it becomes available', (
+  testWidgets('a queued week summary is shown and consumed by rotation', (
     tester,
   ) async {
     // Seed the deferred queue as if a previous visit had lost the
@@ -706,12 +721,24 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(Exposure.pendingBannersKey, ['week-summary']);
 
-    // No time suggestion now → the queued week summary is shown and consumed.
+    // The pile shows the queued summary…
     await pumpQueueBanners(tester, suggest: false, week: true);
+    expect(find.byKey(K.bannerStack), findsOneWidget);
     expect(find.byKey(K.weekSummaryCard), findsOneWidget);
+    // …but it counts as seen only after the user rotates past it.
+    expect(
+      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
+      contains('week-summary'),
+    );
 
-    final after = prefs.getStringList(Exposure.pendingBannersKey) ?? const [];
-    expect(after, isNot(contains('week-summary')));
+    await tester.tap(find.byKey(K.bannerRotate));
+    await tester.pumpAndSettle();
+
+    expect(
+      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
+      isNot(contains('week-summary')),
+    );
+    expect(find.byKey(K.bannerStack), findsNothing);
 
     await disposeTree(tester);
   });
