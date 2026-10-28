@@ -386,4 +386,50 @@ void main() {
 
     await disposeTree(tester);
   });
+
+  testWidgets('rapid hide-completed toggles do not crash the list', (
+    tester,
+  ) async {
+    // Tall viewport so all twelve rows are built (slivers are lazy).
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final today = todayTimestamp();
+    final habits = [
+      for (var id = 1; id <= 12; id++)
+        makeHabit(id: id, name: 'Привычка $id', timeOfDay: 'morning'),
+    ];
+    final logs = [
+      for (var id = 1; id <= 6; id++)
+        makeLog(
+          id: id,
+          habitId: id,
+          date: today,
+          status: LogStatus.done,
+          loggedHour: 8,
+        ),
+    ];
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        for (final h in habits)
+          makeHabitCompanion(name: h.name, timeOfDay: 'morning'),
+      ]);
+    });
+    await pumpGreenhouse(tester, habits: habits, logs: logs);
+
+    // Toggle twice while the first batched animation is still running — the
+    // second target must queue behind the first, never racing it.
+    await tester.tap(find.byKey(K.hideCompletedToggle));
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tap(find.byKey(K.hideCompletedToggle));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    // Back to showing all twelve.
+    for (var id = 1; id <= 12; id++) {
+      expect(find.text('Привычка $id'), findsOneWidget);
+    }
+
+    await disposeTree(tester);
+  });
 }

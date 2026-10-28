@@ -317,73 +317,101 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     return true;
   }
 
+  /// True while an apply loop is running. Because applying is now async
+  /// (it waits between batches), a second [._syncEntries] during that time
+  /// must not start a competing loop against the same list — it would apply
+  /// stale indices concurrently and crash with a RangeError. Instead the new
+  /// target replaces [._pendingNext] and the running loop picks it up after
+  /// the current one finishes.
+  bool _applyingEntries = false;
+
   /// Schedules one post-frame apply of [next]. Build may run many times per
   /// frame; only the latest pending list is applied, and only when it
   /// actually differs from what the animated list shows.
   void _syncEntries(List<_BoardEntry> next) {
     if (_sameEntries(next)) return;
     _pendingNext = next;
+    if (_applyingEntries) return; // the running loop will see the new target
     WidgetsBinding.instance.addPostFrameCallback((_) => _applyPendingEntries());
   }
 
   Future<void> _applyPendingEntries() async {
-    final next = _pendingNext;
-    if (!mounted || next == null) return;
-    _pendingNext = null;
+    if (_applyingEntries) return;
+    _applyingEntries = true;
+    // Resolve once before any async gap; reduced-motion is a stable screen
+    // property for the duration of this loop.
+    final mayDisable = AppMotion.mayDisable(context);
+    try {
+      // Drain every pending target in order. New targets arriving mid-apply
+      // replace [_pendingNext] and are handled by the next loop iteration.
+      while (mounted) {
+        final next = _pendingNext;
+        if (next == null) break;
+        _pendingNext = null;
+        if (_sameEntries(next)) continue;
 
-    final list = _groupListKey.currentState;
-    if (list == null || AppMotion.mayDisable(context)) {
-      setState(() => _entries = next);
-      return;
-    }
-
-    // Split a large diff into roughly equal batches (about three waves), so
-    // a board with many habits updates continuously — a few rows appear or
-    // disappear at a time — instead of trying to animate everything in one
-    // frame and stalling. Small diffs (≤8 rows) apply in a single shot.
-    final currentIds = {for (final e in _entries) e.id};
-    final nextIds = {for (final e in next) e.id};
-    final shared = currentIds.intersection(nextIds).length;
-    final totalChanges = (_entries.length - shared) + (next.length - shared);
-    final batchSize = totalChanges > 8 ? (totalChanges + 2) ~/ 3 : totalChanges;
-
-    // Apply the diff in batches: remove up to [batchSize] rows (back to
-    // front, so indices stay valid), insert up to the remaining batch
-    // capacity (positionally matching the target), then wait for those
-    // animations to finish before the next batch — the list stays in sync
-    // with [_entries] at every step because every mutation goes through the
-    // animated list's own API.
-    var work = List<_BoardEntry>.of(_entries);
-    while (mounted && !_sameEntries(next)) {
-      var applied = 0;
-
-      for (var i = work.length - 1; i >= 0 && applied < batchSize; i--) {
-        if (nextIds.contains(work[i].id)) continue;
-        final removed = work[i];
-        list.removeItem(
-          i,
-          (context, animation) => _entryRow(removed, animation, removing: true),
-          duration: AppMotion.travel,
-        );
-        work.removeAt(i);
-        applied++;
-      }
-
-      var wi = 0;
-      for (var ni = 0; ni < next.length && applied < batchSize; ni++) {
-        if (wi < work.length && work[wi].id == next[ni].id) {
-          wi++;
+        final list = _groupListKey.currentState;
+        if (list == null || mayDisable) {
+          setState(() => _entries = next);
           continue;
         }
-        list.insertItem(wi, duration: AppMotion.travel);
-        work.insert(wi, next[ni]);
-        wi++;
-        applied++;
-      }
 
-      _entries = work;
-      if (applied == 0) break;
-      await Future<void>.delayed(AppMotion.travel);
+        // Split a large diff into roughly equal batches (about three waves),
+        // so a board with many habits updates continuously — a few rows
+        // appear or disappear at a time — instead of trying to animate
+        // everything in one frame and stalling. Small diffs (≤8 rows) apply
+        // in a single shot.
+        final currentIds = {for (final e in _entries) e.id};
+        final nextIds = {for (final e in next) e.id};
+        final shared = currentIds.intersection(nextIds).length;
+        final totalChanges =
+            (_entries.length - shared) + (next.length - shared);
+        final batchSize = totalChanges > 8
+            ? (totalChanges + 2) ~/ 3
+            : totalChanges;
+
+        // Apply the diff in batches: remove up to [batchSize] rows (back to
+        // front, so indices stay valid), insert up to the remaining batch
+        // capacity (positionally matching the target), then wait for those
+        // animations to finish before the next batch — the list stays in
+        // sync with [_entries] at every step because every mutation goes
+        // through the animated list's own API.
+        var work = List<_BoardEntry>.of(_entries);
+        while (mounted && !_sameEntries(next)) {
+          var applied = 0;
+
+          for (var i = work.length - 1; i >= 0 && applied < batchSize; i--) {
+            if (nextIds.contains(work[i].id)) continue;
+            final removed = work[i];
+            list.removeItem(
+              i,
+              (context, animation) =>
+                  _entryRow(removed, animation, removing: true),
+              duration: AppMotion.travel,
+            );
+            work.removeAt(i);
+            applied++;
+          }
+
+          var wi = 0;
+          for (var ni = 0; ni < next.length && applied < batchSize; ni++) {
+            if (wi < work.length && work[wi].id == next[ni].id) {
+              wi++;
+              continue;
+            }
+            list.insertItem(wi, duration: AppMotion.travel);
+            work.insert(wi, next[ni]);
+            wi++;
+            applied++;
+          }
+
+          _entries = work;
+          if (applied == 0) break;
+          await Future<void>.delayed(AppMotion.travel);
+        }
+      }
+    } finally {
+      _applyingEntries = false;
     }
   }
 
