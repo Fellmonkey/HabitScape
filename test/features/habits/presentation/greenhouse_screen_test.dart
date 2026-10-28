@@ -15,6 +15,7 @@ import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
 import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/presentation/screens/greenhouse_screen.dart';
+import 'package:rythm/features/habits/presentation/widgets/habit_card.dart';
 import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/habit_actions.dart';
@@ -429,6 +430,93 @@ void main() {
     for (var id = 1; id <= 12; id++) {
       expect(find.text('Привычка $id'), findsOneWidget);
     }
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('first render cascades large boards in waves', (tester) async {
+    // Tall viewport so every inserted row is actually built (slivers lazy).
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final habits = [
+      for (var id = 1; id <= 12; id++)
+        makeHabit(id: id, name: 'Привычка $id', timeOfDay: 'morning'),
+    ];
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        for (final h in habits)
+          makeHabitCompanion(name: h.name, timeOfDay: 'morning'),
+      ]);
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+          activeHabitsProvider.overrideWith((ref) => Stream.value(habits)),
+          todayLogsProvider.overrideWith((ref) => Stream.value(const [])),
+          todayDayNoteProvider.overrideWith(
+            (ref) => Stream<DayNote?>.value(null),
+          ),
+          echoFeedProvider.overrideWith(
+            (ref) =>
+                Stream.value(const EchoFeed(memories: [], hasAnyNote: false)),
+          ),
+          weekSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              WeekSummaryView(
+                weekStart: DateTime.now(),
+                summary: const WeekSummary(
+                  greenDays: 0,
+                  totalDays: 0,
+                  bestDay: null,
+                  completionPct: null,
+                  weakest: null,
+                ),
+                isWindowOpen: false,
+                isAnswered: false,
+              ),
+            ),
+          ),
+          monthSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              MonthSummaryView(monthStart: DateTime.now().toMidnight),
+            ),
+          ),
+          monthGoalsProvider.overrideWith(
+            (ref, monthTs) => Stream.value(const <MonthlyGoal>[]),
+          ),
+          capsuleFeedProvider.overrideWith(
+            (ref) => Stream.value(
+              CapsuleFeed(
+                today: DateTime.now().toMidnight,
+                upcoming: const [],
+                due: const [],
+                opened: const [],
+              ),
+            ),
+          ),
+          hasOldNoteProvider.overrideWith((ref) => Stream.value(false)),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: const GreenhouseScreen(),
+        ),
+      ),
+    );
+
+    // Right after the first frames, only the first wave is inserted — the
+    // whole board must NOT appear at once.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final midway = find.byType(HabitCard).evaluate().length;
+    expect(midway, lessThan(12));
+
+    await tester.pumpAndSettle();
+    expect(find.byType(HabitCard).evaluate().length, 12);
 
     await disposeTree(tester);
   });
