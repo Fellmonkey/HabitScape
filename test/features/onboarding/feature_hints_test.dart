@@ -52,6 +52,7 @@ void main() {
       WidgetTester tester, {
       required int daysSinceFirstUse,
       required HintController controller,
+      bool enabled = true,
     }) async {
       final exposure = await exposureOnDay(daysSinceFirstUse);
       await tester.pumpWidget(
@@ -66,6 +67,7 @@ void main() {
                 targetId: 'feature-test-echo',
                 hintKey: 'feature-test-echo',
                 minDays: 3,
+                enabled: enabled,
                 title: 'Тестовая подсказка',
                 description: 'Описание тестовой подсказки.',
                 child: tourTarget(
@@ -96,6 +98,23 @@ void main() {
     testWidgets('stays silent before maturation', (tester) async {
       final controller = HintController.test(store: InMemoryHintStore());
       await pumpTrigger(tester, daysSinceFirstUse: 0, controller: controller);
+
+      expect(find.byKey(const Key('trigger-child')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(controller.state.value.isIdle, isTrue);
+
+      controller.dispose();
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('stays silent when the extra gate is disabled', (tester) async {
+      final controller = HintController.test(store: InMemoryHintStore());
+      await pumpTrigger(
+        tester,
+        daysSinceFirstUse: 30,
+        controller: controller,
+        enabled: false,
+      );
 
       expect(find.byKey(const Key('trigger-child')), findsOneWidget);
       expect(tester.takeException(), isNull);

@@ -7,6 +7,7 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/hintful.dart';
+import '../../../../features/capsule/providers/letter_providers.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/feature_intro_trigger.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -34,6 +35,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // The settings entry for capsules gets its own intro once the user has
+    // actually opened a letter (the feature surfaced on the Greenhouse first).
+    final openedAnyCapsule =
+        ref.watch(capsuleFeedProvider).value?.opened.isNotEmpty ?? false;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Настройки')),
       body: ListView(
@@ -85,12 +91,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onTap: () => context.push('/archive'),
           ),
           const SizedBox(height: 8),
-          SettingsTile(
-            key: K.capsulesSettingsEntry,
-            icon: Icons.markunread_mailbox_outlined,
+          FeatureIntroTrigger(
+            targetId: 'capsules-settings-entry',
+            hintKey: 'capsules-settings-entry',
+            minDays: 30,
+            enabled: openedAnyCapsule,
             title: 'Капсулы времени',
-            subtitle: 'Письма себе в будущее',
-            onTap: () => context.push('/capsules'),
+            description:
+                'Ты уже открывал письма из прошлого — здесь быстрый вход к ним.',
+            child: tourTarget(
+              'capsules-settings-entry',
+              SettingsTile(
+                key: K.capsulesSettingsEntry,
+                icon: Icons.markunread_mailbox_outlined,
+                title: 'Капсулы времени',
+                subtitle: 'Письма себе в будущее',
+                onTap: () => context.push('/capsules'),
+              ),
+            ),
           ),
 
           const SizedBox(height: 24),

@@ -40,6 +40,7 @@ import '../widgets/swipe_hint_strip.dart';
 import '../widgets/time_suggestion_banner.dart';
 import '../widgets/today_group_visuals.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
+import '../../../capsule/providers/letter_providers.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
 
 /// Minimum active habits before the «История» shortcut appears in the header.
@@ -125,6 +126,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     // weekly top quota drives it reactively, and the card charges the quota
     // itself on mount (see [EchoCard.atTop]).
     final echoAtTop = ref.watch(exposureProvider).value?.echoAtTop ?? true;
+    final openedAnyCapsule =
+        ref.watch(capsuleFeedProvider).value?.opened.isNotEmpty ?? false;
 
     return Scaffold(
       body: SafeArea(
@@ -141,6 +144,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
               dayProgress,
               today,
               echoAtTop,
+              openedAnyCapsule,
             );
           },
         ),
@@ -163,6 +167,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     double dayProgress,
     DateTime today,
     bool echoAtTop,
+    bool openedAnyCapsule,
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. The hide-completed filter is a board rule too, so the toggle
@@ -392,13 +397,24 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         ),
         SliverToBoxAdapter(
           child: FeatureIntroTrigger(
-            targetId: 'feature-capsules',
-            hintKey: 'feature-capsules',
-            minDays: 30,
+            // Reminder: the invite matured but no capsule was opened within
+            // a week of it (30 + 7 days).
+            targetId: 'feature-capsules-reminder',
+            hintKey: 'feature-capsules-reminder',
+            minDays: 37,
+            enabled: !openedAnyCapsule,
             title: 'Капсулы времени',
             description:
-                'Напиши письмо себе — и через месяц оно откроется, как маленький сюрприз.',
-            child: tourTarget('feature-capsules', const CapsuleCard()),
+                'Ты ещё не открывал письма из прошлого — загляни в Капсулы.',
+            child: FeatureIntroTrigger(
+              targetId: 'feature-capsules',
+              hintKey: 'feature-capsules',
+              minDays: 30,
+              title: 'Капсулы времени',
+              description:
+                  'Напиши письмо себе — и через месяц оно откроется, как маленький сюрприз.',
+              child: tourTarget('feature-capsules', const CapsuleCard()),
+            ),
           ),
         ),
         if (!echoAtTop)

@@ -15,6 +15,7 @@ class FeatureIntroTrigger extends ConsumerStatefulWidget {
     required this.title,
     required this.description,
     required this.child,
+    this.enabled = true,
   });
 
   final String targetId;
@@ -23,6 +24,10 @@ class FeatureIntroTrigger extends ConsumerStatefulWidget {
   final String title;
   final String description;
   final Widget child;
+
+  /// Extra gate beyond the exposure minDays — e.g. "opened a capsule at
+  /// least once". When false the hint is never attempted.
+  final bool enabled;
 
   @override
   ConsumerState<FeatureIntroTrigger> createState() =>
@@ -40,6 +45,7 @@ class _FeatureIntroTriggerState extends ConsumerState<FeatureIntroTrigger> {
       error: (_, _) => widget.child,
       data: (exposure) {
         if (!_attempted &&
+            widget.enabled &&
             exposure.hintVisible(
               key: widget.hintKey,
               minDays: widget.minDays,

@@ -6,6 +6,8 @@ import 'package:rythm/core/formatting/formatting.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/capsule/domain/capsule.dart';
+import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,7 +26,19 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPrefsProvider.overrideWith((_) async => prefs)],
+        overrides: [
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+          capsuleFeedProvider.overrideWith(
+            (ref) => Stream.value(
+              CapsuleFeed(
+                today: DateTime.now().toMidnight,
+                upcoming: const [],
+                due: const [],
+                opened: const [],
+              ),
+            ),
+          ),
+        ],
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
@@ -83,7 +97,19 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPrefsProvider.overrideWith((_) async => prefs)],
+        overrides: [
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+          capsuleFeedProvider.overrideWith(
+            (ref) => Stream.value(
+              CapsuleFeed(
+                today: DateTime.now().toMidnight,
+                upcoming: const [],
+                due: const [],
+                opened: const [],
+              ),
+            ),
+          ),
+        ],
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
@@ -100,7 +126,19 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPrefsProvider.overrideWith((_) async => prefs)],
+        overrides: [
+          sharedPrefsProvider.overrideWith((_) async => prefs),
+          capsuleFeedProvider.overrideWith(
+            (ref) => Stream.value(
+              CapsuleFeed(
+                today: DateTime.now().toMidnight,
+                upcoming: const [],
+                due: const [],
+                opened: const [],
+              ),
+            ),
+          ),
+        ],
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
