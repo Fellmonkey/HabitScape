@@ -138,8 +138,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('banner pile shows up to three overlapped banners and consumes '
-      'queued ones by rotation', (tester) async {
+  testWidgets('rotation cycles the pile and never consumed or empties it', (
+    tester,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(Exposure.pendingBannersKey, [
       'week-summary',
@@ -151,43 +152,33 @@ void main() {
     // Time suggestion + week + month are all available: the pile is visible.
     expect(find.byKey(K.bannerStack), findsOneWidget);
     expect(find.byKey(K.bannerRotate), findsOneWidget);
+    expect(find.byKey(K.greenhouseSuggestionBanner), findsOneWidget);
 
-    // The front card is the time suggestion; rotating moves it behind and
-    // reveals the queued banners one by one. The first rotation consumes
-    // nothing queued.
+    // Rotation is cyclic: the front card cycles to the back, the next one
+    // becomes visible, and nothing is consumed from the deferred queue.
     await tester.tap(find.byKey(K.bannerRotate));
     await tester.pumpAndSettle();
+    expect(find.byKey(K.monthSummaryCard), findsOneWidget);
     expect(
       prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      contains('week-summary'),
-    );
-    expect(
-      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      contains('month-summary'),
+      containsAll(['week-summary', 'month-summary']),
     );
 
-    // Second rotation: month-summary is consumed.
     await tester.tap(find.byKey(K.bannerRotate));
     await tester.pumpAndSettle();
-    expect(
-      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      isNot(contains('month-summary')),
-    );
-    expect(
-      prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      contains('week-summary'),
-    );
-
-    // After the second rotation the pile is a single banner: the rotation
-    // control disappears, and the remaining week stays queued until it is
-    // rotated too (another session/day).
-    expect(find.byKey(K.bannerRotate), findsNothing);
-    expect(find.byKey(K.bannerStack), findsOneWidget);
     expect(find.byKey(K.weekSummaryCard), findsOneWidget);
     expect(
       prefs.getStringList(Exposure.pendingBannersKey) ?? const [],
-      contains('week-summary'),
+      containsAll(['week-summary', 'month-summary']),
     );
+
+    // Third rotation wraps around to the start; the control stays — the
+    // pile is never emptied.
+    await tester.tap(find.byKey(K.bannerRotate));
+    await tester.pumpAndSettle();
+    expect(find.byKey(K.greenhouseSuggestionBanner), findsOneWidget);
+    expect(find.byKey(K.bannerRotate), findsOneWidget);
+    expect(find.byKey(K.bannerStack), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 1));

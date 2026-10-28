@@ -16,8 +16,11 @@ import 'time_suggestion_banner.dart';
 /// Stacked banner pile. Instead of one invisible queue, all currently
 /// available banners (plus leftovers from previous visits) are shown as an
 /// overlapping stack — up to three visible at once. The visible "deck" is
-/// rotated with the corner button: each rotated banner is marked as seen,
-/// and leftover banners persist for the next visit.
+/// rotated with the corner button: rotation is CYCLIC — the stack is never
+/// emptied or consumed, the front banner just cycles to the back, so the
+/// rotation control stays for any pile of two or more. The pile's height
+/// follows the currently visible (front) banner; back cards are flat, same-
+/// height "paper" with no shadow, so the stack reads as one object.
 class BannerStack extends ConsumerStatefulWidget {
   const BannerStack({super.key});
 
@@ -27,9 +30,6 @@ class BannerStack extends ConsumerStatefulWidget {
 
 class _BannerStackState extends ConsumerState<BannerStack> {
   static const _maxVisible = 3;
-
-  /// Banners already rotated past this visit — never re-enqueued.
-  final Set<String> _seenSession = {};
 
   bool _bookkeepingScheduled = false;
 
@@ -49,60 +49,45 @@ class _BannerStackState extends ConsumerState<BannerStack> {
       _ => const TimeSuggestionBanner(),
     };
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.borderL,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return Stack(
+      children: [
+        child,
+        if (top && pile != null && pile > 1)
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Material(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                child: Text(
+                  '$pile',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          child,
-          if (top && pile != null && pile > 1)
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Material(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(999),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    '$pile',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+        if (top && pile != null && pile > 1)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Material(
+              color: theme.colorScheme.surface.withValues(alpha: 0.9),
+              shape: const CircleBorder(),
+              child: IconButton(
+                key: K.bannerRotate,
+                tooltip: 'Показать следующий баннер',
+                visualDensity: VisualDensity.compact,
+                iconSize: 18,
+                icon: const Icon(Icons.swap_horiz_rounded),
+                onPressed: _rotateTop,
               ),
             ),
-          if (top && pile != null && pile > 1)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Material(
-                color: theme.colorScheme.surface.withValues(alpha: 0.9),
-                shape: const CircleBorder(),
-                child: IconButton(
-                  key: K.bannerRotate,
-                  tooltip: 'Показать следующий баннер',
-                  visualDensity: VisualDensity.compact,
-                  iconSize: 18,
-                  icon: const Icon(Icons.swap_horiz_rounded),
-                  onPressed: _rotateTop,
-                ),
-              ),
-            ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -113,16 +98,11 @@ class _BannerStackState extends ConsumerState<BannerStack> {
 
     final deck = _visibleDeck;
     if (deck.isEmpty) return;
-    final consumed = deck.last;
+    // Cycle: the front banner moves to the back; the next one becomes
+    // visible. Nothing is consumed or removed — rotation is circular.
     setState(() {
       _deck.insert(0, _deck.removeLast());
     });
-    _seenSession.add(consumed);
-    // If the rotated banner was waiting in the deferred queue, retire it.
-    final exposure = ref.read(exposureProvider).value;
-    if (exposure != null && exposure.pendingBanners.contains(consumed)) {
-      ref.read(exposureActionsProvider.notifier).removePendingBanner(consumed);
-    }
   }
 
   /// The session deck, kept in rotation order across rebuilds.
@@ -145,7 +125,7 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     // ── Assemble the deck: current candidates first, then deferred leftovers.
     final deck = <String>[];
     void add(String id) {
-      if (!deck.contains(id) && !_seenSession.contains(id)) deck.add(id);
+      if (!deck.contains(id)) deck.add(id);
     }
 
     if (weekAsync.value?.shouldShow == true) add('week-summary');
@@ -177,19 +157,21 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     final pile = visible.length;
     // The deck fans toward the top-right: each card sits `step` pixels
     // higher and righter than the one before it. The FRONT card defines the
-    // pile's natural height — it is the only fully interactive, unclipped
-    // card. Back cards are masked to the front's box (ClipRect + OverflowBox
-    // let them lay out at their natural size), so a taller back card can
-    // never bleed over the sections below the pile (swipe hint, group
-    // headers). A single banner simply takes its natural height.
+    // pile's height — the stack adapts to whatever banner is visible, and
+    // every back card is drawn as flat same-height "paper" clipped to the
+    // front's box, so the pile reads as one uniform object with a single
+    // shadow (the front's). A single banner simply takes its natural height.
+    // The cards bring their own 20px side insets, so the stack itself adds
+    // no horizontal padding — the pile stays on the app's 20px grid.
     const step = 7.0;
     final off = (pile - 1) * step;
     return Padding(
       key: K.bannerStack,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.only(bottom: 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final cardWidth = constraints.maxWidth - off;
+          final theme = Theme.of(context);
           return Stack(
             clipBehavior: Clip.none,
             children: [
@@ -199,11 +181,17 @@ class _BannerStackState extends ConsumerState<BannerStack> {
                   top: i * step,
                   width: cardWidth,
                   bottom: (pile - 1 - i) * step,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.topCenter,
-                      maxHeight: double.infinity,
-                      child: _cardFor(visible[i], top: false, pile: pile),
+                  child: ClipRRect(
+                    borderRadius: AppRadius.borderL,
+                    child: ColoredBox(
+                      color: theme.colorScheme.surface.withValues(alpha: 0.7),
+                      child: ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.topCenter,
+                          maxHeight: double.infinity,
+                          child: _cardFor(visible[i], top: false, pile: pile),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -211,7 +199,19 @@ class _BannerStackState extends ConsumerState<BannerStack> {
                 padding: EdgeInsets.only(left: off, top: off),
                 child: SizedBox(
                   width: cardWidth,
-                  child: _cardFor(visible[pile - 1], top: true, pile: pile),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.borderL,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: _cardFor(visible[pile - 1], top: true, pile: pile),
+                  ),
                 ),
               ),
             ],
