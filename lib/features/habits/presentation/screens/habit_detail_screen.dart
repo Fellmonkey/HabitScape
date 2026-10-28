@@ -17,7 +17,6 @@ import '../widgets/habit_form_sheet.dart';
 import '../widgets/habit_info_row.dart';
 import '../widgets/habit_lifecycle_section.dart';
 import '../widgets/history_sliver.dart';
-import '../widgets/metrics_detail_section.dart';
 import '../widgets/month_heatmap.dart';
 import '../widgets/month_stats_section.dart';
 import '../widgets/time_distribution_section.dart';
@@ -137,7 +136,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                     segments: const [
                       ButtonSegment(value: 0, label: Text('Обзор')),
                       ButtonSegment(value: 1, label: Text('История')),
-                      ButtonSegment(value: 2, label: Text('Метрики')),
                     ],
                     selected: {_tab},
                     onSelectionChanged: (s) => setState(() => _tab = s.first),
@@ -200,18 +198,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                     if (_tab == 1) ...[
                       Text('История', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
-                    ],
-
-                    if (_tab == 2) ...[
-                      metricsAsync.when(
-                        loading: () => const SizedBox(
-                          height: 120,
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                        error: (e, _) => Text('Ошибка метрик: $e'),
-                        data: (m) => MetricsDetailSection(metrics: m),
-                      ),
-                      const SizedBox(height: 24),
                     ],
                   ],
                 ),

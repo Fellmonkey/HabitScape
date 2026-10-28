@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/stats/presentation/widgets/time_suggestion_card.dart';
-import '../../features/stats/providers/habit_lifecycle_providers.dart';
+import '../../features/habits/presentation/widgets/time_suggestion_banner.dart';
+import '../providers/time_suggestions_provider.dart';
 import '../keys.dart';
 
 /// Debug preview of «Подсказка»: shows the stats time-suggestion card with
@@ -69,7 +69,8 @@ class TimeSuggestionsPreviewSheet extends ConsumerWidget {
                     ),
                   );
                 }
-                return const TimeSuggestionCard();
+                // The same banner that appears on the Greenhouse.
+                return const TimeSuggestionBanner();
               },
             ),
           ],

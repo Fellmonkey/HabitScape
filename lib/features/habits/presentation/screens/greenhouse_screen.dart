@@ -30,6 +30,7 @@ import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
 import '../widgets/month_summary_card.dart';
 import '../widgets/progress_ring.dart';
+import '../widgets/time_suggestion_banner.dart';
 import '../widgets/today_group_visuals.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
@@ -227,6 +228,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         const SliverToBoxAdapter(child: WeekSummaryCard()),
 
         const SliverToBoxAdapter(child: MonthSummaryCard()),
+
+        const SliverToBoxAdapter(child: TimeSuggestionBanner()),
 
         const SliverToBoxAdapter(child: FeatureHintBanner()),
 

@@ -16,7 +16,6 @@ import '../widgets/intentions_card.dart';
 import '../widgets/mood_correlation_card.dart';
 import '../widgets/month_trend_card.dart';
 import '../widgets/rhythm_card.dart';
-import '../widgets/time_suggestion_card.dart';
 import '../widgets/week_trend_card.dart';
 
 /// Statistics screen — an informative dashboard across everything.
@@ -194,29 +193,20 @@ class StatsScreen extends ConsumerWidget {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // ── Archive ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: ArchiveCard(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-            // ── Time suggestions ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: TimeSuggestionCard(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
             // ── Intentions ──
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: IntentionsCard(),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+            // ── Archive (bottom) ──
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: ArchiveCard(),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

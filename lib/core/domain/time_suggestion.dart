@@ -1,7 +1,7 @@
-import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
-import '../../../core/utils/date_helpers.dart';
-import '../../../core/utils/time_bucket.dart';
+import '../database/app_database.dart';
+import '../database/enums.dart';
+import '../utils/date_helpers.dart';
+import '../utils/time_bucket.dart';
 
 /// One actionable hint: a habit whose *actual* peak marking time disagrees
 /// with the time-of-day it was configured for. Offered only once enough

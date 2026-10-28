@@ -18,7 +18,6 @@ abstract final class K {
   static const statsMonthlyTrend = Key('stats_monthly_trend');
   static const statsIntentions = Key('stats_intentions');
   static const statsArchive = Key('stats_archive');
-  static const statsSuggestion = Key('stats_suggestion');
 
   // ── Greenhouse screen ──────────────────────────────────────
   static const fabCreateHabit = Key('fab_create_habit');
@@ -133,6 +132,7 @@ abstract final class K {
   static const monthSummaryTitle = Key('month_summary_title');
   static const debugMonthSummaryPreview = Key('debug_month_summary_preview');
   static const debugSuggestionsPreview = Key('debug_suggestions_preview');
+  static const greenhouseSuggestionBanner = Key('greenhouse_suggestion_banner');
 
   // ── Year summary (Итоги года) ──────────────────────────────
   static const yearSummaryOpen = Key('year_summary_open');

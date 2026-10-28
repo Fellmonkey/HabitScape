@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rythm/core/domain/habit_lifecycle.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/core/utils/time_bucket.dart';
-import 'package:rythm/core/domain/habit_lifecycle.dart';
-import 'package:rythm/features/stats/domain/time_suggestion.dart';
 import 'package:rythm/features/stats/presentation/widgets/archive_card.dart';
-import 'package:rythm/features/stats/presentation/widgets/time_suggestion_card.dart';
 import 'package:rythm/features/stats/providers/habit_lifecycle_providers.dart';
 
 import '../../../fixtures/test_factories.dart';
@@ -40,25 +37,26 @@ HabitLifecycle _lifecycle({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pump(WidgetTester tester, Widget child) async {
+  Future<void> pump(
+    WidgetTester tester,
+    Widget child, {
+    List<HabitLifecycle>? lifecycles,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          habitLifecycleProvider.overrideWith(
-            (ref) async => [
-              _lifecycle(id: 1, name: 'Бег'),
-              _lifecycle(id: 2, name: 'Чтение', archived: true, ageDays: 120),
-            ],
-          ),
-          timeSuggestionsProvider.overrideWith(
-            (ref) async => [
-              TimeSuggestion(
-                habit: makeHabit(id: 1, name: 'Бег'),
-                actualBucket: TimeBucket.morning,
-                sampleSize: 14,
-              ),
-            ],
-          ),
+          habitLifecycleProvider.overrideWith((ref) async {
+            return lifecycles ??
+                [
+                  _lifecycle(id: 1, name: 'Бег'),
+                  _lifecycle(
+                    id: 2,
+                    name: 'Чтение',
+                    archived: true,
+                    ageDays: 120,
+                  ),
+                ];
+          }),
         ],
         child: MaterialApp(
           theme: AppTheme.light,
@@ -80,11 +78,12 @@ void main() {
     expect(find.text('Бег'), findsNothing);
   });
 
-  testWidgets('time suggestion card shows the hint', (tester) async {
-    await pump(tester, const TimeSuggestionCard());
-    expect(find.byKey(K.statsSuggestion), findsOneWidget);
-    expect(find.text('Подсказка'), findsOneWidget);
-    expect(find.textContaining('Бег: чаще отмечаешь утром'), findsOneWidget);
-    expect(find.textContaining('n=14'), findsOneWidget);
+  testWidgets('archive card with nothing archived shows a header and hint', (
+    tester,
+  ) async {
+    await pump(tester, const ArchiveCard(), lifecycles: const []);
+    expect(find.byKey(K.statsArchive), findsOneWidget);
+    expect(find.text('Архив'), findsOneWidget);
+    expect(find.textContaining('Архив пуст'), findsOneWidget);
   });
 }

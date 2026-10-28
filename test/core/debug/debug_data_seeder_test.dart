@@ -7,7 +7,7 @@ import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/core/domain/completion.dart';
 import 'package:rythm/core/domain/habit_lifecycle.dart';
-import 'package:rythm/features/stats/domain/time_suggestion.dart';
+import 'package:rythm/core/domain/time_suggestion.dart';
 
 import '../../fixtures/test_db.dart';
 

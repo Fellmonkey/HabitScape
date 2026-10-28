@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/debug/time_suggestions_preview.dart';
+import 'package:rythm/core/domain/time_suggestion.dart';
 import 'package:rythm/core/keys.dart';
+import 'package:rythm/core/providers/time_suggestions_provider.dart';
 import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
-import 'package:rythm/features/stats/domain/time_suggestion.dart';
-import 'package:rythm/features/stats/providers/habit_lifecycle_providers.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';
@@ -63,7 +63,7 @@ void main() {
     expect(find.textContaining('Советов нет'), findsOneWidget);
   });
 
-  testWidgets('renders the suggestion card with data', (tester) async {
+  testWidgets('renders the greenhouse banner with data', (tester) async {
     await pumpPreview(
       tester,
       DateTime.utc(2026, 10, 28),
@@ -77,7 +77,7 @@ void main() {
     );
 
     expect(find.byKey(K.debugSuggestionsPreview), findsOneWidget);
-    expect(find.text('Подсказка'), findsOneWidget);
+    expect(find.byKey(K.greenhouseSuggestionBanner), findsOneWidget);
     expect(find.textContaining('Бег: чаще отмечаешь утром'), findsOneWidget);
     expect(find.textContaining('n=14'), findsOneWidget);
   });
