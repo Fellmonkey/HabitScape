@@ -363,7 +363,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         list.removeItem(
           i,
           (context, animation) => _entryRow(removed, animation, removing: true),
-          duration: AppMotion.base,
+          duration: AppMotion.travel,
         );
         work.removeAt(i);
         applied++;
@@ -375,7 +375,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           wi++;
           continue;
         }
-        list.insertItem(wi, duration: AppMotion.base);
+        list.insertItem(wi, duration: AppMotion.travel);
         work.insert(wi, next[ni]);
         wi++;
         applied++;
@@ -383,7 +383,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
       _entries = work;
       if (applied == 0) break;
-      await Future<void>.delayed(AppMotion.base);
+      await Future<void>.delayed(AppMotion.travel);
     }
   }
 
@@ -415,11 +415,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             ? child
             : SlideTransition(
                 position: Tween(
-                  begin: const Offset(0, 0.07),
+                  begin: const Offset(0, 0.09),
                   end: Offset.zero,
                 ).animate(curved),
                 child: ScaleTransition(
-                  scale: Tween(begin: 0.97, end: 1.0).animate(curved),
+                  scale: Tween(begin: 0.95, end: 1.0).animate(curved),
                   child: child,
                 ),
               ),
