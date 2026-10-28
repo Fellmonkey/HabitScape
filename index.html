@@ -31,6 +31,16 @@
 
   <title>HabitScape</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Preload the Drift web stack: sqlite3.wasm + the database worker are only
+    fetched when the first query runs, which stalls the cold start with a
+    blank screen while the browser downloads and initializes them. Fetching
+    them eagerly alongside the app makes the first paint of the board start
+    as soon as the engine is up.
+  -->
+  <link rel="preload" href="sqlite3.wasm" as="fetch" crossorigin="anonymous" fetchpriority="high">
+  <link rel="preload" href="drift_worker.js" as="script" fetchpriority="high">
 </head>
 <body>
   <!--
