@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/history_store_provider.dart';
+import '../../../core/domain/habit_lifecycle.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../domain/habit_lifecycle.dart';
 import '../domain/time_suggestion.dart';
 
 /// Life-span records for every habit (active + archived), computed over all

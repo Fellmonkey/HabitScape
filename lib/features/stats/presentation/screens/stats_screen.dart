@@ -11,7 +11,6 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/year_summary_providers.dart';
 import '../widgets/archive_card.dart';
-import '../widgets/habits_card.dart';
 import '../widgets/heatmap_card.dart';
 import '../widgets/intentions_card.dart';
 import '../widgets/mood_correlation_card.dart';
@@ -191,15 +190,6 @@ class StatsScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: RhythmCard(rhythm: stats.rhythm),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-            // ── Habits (life span) ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: HabitsCard(),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

@@ -772,6 +772,78 @@ class DebugDataSeeder {
     await db.habitLogsDao.upsertLogs(logs);
   }
 
+  /// Seeds several archived habits with different life spans and completion
+  /// levels — for verifying the stats «Архив» card.
+  Future<void> seedArchivedHabits() async {
+    await _seedArchivedHabit(
+      name: 'Йога',
+      createdDaysAgo: 180,
+      lifespanDays: 120,
+      doneDays: 90,
+    );
+    await _seedArchivedHabit(
+      name: 'Чтение книг',
+      createdDaysAgo: 90,
+      lifespanDays: 45,
+      doneDays: 30,
+    );
+    // Never touched: its life is a single quiet day.
+    await _seedArchivedHabit(
+      name: 'Медитация',
+      createdDaysAgo: 200,
+      lifespanDays: 0,
+      doneDays: 0,
+    );
+  }
+
+  Future<void> _seedArchivedHabit({
+    required String name,
+    required int createdDaysAgo,
+    required int lifespanDays,
+    required int doneDays,
+  }) async {
+    final created = _todayMidnight.subtract(Duration(days: createdDaysAgo));
+    final habitId = await db.habitsDao.insertHabit(
+      HabitsCompanion(
+        name: Value(name),
+        createdAt: Value(created.unixSeconds),
+        icon: const Value('check'),
+        frequencyType: const Value('daily'),
+        frequencyValue: const Value('{}'),
+        timeOfDay: const Value('anytime'),
+        isArchived: const Value(true),
+      ),
+    );
+
+    final count = doneDays.clamp(0, lifespanDays);
+    if (count == 0) return;
+    final logs = [
+      for (var i = 0; i < count; i++)
+        HabitLogsCompanion.insert(
+          habitId: habitId,
+          // Spread marks across the whole life: one at the start, one on
+          // the very last day, the rest along the middle — so the recorded
+          // life span matches [lifespanDays], not just the done days.
+          date: created
+              .add(
+                Duration(
+                  days: count >= lifespanDays
+                      ? i
+                      : i == 0
+                      ? 0
+                      : i == count - 1
+                      ? lifespanDays - 1
+                      : i,
+                ),
+              )
+              .unixSeconds,
+          status: const Value(LogStatus.done),
+          loggedHour: const Value(12),
+        ),
+    ];
+    await db.habitLogsDao.upsertLogs(logs);
+  }
+
   /// Maps a day's completion ratio to a mood with noise — the shared
   /// generation curve in `core/domain/mood_rule.dart`, which mirrors the
   /// relationship the stats insight measures.

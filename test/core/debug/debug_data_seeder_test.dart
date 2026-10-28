@@ -6,6 +6,7 @@ import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
 import 'package:rythm/core/domain/completion.dart';
+import 'package:rythm/core/domain/habit_lifecycle.dart';
 import 'package:rythm/features/stats/domain/time_suggestion.dart';
 
 import '../../fixtures/test_db.dart';
@@ -277,6 +278,42 @@ void main() {
       expect(suggestions, hasLength(1));
       expect(suggestions.single.habit.id, habits.single.id);
       expect(suggestions.single.actualBucket, TimeBucket.morning);
+    });
+
+    test('seedArchivedHabits creates archived habits with life spans', () async {
+      final seeder = DebugDataSeeder(db, clock: _FakeClock(pinned));
+      await seeder.seedArchivedHabits();
+
+      final all = await db.habitsDao.getAllHabits();
+      final archived = all.where((h) => h.isArchived).toList();
+      expect(
+        archived.map((h) => h.name),
+        containsAll(['Йога', 'Чтение книг', 'Медитация']),
+      );
+
+      final logs = await db.habitLogsDao.getAllLogs();
+      expect(logs, hasLength(120)); // 90 + 30 done logs
+
+      final lifecycles = computeHabitLifecycles(
+        habits: archived,
+        logs: logs,
+        now: pinned.toMidnight,
+      );
+      final yoga = lifecycles.singleWhere((l) => l.habit.name == 'Йога');
+      final reading = lifecycles.singleWhere(
+        (l) => l.habit.name == 'Чтение книг',
+      );
+      final meditation = lifecycles.singleWhere(
+        (l) => l.habit.name == 'Медитация',
+      );
+
+      // Life spans: 120 and 45 days respectively; meditation never did anything.
+      expect(yoga.ageDays, 120);
+      expect(yoga.stabilityPct, closeTo(90 / 120 * 100, 0.01));
+      expect(reading.ageDays, 45);
+      expect(reading.stabilityPct, closeTo(30 / 45 * 100, 0.01));
+      expect(meditation.ageDays, 1);
+      expect(meditation.stabilityPct, 0.0);
     });
   });
 }

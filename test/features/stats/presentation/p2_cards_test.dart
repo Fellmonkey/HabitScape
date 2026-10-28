@@ -5,10 +5,9 @@ import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
-import 'package:rythm/features/stats/domain/habit_lifecycle.dart';
+import 'package:rythm/core/domain/habit_lifecycle.dart';
 import 'package:rythm/features/stats/domain/time_suggestion.dart';
 import 'package:rythm/features/stats/presentation/widgets/archive_card.dart';
-import 'package:rythm/features/stats/presentation/widgets/habits_card.dart';
 import 'package:rythm/features/stats/presentation/widgets/time_suggestion_card.dart';
 import 'package:rythm/features/stats/providers/habit_lifecycle_providers.dart';
 
@@ -69,17 +68,6 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
-
-  testWidgets('habits card shows active habits with age and stability', (
-    tester,
-  ) async {
-    await pump(tester, const HabitsCard());
-    expect(find.byKey(K.statsHabits), findsOneWidget);
-    expect(find.text('Привычки'), findsOneWidget);
-    expect(find.text('Бег'), findsOneWidget);
-    expect(find.text('3 мес · 83%'), findsOneWidget); // 90 days → 3 мес
-    expect(find.text('Чтение'), findsNothing);
-  });
 
   testWidgets('archive card shows retired habits with their life span', (
     tester,

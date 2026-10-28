@@ -1,6 +1,6 @@
-import '../../../core/database/app_database.dart';
-import '../../../core/domain/completion.dart';
-import '../../../core/utils/date_helpers.dart';
+import '../database/app_database.dart';
+import 'completion.dart';
+import '../utils/date_helpers.dart';
 
 /// One habit's life-span summary: how long it has existed (or lived, if
 /// archived), and how stable its completion was over that period.
@@ -18,7 +18,7 @@ class HabitLifecycle {
   /// Days the habit has existed (active) or lived (archived), inclusive.
   final int ageDays;
 
-  /// Done logs over the whole life span. `int`
+  /// Done logs over the whole life span.
   final int doneCount;
 
   /// Expected days over the same span (after skips are excused).

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/domain/habit_lifecycle.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card_header.dart';
-import '../../domain/habit_lifecycle.dart';
 import '../../providers/habit_lifecycle_providers.dart';
 
 /// «Архив»: retired habits with their life span and overall completion — the

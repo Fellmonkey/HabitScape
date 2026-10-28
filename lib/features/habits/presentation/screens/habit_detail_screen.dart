@@ -15,6 +15,7 @@ import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
 import '../widgets/habit_form_sheet.dart';
 import '../widgets/habit_info_row.dart';
+import '../widgets/habit_lifecycle_section.dart';
 import '../widgets/history_sliver.dart';
 import '../widgets/metrics_detail_section.dart';
 import '../widgets/month_heatmap.dart';
@@ -187,6 +188,12 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
                         error: (_, _) => const SizedBox.shrink(),
                         data: (m) => TimeDistributionSection(metrics: m),
                       ),
+                      const SizedBox(height: 24),
+
+                      // Life span: age, stability and totals over the whole
+                      // existence — the "Привычки" card's data, at home on
+                      // the habit's own screen.
+                      HabitLifecycleSection(habitId: habitId),
                       const SizedBox(height: 24),
                     ],
 

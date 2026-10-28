@@ -471,6 +471,23 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Архив: данные созданы',
+                    (s) => s.seedArchivedHabits(),
+                  ),
+            icon: const Icon(Icons.archive_outlined, size: 18),
+            label: const Text('Архив: данные созданы'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.dustyRose,
+              side: const BorderSide(color: AppColors.dustyRose),
+            ),
+          ),
+        ),
 
         // Scenario cards
         _CategoryHeader(title: 'Сценарии'),
