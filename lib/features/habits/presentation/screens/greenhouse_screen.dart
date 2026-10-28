@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,9 +9,9 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/providers/time_suggestions_provider.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
-import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
@@ -20,6 +23,8 @@ import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
+import '../../providers/month_summary_providers.dart';
+import '../../../week/providers/week_providers.dart';
 import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';
@@ -30,10 +35,20 @@ import '../widgets/habit_form_sheet.dart';
 import '../widgets/month_goals_card.dart';
 import '../widgets/month_summary_card.dart';
 import '../widgets/progress_ring.dart';
+import '../widgets/swipe_hint_strip.dart';
 import '../widgets/time_suggestion_banner.dart';
 import '../widgets/today_group_visuals.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
+
+/// Minimum active habits before the «История» shortcut appears in the header.
+const greenHouseHistoryMinHabits = 3;
+
+/// Minimum habits in a single group before the hide-completed toggle appears.
+const greenhouseToggleMinGroupHabits = 5;
+
+/// The one-time tooltip key for the hide-completed toggle.
+const hideCompletedToggleHintKey = 'hide_completed_toggle';
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
@@ -63,6 +78,11 @@ final class _HabitEntry extends _BoardEntry {
   String get id => 'h:${habit.id}';
 }
 
+/// Which single banner the board may show today — at most one of the four
+/// competing blocks (feature hint, time suggestion, week summary, month
+/// summary). Feature hints win, then time suggestions, then the summaries.
+enum _HomeBanner { featureHint, timeSuggestion, weekSummary, monthSummary }
+
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
 
@@ -77,6 +97,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// Habit ids created in this session — they get a one-shot entrance.
   final Set<int> _enteringIds = <int>{};
 
+  /// Just-completed habits that stay visible past the hide-completed filter
+  /// while their card-level undo window is still open (deadline per id).
+  final Map<int, DateTime> _graceUntil = <int, DateTime>{};
+
   /// The board's visible rows (group headers + habit cards) rendered by the
   /// animated sliver list. Kept in sync with [groupToday]'s output; when the
   /// two differ, the difference is applied as insert/remove animations.
@@ -84,6 +108,10 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       GlobalKey<SliverAnimatedListState>();
   List<_BoardEntry> _entries = const [];
   List<_BoardEntry>? _pendingNext;
+
+  /// Tooltip shown once when the hide-completed toggle first appears.
+  final GlobalKey<TooltipState> _toggleTooltipKey = GlobalKey<TooltipState>();
+  bool _toggleHintTriggered = false;
 
   @override
   String get tourScope => AppTourIds.greenhouse;
@@ -141,7 +169,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. The hide-completed filter is a board rule too, so the toggle
-    // just feeds it. Logs are indexed by habit id once here and shared with
+    // just feeds it. Recently completed habits stay visible during their undo
+    // window ([_graceUntil]) so the card can offer «Отменить» before it
+    // slides away. Logs are indexed by habit id once here and shared with
     // both the board filter and the card list, so the index is never built
     // twice per frame.
     final logByHabit = {for (final l in logs) l.habitId: l};
@@ -151,11 +181,56 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       logs: logs,
       hideCompleted: _hideCompleted,
       logByHabit: logByHabit,
+      keepVisible: {
+        for (final e in _graceUntil.entries)
+          if (e.value.isAfter(DateTime.now())) e.key,
+      },
     );
 
     // Feed the animated list: rows are derived here and diffed against the
     // current rows post-frame (build itself must not mutate the list).
     _syncEntries(_buildEntries(groups, logByHabit));
+
+    // ── Header gating for newcomers ──
+    // «История» only helps once there is something to look back on; the
+    // hide-completed toggle only earns its place in a big group.
+    final canSeeHistory = habits.length >= greenHouseHistoryMinHabits;
+    final maxGroupSize = groups.fold(
+      0,
+      (max, g) => math.max(max, g.habits.length),
+    );
+    final canSeeToggle = maxGroupSize >= greenhouseToggleMinGroupHabits;
+
+    // ── Single-banner arbitration ──
+    final exposureAsync = ref.watch(exposureProvider);
+    final suggestionsAsync = ref.watch(timeSuggestionsProvider);
+    final weekAsync = ref.watch(weekSummaryProvider);
+    final monthAsync = ref.watch(monthSummaryProvider);
+
+    final _HomeBanner? banner;
+    if (exposureAsync.value != null &&
+        activeFeatureHint(exposureAsync.value!) != null) {
+      banner = _HomeBanner.featureHint;
+    } else if ((suggestionsAsync.value ?? const []).isNotEmpty) {
+      banner = _HomeBanner.timeSuggestion;
+    } else if (weekAsync.value?.shouldShow == true) {
+      banner = _HomeBanner.weekSummary;
+    } else if (monthAsync.value?.shouldShow == true) {
+      banner = _HomeBanner.monthSummary;
+    } else {
+      banner = null;
+    }
+
+    final Widget? bannerWidget = switch (banner) {
+      _HomeBanner.featureHint => const FeatureHintBanner(),
+      _HomeBanner.timeSuggestion => const TimeSuggestionBanner(),
+      _HomeBanner.weekSummary => const WeekSummaryCard(),
+      _HomeBanner.monthSummary => const MonthSummaryCard(),
+      null => null,
+    };
+
+    // First-appearance tooltip for the hide-completed toggle.
+    _maybeShowToggleHint(canSeeToggle);
 
     return CustomScrollView(
       slivers: [
@@ -185,34 +260,43 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     ],
                   ),
                 ),
-                tourTarget(
-                  AppHintIds.greenhouseSpread,
-                  OutlinedButton.icon(
-                    key: K.openMonthSpread,
-                    onPressed: () => context.push('/month'),
-                    icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                    label: const Text('История'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                if (canSeeHistory)
+                  tourTarget(
+                    AppHintIds.greenhouseSpread,
+                    OutlinedButton.icon(
+                      key: K.openMonthSpread,
+                      onPressed: () => context.push('/month'),
+                      icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                      label: const Text('История'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
                     ),
                   ),
-                ),
                 // Hide completed toggle
-                IconButton(
-                  key: K.hideCompletedToggle,
-                  onPressed: () =>
-                      setState(() => _hideCompleted = !_hideCompleted),
-                  icon: Icon(
-                    _hideCompleted
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                if (canSeeToggle)
+                  Tooltip(
+                    key: _toggleTooltipKey,
+                    message: 'Скрыть выполненные привычки',
+                    triggerMode: TooltipTriggerMode.manual,
+                    child: IconButton(
+                      key: K.hideCompletedToggle,
+                      onPressed: () =>
+                          setState(() => _hideCompleted = !_hideCompleted),
+                      icon: Icon(
+                        _hideCompleted
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                      tooltip: _hideCompleted
+                          ? 'Показать выполненные'
+                          : 'Скрыть выполненные',
+                    ),
                   ),
-                  tooltip: _hideCompleted
-                      ? 'Показать выполненные'
-                      : 'Скрыть выполненные',
-                ),
               ],
             ),
           ),
@@ -225,13 +309,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
         if (echoAtTop) const SliverToBoxAdapter(child: EchoCard(atTop: true)),
 
-        const SliverToBoxAdapter(child: WeekSummaryCard()),
+        // ── Single banner (feature hint → time suggestion → summaries) ──
+        if (bannerWidget != null) SliverToBoxAdapter(child: bannerWidget),
 
-        const SliverToBoxAdapter(child: MonthSummaryCard()),
-
-        const SliverToBoxAdapter(child: TimeSuggestionBanner()),
-
-        const SliverToBoxAdapter(child: FeatureHintBanner()),
+        // ── One-time swipe teaching strip ──
+        if (habits.isNotEmpty)
+          const SliverToBoxAdapter(child: SwipeHintStrip()),
 
         if (habits.isEmpty)
           SliverFillRemaining(
@@ -292,6 +375,38 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         if (!echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
       ],
     );
+  }
+
+  /// Shows the one-time tooltip the first time the hide-completed toggle
+  /// becomes visible, then records it so it never returns.
+  void _maybeShowToggleHint(bool canSeeToggle) {
+    if (!canSeeToggle || _toggleHintTriggered) return;
+    final exposure = ref.read(exposureProvider).value;
+    if (exposure == null || exposure.hasSeenUx(hideCompletedToggleHintKey)) {
+      return;
+    }
+    _toggleHintTriggered = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _toggleTooltipKey.currentState?.ensureTooltipVisible();
+      ref
+          .read(exposureActionsProvider.notifier)
+          .recordSeenUx(hideCompletedToggleHintKey);
+    });
+  }
+
+  /// Keeps a just-completed habit visible through its undo window when the
+  /// hide-completed filter is on, so the card can show «Отменить» before it
+  /// slides away.
+  void _onHabitStatusChanged(int habitId) {
+    if (!_hideCompleted) return;
+    setState(() {
+      _graceUntil[habitId] = DateTime.now().add(habitUndoWindow);
+    });
+    Timer(habitUndoWindow, () {
+      if (!mounted) return;
+      setState(() => _graceUntil.remove(habitId));
+    });
   }
 
   /// Flattens the board into animated-list rows: one header entry per group,
@@ -491,47 +606,29 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   }
 
   Widget _buildHabitRow(Habit habit, HabitLog? log) {
+    // The Dismissible lives inside the card itself — the card owns its status
+    // changes, so the undo affordance works identically for taps and swipes.
     return RepaintBoundary(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-        child: Dismissible(
-          key: K.habitCard(habit.id),
-          direction: DismissDirection.horizontal,
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
-            color: context.palette.emerald.withValues(alpha: 0.18),
-            child: Icon(Icons.check_rounded, color: context.palette.emerald),
-          ),
-          secondaryBackground: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            color: context.palette.greyBlue.withValues(alpha: 0.18),
-            child: Icon(Icons.pause_rounded, color: context.palette.greyBlue),
-          ),
-          movementDuration: const Duration(milliseconds: 220),
-          resizeDuration: const Duration(milliseconds: 220),
-          dismissThresholds: const {DismissDirection.horizontal: 0.35},
-          confirmDismiss: (direction) async {
-            final actions = ref.read(habitActionsProvider.notifier);
-            if (direction == DismissDirection.startToEnd) {
-              await actions.logToday([habit.id], status: LogStatus.done);
-            } else {
-              await actions.logToday([habit.id], status: LogStatus.skip);
-            }
-            return false;
-          },
-          child: _enteringIds.contains(habit.id)
-              ? Entrance(
-                  onComplete: () {
-                    if (mounted) {
-                      setState(() => _enteringIds.remove(habit.id));
-                    }
-                  },
-                  child: HabitCard(habit: habit, log: log),
-                )
-              : HabitCard(habit: habit, log: log),
-        ),
+        child: _enteringIds.contains(habit.id)
+            ? Entrance(
+                onComplete: () {
+                  if (mounted) {
+                    setState(() => _enteringIds.remove(habit.id));
+                  }
+                },
+                child: HabitCard(
+                  habit: habit,
+                  log: log,
+                  onStatusChanged: () => _onHabitStatusChanged(habit.id),
+                ),
+              )
+            : HabitCard(
+                habit: habit,
+                log: log,
+                onStatusChanged: () => _onHabitStatusChanged(habit.id),
+              ),
       ),
     );
   }

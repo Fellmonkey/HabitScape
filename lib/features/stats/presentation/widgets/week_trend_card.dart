@@ -24,7 +24,7 @@ class WeekTrendCard extends StatelessWidget {
         ? context.palette.sage
         : falling
         ? context.palette.rose
-        : theme.colorScheme.onSurface.withValues(alpha: 0.5);
+        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
     final deltaIcon = rising
         ? Icons.trending_up_rounded
         : falling
@@ -50,7 +50,7 @@ class WeekTrendCard extends StatelessWidget {
             Text(
               'Отмечай привычки — здесь появится сравнение с прошлой неделей.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             )
           else ...[

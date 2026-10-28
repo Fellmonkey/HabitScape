@@ -40,7 +40,7 @@ class MoodCorrelationCard extends StatelessWidget {
                   'Сравниваем дни со всеми выполненными привычками и дни '
                   'без отметок.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -66,7 +66,7 @@ class MoodCorrelationCard extends StatelessWidget {
                   'Это наблюдение, а не причина: совпадение не значит, что '
                   'одно вызывает другое.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -86,7 +86,7 @@ class MoodCorrelationCard extends StatelessWidget {
                       : 'Заполняй «Момент дня» и отмечай привычки — покажем, '
                             'как настроение связано с выполнением.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -121,7 +121,7 @@ class _CorrBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

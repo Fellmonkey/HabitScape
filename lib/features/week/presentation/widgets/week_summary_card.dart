@@ -125,7 +125,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
                 Text(
                   'Прошлое намерение: «$previousIntention»',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -175,7 +175,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
                   'Одно намерение, а не план. То, что хочешь удержать или '
                   'улучшить — например, «бег по вторникам».',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -190,7 +190,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
                   decoration: InputDecoration(
                     hintText: 'Например: ранний подъём, без сахара по будням…',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     counterText: '',
                     filled: true,
@@ -269,7 +269,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
           Text(
             'На следующей неделе — ${summary.nextWeekPlannedDays[summary.weakest!.$1]} ${pluralDays(summary.nextWeekPlannedDays[summary.weakest!.$1]!)}',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -279,7 +279,7 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
         Text(
           'Все привычки выполнены 🎉',
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],

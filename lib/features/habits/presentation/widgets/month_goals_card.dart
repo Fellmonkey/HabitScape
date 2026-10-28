@@ -117,7 +117,7 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
                           ? Icons.expand_less_rounded
                           : Icons.expand_more_rounded,
                       size: 20,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ],
                 ),
@@ -222,7 +222,7 @@ class _GoalRow extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   decoration: goal.isDone ? TextDecoration.lineThrough : null,
                   color: goal.isDone
-                      ? theme.colorScheme.onSurface.withValues(alpha: 0.45)
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
                       : null,
                 ),
               ),

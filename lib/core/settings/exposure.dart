@@ -26,6 +26,7 @@ class Exposure {
   static const echoLastShownKey = 'echo_last_shown_date';
   static const firstUseKey = 'first_use_date';
   static const dismissedHintsKey = 'dismissed_feature_hints';
+  static const seenUxKey = 'seen_ux_hints';
 
   /// Days the echo card stays quiet after a showing.
   static const echoCooldownDays = 2;
@@ -55,6 +56,13 @@ class Exposure {
   /// Hides [key] for good. Repeated calls keep one entry.
   Future<void> dismissHint(String key) =>
       _addToStringSet(dismissedHintsKey, key);
+
+  /// Whether a one-time UI affordance (e.g. a first-appearance tooltip) has
+  /// already been shown.
+  bool hasSeenUx(String key) => _stringSet(seenUxKey).contains(key);
+
+  /// Records that a one-time UI affordance was shown. Idempotent.
+  Future<void> recordSeenUx(String key) => _addToStringSet(seenUxKey, key);
 
   /// Back to the first-run slate: every feature hint can appear again.
   Future<void> clearDismissedHints() async {
@@ -182,6 +190,9 @@ class ExposureActions extends Notifier<void> {
 
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
+
+  /// Records a one-time UI affordance as seen and refreshes the snapshot.
+  Future<void> recordSeenUx(String key) => _mutate((e) => e.recordSeenUx(key));
 
   /// Clears all dismissed feature hints and refreshes the snapshot.
   Future<void> resetDismissedHints() => _mutate((e) => e.clearDismissedHints());

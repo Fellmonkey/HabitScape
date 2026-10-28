@@ -40,7 +40,7 @@ class HistorySection extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.4),
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -188,7 +188,7 @@ class LogTile extends StatelessWidget {
             Text(
               hourStr,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
         ],

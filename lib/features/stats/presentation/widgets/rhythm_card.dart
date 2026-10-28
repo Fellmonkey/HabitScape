@@ -48,7 +48,7 @@ class RhythmCard extends StatelessWidget {
             Text(
               'Пока мало данных — веди привычки несколько дней.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],

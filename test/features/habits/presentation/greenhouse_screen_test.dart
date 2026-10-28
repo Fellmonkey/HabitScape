@@ -152,32 +152,50 @@ void main() {
   testWidgets('hide-completed removes only today\'s done habits', (
     tester,
   ) async {
+    // The toggle only appears once a group holds at least five habits, so
+    // the board must be big enough for it to be visible. The viewport also
+    // has to fit the whole board (slivers are lazy).
+    await tester.binding.setSurfaceSize(const Size(800, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final today = todayTimestamp();
-    await pumpGreenhouse(
-      tester,
-      habits: [
-        makeHabit(id: 1, name: 'Сделано', timeOfDay: 'morning'),
-        makeHabit(id: 2, name: 'Не сделано', timeOfDay: 'morning'),
-      ],
-      logs: [
+    final habits = [
+      for (var id = 1; id <= 6; id++)
+        makeHabit(id: id, name: 'Привычка $id', timeOfDay: 'morning'),
+    ];
+    final logs = [
+      for (var id = 1; id <= 3; id++)
         makeLog(
-          id: 1,
-          habitId: 1,
+          id: id,
+          habitId: id,
           date: today,
           status: LogStatus.done,
           loggedHour: 8,
         ),
-      ],
-    );
+    ];
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        for (final h in habits)
+          makeHabitCompanion(name: h.name, timeOfDay: 'morning'),
+      ]);
+    });
+    await pumpGreenhouse(tester, habits: habits, logs: logs);
 
-    expect(find.text('Сделано'), findsOneWidget);
-    expect(find.text('Не сделано'), findsOneWidget);
+    // All six are visible before toggling.
+    for (var id = 1; id <= 6; id++) {
+      expect(find.text('Привычка $id'), findsOneWidget);
+    }
 
     await tester.tap(find.byKey(K.hideCompletedToggle));
     await tester.pumpAndSettle();
 
-    expect(find.text('Сделано'), findsNothing);
-    expect(find.text('Не сделано'), findsOneWidget);
+    // The three done ones are hidden; the other three stay.
+    for (var id = 1; id <= 3; id++) {
+      expect(find.text('Привычка $id'), findsNothing);
+    }
+    for (var id = 4; id <= 6; id++) {
+      expect(find.text('Привычка $id'), findsOneWidget);
+    }
 
     await disposeTree(tester);
   });
@@ -334,6 +352,46 @@ void main() {
     );
     final after = tester.widget<Text>(find.text('Сделано'));
     expect(after.style?.decoration, isNot(TextDecoration.lineThrough));
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('completing opens an undo affordance that restores the state', (
+    tester,
+  ) async {
+    final id = await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Сделано', timeOfDay: 'morning'),
+    );
+
+    // Watch the real database stream so the card sees both the write and the
+    // undo removal.
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: id, name: 'Сделано', timeOfDay: 'morning')],
+      logsStream: db.habitLogsDao.watchLogsForDate(todayTimestamp()),
+    );
+
+    final check = find.byKey(K.habitCheck(id));
+    await tester.tap(check);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // The undo affordance appears while the window is open.
+    expect(find.text('Отменить'), findsOneWidget);
+    expect(
+      find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Отменить'));
+    await tester.pumpAndSettle();
+
+    // The log is gone and the check is empty again.
+    expect(await db.habitLogsDao.getAllLogs(), isEmpty);
+    expect(
+      find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
+      findsNothing,
+    );
+    expect(find.text('Отменить'), findsNothing);
 
     await disposeTree(tester);
   });

@@ -61,7 +61,7 @@ class YearSummaryScreen extends ConsumerWidget {
             'Отмечай привычки и записывай моменты — покажем год в пикселях '
             'и главные цифры.',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
           ),
@@ -138,7 +138,7 @@ class YearSummaryScreen extends ConsumerWidget {
                 Text(
                   'По типам расписаний: процент выполненных ожидаемых дней.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -148,7 +148,7 @@ class YearSummaryScreen extends ConsumerWidget {
                   'Это наблюдение, а не причина — но может подсказать, '
                   'какое расписание тебе подходит.',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -289,7 +289,7 @@ class YearSummaryScreen extends ConsumerWidget {
                   '${stat.pct.round()}% · ${stat.done} из ${stat.expected}',
                   textAlign: TextAlign.end,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),

@@ -13,6 +13,7 @@ class StatsOverview {
     required this.moodCorrelation,
     required this.weekTrend,
     required this.rhythm,
+    this.activeDays = 0,
   });
 
   /// Last 365 days (oldest first) for the heatmap.
@@ -23,6 +24,10 @@ class StatsOverview {
   final MoodCorrelation moodCorrelation;
   final WeekTrend weekTrend;
   final RhythmStats rhythm;
+
+  /// Number of distinct days with any recorded activity (a habit log or a
+  /// day note). Drives what the stats screen reveals and when.
+  final int activeDays;
 }
 
 /// Builds the full [StatsOverview] from raw DAO data. Pure — no DB access.
@@ -54,11 +59,15 @@ StatsOverview buildStatsOverview({
   // numbers in two.
   final yearTotalDone = days.fold(0, (sum, day) => sum + day.done);
 
+  final logDates = {for (final l in yearLogs) l.date};
+  final noteDates = {for (final n in yearNotes) n.date};
+
   return StatsOverview(
     days: days,
     yearTotalDone: yearTotalDone,
     moodCorrelation: computeMoodCorrelation(days: days, notes: yearNotes),
     weekTrend: computeWeekTrend(habits: habits, logs: yearLogs, now: now),
     rhythm: computeRhythmStats(days: days, logs: yearLogs),
+    activeDays: logDates.union(noteDates).length,
   );
 }

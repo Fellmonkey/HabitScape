@@ -106,7 +106,7 @@ class _MonthSummaryPreviewSheetState
                   : 'Сейчас карточка скрыта (окно — последние 3 дня месяца). '
                         'Превью показывает её содержимое.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 16),

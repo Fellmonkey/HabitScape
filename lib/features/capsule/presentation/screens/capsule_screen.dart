@@ -174,7 +174,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
               Text(
                 nextLine,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -243,7 +243,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
             Text(
               'Одна фраза — 15–20 секунд. Откроется потом.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 10),
@@ -264,7 +264,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
                 decoration: InputDecoration(
                   hintText: 'Что скажешь себе через месяц?',
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   counterText: '',
                   filled: true,
@@ -362,7 +362,7 @@ class _CapsuleTile extends StatelessWidget {
     } else if (opened) {
       subtitle = 'Открыто · ${wroteAgoLabel(capsule)}';
       icon = Icons.mark_email_read_outlined;
-      color = theme.colorScheme.onSurface.withValues(alpha: 0.4);
+      color = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     } else {
       final opensAt = formatShortDate(
         dateFromUnix(capsule.deliverAt),
@@ -402,7 +402,7 @@ class _CapsuleTile extends StatelessWidget {
                   subtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: opened
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.45)
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
                         : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),

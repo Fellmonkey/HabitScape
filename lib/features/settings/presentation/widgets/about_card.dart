@@ -121,7 +121,7 @@ class AboutCard extends StatelessWidget {
               ),
               trailing: Icon(
                 Icons.chevron_right_rounded,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],

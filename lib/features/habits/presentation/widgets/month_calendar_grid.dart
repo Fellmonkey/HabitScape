@@ -51,7 +51,7 @@ class MonthCalendarGrid extends StatelessWidget {
               child: Text(
                 w,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -198,7 +198,7 @@ class MonthDayCell extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation(
                       day.ratio >= 1.0
                           ? context.palette.emerald
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -207,7 +207,7 @@ class MonthDayCell extends StatelessWidget {
                   day.done == 0 ? '—' : '${day.done}/${day.expected}',
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 10,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ] else

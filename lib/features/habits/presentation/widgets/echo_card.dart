@@ -73,7 +73,7 @@ class _EchoHint extends StatelessWidget {
             child: Text(
               'Завтра здесь появится вчерашний день.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ),

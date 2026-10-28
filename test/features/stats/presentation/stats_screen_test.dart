@@ -15,10 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
 
-const _noRecordsText =
-    'Заполняй «Момент дня» и отмечай привычки — покажем, как настроение связано с выполнением.';
-const _notComparableText =
-    'Пока мало данных для сравнения: нужны дни, где выполнено всё или, наоборот, ничего.';
+const _inviteText = 'Здесь появятся тренды';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -98,20 +95,27 @@ void main() {
     await seed(partialDays: 0);
     await pumpStats(tester);
 
-    expect(find.text(_noRecordsText), findsOneWidget);
-    expect(find.text(_notComparableText), findsNothing);
+    // A single invitation card replaces the whole dashboard before any data.
+    expect(find.text(_inviteText), findsOneWidget);
+    expect(find.byKey(K.statsWeekTrend), findsNothing);
+    expect(find.byKey(K.statsCorrelation), findsNothing);
     // No history yet — the year button stays hidden.
     expect(find.byKey(K.yearSummaryOpen), findsNothing);
   });
 
-  testWidgets('explains the missing comparison when only partial days exist', (
+  testWidgets('dashboard appears after the first five activity days', (
     tester,
   ) async {
     await seed(partialDays: 5);
     await pumpStats(tester);
 
-    expect(find.text(_notComparableText), findsOneWidget);
-    expect(find.text(_noRecordsText), findsNothing);
+    // Basic cards appear; advanced insights (correlation, rhythm) stay locked
+    // until 30 activity days.
+    expect(find.text(_inviteText), findsNothing);
+    expect(find.byKey(K.statsWeekTrend), findsOneWidget);
+    expect(find.byKey(K.statsHeatmap), findsOneWidget);
+    expect(find.byKey(K.statsCorrelation), findsNothing);
+    expect(find.byKey(K.statsRhythm), findsNothing);
   });
 
   testWidgets('header opens the year summary once there is history', (
@@ -141,8 +145,9 @@ void main() {
     final today = DateTime.now().toMidnight;
     final logs = <HabitLogsCompanion>[];
     final notes = <DayNotesCompanion>[];
-    // Ten fully-done days with a good mood.
-    for (var i = 0; i < 10; i++) {
+    // 35 fully-done days with a good mood — enough to unlock the advanced
+    // insights (30+ activity days).
+    for (var i = 0; i < 35; i++) {
       final date = today.subtract(Duration(days: i));
       logs.add(
         HabitLogsCompanion.insert(
@@ -165,8 +170,8 @@ void main() {
         ),
       );
     }
-    // Ten empty days with a bad mood.
-    for (var i = 11; i < 21; i++) {
+    // 15 empty days with a bad mood.
+    for (var i = 36; i < 51; i++) {
       final date = today.subtract(Duration(days: i));
       notes.add(
         DayNotesCompanion.insert(
@@ -202,8 +207,12 @@ void main() {
       findsNWidgets(2),
     );
     expect(
-      find.descendant(of: correlationCard, matching: find.text('10 дней')),
-      findsNWidgets(2),
+      find.descendant(of: correlationCard, matching: find.text('35 дней')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: correlationCard, matching: find.text('15 дней')),
+      findsOneWidget,
     );
     expect(find.textContaining('Это наблюдение, а не причина'), findsOneWidget);
   });

@@ -38,7 +38,7 @@ class MonthSummarySection extends StatelessWidget {
             Text(
               '${summary.momentsCount} ${pluralMoments(summary.momentsCount)}',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -70,7 +70,7 @@ class MonthSummarySection extends StatelessWidget {
               value: progress / 100.0,
               minHeight: 6,
               backgroundColor: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.4),
+                  .withValues(alpha: 0.6),
               valueColor: AlwaysStoppedAnimation(
                 progressColor(
                   progress,

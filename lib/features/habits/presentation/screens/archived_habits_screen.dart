@@ -208,7 +208,7 @@ class _ArchivedHabitTile extends ConsumerWidget {
         subtitle: Text(
           _subtitleText(habit),
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
         trailing: Row(

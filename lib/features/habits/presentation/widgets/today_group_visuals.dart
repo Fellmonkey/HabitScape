@@ -41,7 +41,7 @@ import '../../domain/today_board.dart';
     TodayGroupKind.notToday => (
       'Не сегодня',
       Icons.event_busy_outlined,
-      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     ),
   };
 }

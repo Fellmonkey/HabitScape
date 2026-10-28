@@ -107,7 +107,7 @@ class _DayMomentComposerState extends ConsumerState<DayMomentComposer> {
               Text(
                 'Момент дня',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   letterSpacing: 0.4,
                 ),
               ),

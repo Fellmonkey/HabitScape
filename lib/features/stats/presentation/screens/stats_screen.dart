@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/config/app_constants.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
@@ -145,71 +146,87 @@ class StatsScreen extends ConsumerWidget {
             ),
           ],
           data: (stats) => [
-            // ── Week trend ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: WeekTrendCard(stats: stats),
-              ),
-            ),
-
-            // ── Year heatmap ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: HeatmapCard(
-                  stats: stats,
-                  today: today,
-                  onDayTap: showDayDetail,
+            // Before there is anything to summarize, one invitation card
+            // replaces the whole dashboard — no forest of empty headers.
+            if (stats.activeDays < AppConstants.statsInviteDays)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                  child: _StatsInviteCard(),
+                ),
+              )
+            else ...[
+              // ── Week trend ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: WeekTrendCard(stats: stats),
                 ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // ── Month trend ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: MonthlyTrendCard(),
+              // ── Year heatmap ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  child: HeatmapCard(
+                    stats: stats,
+                    today: today,
+                    onDayTap: showDayDetail,
+                  ),
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // ── Mood ↔ completion ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: MoodCorrelationCard(corr: stats.moodCorrelation),
+              // ── Month trend ──
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: MonthlyTrendCard(),
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // ── Weekly rhythm ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: RhythmCard(rhythm: stats.rhythm),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              // Advanced insights unlock only after enough observation days —
+              // correlation and rhythm need a real sample to be meaningful.
+              if (stats.activeDays >=
+                  AppConstants.statsAdvancedInsightsDays) ...[
+                // ── Mood ↔ completion ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: MoodCorrelationCard(corr: stats.moodCorrelation),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-            // ── Intentions ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: IntentionsCard(),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                // ── Weekly rhythm ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: RhythmCard(rhythm: stats.rhythm),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ],
 
-            // ── Archive (bottom) ──
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: ArchiveCard(),
+              // ── Intentions ──
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: IntentionsCard(),
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // ── Archive (bottom) ──
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: ArchiveCard(),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
           ],
         ),
       ],
@@ -235,6 +252,50 @@ class StatsScreen extends ConsumerWidget {
           ),
           child: scrollView,
         ),
+      ),
+    );
+  }
+}
+
+/// The single card shown before the dashboard has anything to summarize.
+/// Invites the two rituals the stats are built from: habits and moments.
+class _StatsInviteCard extends StatelessWidget {
+  const _StatsInviteCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppRadius.borderL,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.insights_rounded,
+            size: 44,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Здесь появятся тренды',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Отмечай привычки и записывай моменты — '
+            'накопится немного данных, и статистика оживёт.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

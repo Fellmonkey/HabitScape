@@ -16,4 +16,12 @@ abstract final class AppConstants {
   /// The shared "a month" window: how old a day note must be to trigger the
   /// capsule invitation, and how stale a backup gets before it is flagged.
   static const staleNoteAfterDays = 30;
+
+  /// Stats screen: days of activity before the dashboard replaces the single
+  /// invitation card.
+  static const statsInviteDays = 5;
+
+  /// Stats screen: activity days before advanced insights (mood correlation,
+  /// weekly rhythm) unlock.
+  static const statsAdvancedInsightsDays = 30;
 }

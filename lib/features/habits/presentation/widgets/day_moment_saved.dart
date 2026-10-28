@@ -44,7 +44,7 @@ class DayMomentSaved extends StatelessWidget {
                   size: 20,
                   color:
                       mood?.color(context) ??
-                      theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(width: 12),

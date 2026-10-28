@@ -167,7 +167,7 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
                   onPressed: _showHelp,
                   icon: Icon(
                     Icons.help_outline_rounded,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],

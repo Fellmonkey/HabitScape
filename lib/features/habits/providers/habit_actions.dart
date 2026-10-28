@@ -66,6 +66,18 @@ class HabitActions extends Notifier<void> {
     );
   }
 
+  /// Reverts today's log for [habitId] back to [previous] — null restores
+  /// the "no log" state (the action is undone), anything else restores that
+  /// previous status. Used by the card-level undo affordance.
+  Future<void> undoTodayLog(int habitId, {LogStatus? previous}) async {
+    final today = ref.read(todayDateProvider).unixSeconds;
+    if (previous == null) {
+      await _logsDao.deleteLog(habitId, today);
+    } else {
+      await _logsDao.logAll([habitId], today, previous);
+    }
+  }
+
   /// Moves a habit between lifecycle states: archive, restore, or delete.
   /// Deleting is permanent — the caller confirms before invoking.
   Future<void> setLifecycle(int habitId, HabitLifecycle action) async {

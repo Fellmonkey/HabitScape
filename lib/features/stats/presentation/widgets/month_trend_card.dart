@@ -38,7 +38,7 @@ class MonthlyTrendCard extends ConsumerWidget {
             Text(
               'Отмечай привычки — здесь появится сравнение месяцев.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -66,7 +66,7 @@ class MonthlyTrendCard extends ConsumerWidget {
           Text(
             'Процент выполненных ожидаемых привычек за каждый месяц.',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 12),
@@ -78,7 +78,7 @@ class MonthlyTrendCard extends ConsumerWidget {
           Text(
             'Месяцы без отметок пропущены.',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],

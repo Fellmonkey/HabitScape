@@ -80,7 +80,7 @@ class _ArchivedRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
     final pct = lifecycle.stabilityPct.round();
 
     return InkWell(
@@ -93,7 +93,7 @@ class _ArchivedRow extends StatelessWidget {
             Icon(
               Icons.inventory_2_outlined,
               size: 16,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             const SizedBox(width: 10),
             Expanded(

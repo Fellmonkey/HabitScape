@@ -64,7 +64,7 @@ class _GithubHeatmapState extends State<GithubHeatmap> {
               child: Text(
                 'Пока нет данных за год — отмечай привычки, и здесь появится карта активности.',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ),

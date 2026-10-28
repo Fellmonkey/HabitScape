@@ -123,7 +123,7 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
                 '${formatFullDate(created)} · одна фраза о дне',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 32),
@@ -215,7 +215,7 @@ class _ReplyComposerState extends State<_ReplyComposer> {
             Text(
               'Пара слов себе сейчас — не цель и не задача, просто отклик.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 10),
@@ -230,7 +230,7 @@ class _ReplyComposerState extends State<_ReplyComposer> {
               decoration: InputDecoration(
                 hintText: 'Что ответишь этому себе?',
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
                 counterText: '',
                 filled: true,

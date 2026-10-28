@@ -80,7 +80,7 @@ class HeatmapGrid extends StatelessWidget {
                 child: Text(
                   shortWeekdayNames[i + 1],
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),

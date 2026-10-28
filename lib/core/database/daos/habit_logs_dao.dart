@@ -67,6 +67,14 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     return delete(habitLogs).go();
   }
 
+  /// Deletes one habit's log for a specific date — the undo path: removing
+  /// today's log restores the "not marked" state.
+  Future<void> deleteLog(int habitId, int date) {
+    return (delete(
+      habitLogs,
+    )..where((l) => l.habitId.equals(habitId) & l.date.equals(date))).go();
+  }
+
   /// Upserts a log for (habitId, date) with a single INSERT … ON CONFLICT
   /// UPDATE — no read-before-write.
   Future<void> upsertLog(HabitLogsCompanion entry) {

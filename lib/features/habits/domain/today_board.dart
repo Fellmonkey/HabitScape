@@ -27,6 +27,9 @@ class TodayGroup {
 /// dropped from their section, and sections left empty are omitted — the
 /// same view the screen renders with the toggle on.
 ///
+/// [keepVisible] exempts habit ids from the hide-completed filter (e.g. a
+/// card that was just completed but whose undo window is still open).
+///
 /// Pure — no DB, no clock ([today] is passed in so tests can pin it). Owns
 /// the single definition of the board's ordering, which sections get a
 /// "mark all" affordance, and what the hide-completed view shows.
@@ -36,6 +39,7 @@ List<TodayGroup> groupToday({
   List<HabitLog> logs = const [],
   bool hideCompleted = false,
   Map<int, HabitLog>? logByHabit,
+  Set<int> keepVisible = const {},
 }) {
   final focus = <Habit>[];
   final morning = <Habit>[];
@@ -106,6 +110,7 @@ List<TodayGroup> groupToday({
   final visible = <TodayGroup>[];
   for (final group in groups) {
     final kept = group.habits.where((h) {
+      if (keepVisible.contains(h.id)) return true;
       final log = index[h.id];
       return log == null || log.status != LogStatus.done;
     }).toList();

@@ -105,7 +105,7 @@ class MonthSummaryBody extends StatelessWidget {
                 size: 15,
                 color: summary.goals!.done == summary.goals!.total
                     ? context.palette.emerald
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 6),
               Expanded(

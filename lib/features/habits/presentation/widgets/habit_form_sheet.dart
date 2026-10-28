@@ -267,7 +267,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
               subtitle: Text(
                 '${_timeOfDay.localizedName} · ${_icon.visual.label}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               children: [
