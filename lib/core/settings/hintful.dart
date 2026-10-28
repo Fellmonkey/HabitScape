@@ -17,3 +17,11 @@ final hintfulStoreProvider = FutureProvider<SharedPreferencesHintStore>((
   Hintful.configure(store: store);
   return store;
 });
+
+/// One app-wide controller shared by tours and single hints — a second
+/// controller would fight for the same overlay.
+final hintfulControllerProvider = Provider<HintController>((ref) {
+  // Ensure the store is installed before the controller is used.
+  ref.watch(hintfulStoreProvider);
+  return HintController();
+});

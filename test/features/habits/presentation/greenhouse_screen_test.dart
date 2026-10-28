@@ -46,6 +46,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hintful.greenhouse': 'true',
+      'hintful.greenhouse-hide-toggle': 'true',
     });
     db = createTestDatabase();
   });
@@ -372,11 +373,17 @@ void main() {
     );
 
     final check = find.byKey(K.habitCheck(id));
+
+    // The card's height must not change when the undo pill appears — it
+    // overlays the card instead of pushing a row into the layout.
+    final cardSizeBeforeUndo = tester.getSize(find.byType(HabitCard));
+
     await tester.tap(check);
     await tester.pump(const Duration(milliseconds: 300));
 
     // The undo affordance appears while the window is open.
     expect(find.text('Отменить'), findsOneWidget);
+    expect(tester.getSize(find.byType(HabitCard)), cardSizeBeforeUndo);
     expect(
       find.descendant(of: check, matching: find.byIcon(Icons.check_rounded)),
       findsOneWidget,
@@ -575,6 +582,50 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byType(HabitCard).evaluate().length, 12);
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('hide-completed toggle shows a one-time intro hint', (
+    tester,
+  ) async {
+    // Tall viewport so all six rows are built (slivers are lazy).
+    await tester.binding.setSurfaceSize(const Size(800, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    // Fresh install for the toggle hint: do NOT seed its key. The greenhouse
+    // tour stays seen so it cannot fight for the overlay.
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hintful.greenhouse': 'true',
+    });
+
+    final habits = [
+      for (var id = 1; id <= 6; id++)
+        makeHabit(id: id, name: 'Привычка $id', timeOfDay: 'morning'),
+    ];
+    await db.batch((batch) {
+      batch.insertAll(db.habits, [
+        for (final h in habits)
+          makeHabitCompanion(name: h.name, timeOfDay: 'morning'),
+      ]);
+    });
+    await pumpGreenhouse(tester, habits: habits);
+
+    // The one-time spotlight hint appears exactly once (the button's own
+    // tooltip is not built as text, so the only match is the hint title).
+    expect(find.text('Скрыть выполненные'), findsOneWidget);
+
+    // Dismiss it by tapping the overlay scrim — tapping outside the
+    // spotlight advances the single-step hint (finish) and marks it shown.
+    // (Esc also dismisses, but the day-moment field owns keyboard focus in
+    // this test, so the key event would not reach the hint's overlay.)
+    await tester.tapAt(const Offset(40, 300));
+    await tester.pumpAndSettle();
+    expect(find.text('Скрыть выполненные'), findsNothing);
+
+    // A second pump (fresh screen, same session) must not re-show it.
+    await pumpGreenhouse(tester, habits: habits);
+    expect(find.text('Скрыть выполненные'), findsNothing);
 
     await disposeTree(tester);
   });

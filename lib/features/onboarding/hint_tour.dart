@@ -31,20 +31,19 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
   @override
   void initState() {
     super.initState();
-    _hintController = HintController();
     WidgetsBinding.instance.addPostFrameCallback((_) => _startWhenReady());
   }
 
   Future<void> _startWhenReady() async {
-    final controller = _hintController;
-    if (controller == null || _starting) return;
+    if (_starting) return;
     _starting = true;
     // The hintful store is the single "already shown" record. Creating it
     // installs it as the app-wide Hintful store; `tryShowTour` then gates
     // atomically on it and records the tour on any exit (finish / skip /
     // abort) — no second flag, no manual bookkeeping.
     await ref.read(hintfulStoreProvider.future);
-    if (!mounted || _hintController == null) return;
+    if (!mounted) return;
+    _hintController = ref.read(hintfulControllerProvider);
     await _hintController!.tryShowTour(
       hintTour,
       mark: HintMarkPolicy.onAnyExit,
@@ -53,7 +52,6 @@ mixin OnboardingTourMixin<T extends ConsumerStatefulWidget>
 
   @override
   void dispose() {
-    _hintController?.dispose();
     _hintController = null;
     super.dispose();
   }

@@ -57,13 +57,6 @@ class Exposure {
   Future<void> dismissHint(String key) =>
       _addToStringSet(dismissedHintsKey, key);
 
-  /// Whether a one-time UI affordance (e.g. a first-appearance tooltip) has
-  /// already been shown.
-  bool hasSeenUx(String key) => _stringSet(seenUxKey).contains(key);
-
-  /// Records that a one-time UI affordance was shown. Idempotent.
-  Future<void> recordSeenUx(String key) => _addToStringSet(seenUxKey, key);
-
   /// Back to the first-run slate: every feature hint can appear again.
   Future<void> clearDismissedHints() async {
     await _prefs.remove(dismissedHintsKey);
@@ -190,9 +183,6 @@ class ExposureActions extends Notifier<void> {
 
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
-
-  /// Records a one-time UI affordance as seen and refreshes the snapshot.
-  Future<void> recordSeenUx(String key) => _mutate((e) => e.recordSeenUx(key));
 
   /// Clears all dismissed feature hints and refreshes the snapshot.
   Future<void> resetDismissedHints() => _mutate((e) => e.clearDismissedHints());

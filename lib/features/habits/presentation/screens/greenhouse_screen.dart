@@ -14,7 +14,9 @@ import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
+import '../../../../features/onboarding/feature_intro_trigger.dart';
 import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../features/onboarding/single_hint.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -25,7 +27,6 @@ import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
 import '../../providers/month_summary_providers.dart';
 import '../../../week/providers/week_providers.dart';
-import '../../../onboarding/feature_hints.dart';
 
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
@@ -46,9 +47,6 @@ const greenHouseHistoryMinHabits = 3;
 
 /// Minimum habits in a single group before the hide-completed toggle appears.
 const greenhouseToggleMinGroupHabits = 5;
-
-/// The one-time tooltip key for the hide-completed toggle.
-const hideCompletedToggleHintKey = 'hide_completed_toggle';
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
@@ -78,10 +76,10 @@ final class _HabitEntry extends _BoardEntry {
   String get id => 'h:${habit.id}';
 }
 
-/// Which single banner the board may show today — at most one of the four
-/// competing blocks (feature hint, time suggestion, week summary, month
-/// summary). Feature hints win, then time suggestions, then the summaries.
-enum _HomeBanner { featureHint, timeSuggestion, weekSummary, monthSummary }
+/// Which single banner the board may show today — at most one of the three
+/// competing blocks (time suggestion, week summary, month summary). Time
+/// suggestions win, then the summaries.
+enum _HomeBanner { timeSuggestion, weekSummary, monthSummary }
 
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
@@ -109,8 +107,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   List<_BoardEntry> _entries = const [];
   List<_BoardEntry>? _pendingNext;
 
-  /// Tooltip shown once when the hide-completed toggle first appears.
-  final GlobalKey<TooltipState> _toggleTooltipKey = GlobalKey<TooltipState>();
+  /// Whether the hide-completed toggle's one-time hint was attempted.
   bool _toggleHintTriggered = false;
 
   @override
@@ -202,16 +199,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final canSeeToggle = maxGroupSize >= greenhouseToggleMinGroupHabits;
 
     // ── Single-banner arbitration ──
-    final exposureAsync = ref.watch(exposureProvider);
     final suggestionsAsync = ref.watch(timeSuggestionsProvider);
     final weekAsync = ref.watch(weekSummaryProvider);
     final monthAsync = ref.watch(monthSummaryProvider);
 
     final _HomeBanner? banner;
-    if (exposureAsync.value != null &&
-        activeFeatureHint(exposureAsync.value!) != null) {
-      banner = _HomeBanner.featureHint;
-    } else if ((suggestionsAsync.value ?? const []).isNotEmpty) {
+    if ((suggestionsAsync.value ?? const []).isNotEmpty) {
       banner = _HomeBanner.timeSuggestion;
     } else if (weekAsync.value?.shouldShow == true) {
       banner = _HomeBanner.weekSummary;
@@ -222,9 +215,16 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     }
 
     final Widget? bannerWidget = switch (banner) {
-      _HomeBanner.featureHint => const FeatureHintBanner(),
       _HomeBanner.timeSuggestion => const TimeSuggestionBanner(),
-      _HomeBanner.weekSummary => const WeekSummaryCard(),
+      _HomeBanner.weekSummary => FeatureIntroTrigger(
+        targetId: 'feature-week-summary',
+        hintKey: 'feature-week-summary',
+        minDays: 7,
+        title: 'Итог недели',
+        description:
+            'По воскресеньям здесь появляется мягкое резюме недели. Можно пропустить.',
+        child: tourTarget('feature-week-summary', const WeekSummaryCard()),
+      ),
       _HomeBanner.monthSummary => const MonthSummaryCard(),
       null => null,
     };
@@ -276,11 +276,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                   ),
                 // Hide completed toggle
                 if (canSeeToggle)
-                  Tooltip(
-                    key: _toggleTooltipKey,
-                    message: 'Скрыть выполненные привычки',
-                    triggerMode: TooltipTriggerMode.manual,
-                    child: IconButton(
+                  tourTarget(
+                    'greenhouse-hide-toggle',
+                    IconButton(
                       key: K.hideCompletedToggle,
                       onPressed: () =>
                           setState(() => _hideCompleted = !_hideCompleted),
@@ -307,9 +305,20 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           child: tourTarget(AppHintIds.greenhouseMoment, const DayMomentCard()),
         ),
 
-        if (echoAtTop) const SliverToBoxAdapter(child: EchoCard(atTop: true)),
+        if (echoAtTop)
+          SliverToBoxAdapter(
+            child: FeatureIntroTrigger(
+              targetId: 'feature-echo',
+              hintKey: 'feature-echo',
+              minDays: 3,
+              title: 'Открылось Эхо',
+              description:
+                  'Прошлые моменты теперь появляются под Моментом дня. Тапни, чтобы раскрыть.',
+              child: tourTarget('feature-echo', const EchoCard(atTop: true)),
+            ),
+          ),
 
-        // ── Single banner (feature hint → time suggestion → summaries) ──
+        // ── Single banner (time suggestion → summaries) ──
         if (bannerWidget != null) SliverToBoxAdapter(child: bannerWidget),
 
         // ── One-time swipe teaching strip ──
@@ -370,28 +379,60 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             ),
           ),
         ),
-        const SliverToBoxAdapter(child: MonthGoalsCard()),
-        const SliverToBoxAdapter(child: CapsuleCard()),
-        if (!echoAtTop) const SliverToBoxAdapter(child: EchoCard()),
+        SliverToBoxAdapter(
+          child: FeatureIntroTrigger(
+            targetId: 'feature-month-goals',
+            hintKey: 'feature-month-goals',
+            minDays: 14,
+            title: 'Цели месяца',
+            description:
+                'Чего достичь через привычки в этом месяце? Отмечай цели прямо здесь.',
+            child: tourTarget('feature-month-goals', const MonthGoalsCard()),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: FeatureIntroTrigger(
+            targetId: 'feature-capsules',
+            hintKey: 'feature-capsules',
+            minDays: 30,
+            title: 'Капсулы времени',
+            description:
+                'Письмо себе в будущее: напиши одну фразу — и через месяц получишь её.',
+            child: tourTarget('feature-capsules', const CapsuleCard()),
+          ),
+        ),
+        if (!echoAtTop)
+          SliverToBoxAdapter(
+            child: FeatureIntroTrigger(
+              targetId: 'feature-echo',
+              hintKey: 'feature-echo',
+              minDays: 3,
+              title: 'Открылось Эхо',
+              description:
+                  'Прошлые моменты теперь появляются под Моментом дня. Тапни, чтобы раскрыть.',
+              child: tourTarget('feature-echo', const EchoCard()),
+            ),
+          ),
       ],
     );
   }
 
-  /// Shows the one-time tooltip the first time the hide-completed toggle
-  /// becomes visible, then records it so it never returns.
+  /// Attempts the one-time hintful hint the first time the hide-completed
+  /// toggle becomes visible. Show-once is owned by the hintful store.
   void _maybeShowToggleHint(bool canSeeToggle) {
     if (!canSeeToggle || _toggleHintTriggered) return;
-    final exposure = ref.read(exposureProvider).value;
-    if (exposure == null || exposure.hasSeenUx(hideCompletedToggleHintKey)) {
-      return;
-    }
     _toggleHintTriggered = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _toggleTooltipKey.currentState?.ensureTooltipVisible();
-      ref
-          .read(exposureActionsProvider.notifier)
-          .recordSeenUx(hideCompletedToggleHintKey);
+      showSingleHint(
+        context,
+        ref,
+        targetId: 'greenhouse-hide-toggle',
+        title: 'Скрыть выполненные',
+        description:
+            'Когда привычек много — скрывай выполненные, чтобы видеть только то, что осталось.',
+        id: 'greenhouse-hide-toggle',
+      );
     });
   }
 

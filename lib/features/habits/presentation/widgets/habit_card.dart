@@ -316,26 +316,24 @@ class _HabitCardState extends ConsumerState<HabitCard>
       ),
     );
 
-    // Undo row appears while the undo window is open. Fade-in only — no
-    // transform, so it never fights the card's own scale/bounce.
-    Widget body = card;
-    if (_showUndo) {
-      body = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          card,
-          AnimatedSwitcher(
-            duration: AppMotion.base,
-            switchInCurve: AppMotion.easeOutStrong,
-            switchOutCurve: AppMotion.easeOutStrong,
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: _UndoRow(key: const ValueKey('undo-row'), onUndo: _undo),
+    // Undo pill overlays the card's own corner — the card's height never
+    // changes when it appears/disappears.
+    Widget body = Stack(
+      alignment: Alignment.center,
+      children: [
+        card,
+        if (_showUndo)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: _UndoPill(
+              onUndo: _undo,
+              visible: _showUndo && !AppMotion.mayDisable(context),
+              glow: _glow,
+            ),
           ),
-        ],
-      );
-    }
+      ],
+    );
 
     return Dismissible(
       key: K.habitCard(widget.habit.id),
@@ -417,30 +415,99 @@ class _GlowShell extends StatelessWidget {
   }
 }
 
-/// The «Отменить» action shown while the undo window is open.
-class _UndoRow extends StatelessWidget {
-  const _UndoRow({required this.onUndo, super.key});
+/// The «Отменить» action as a thick pill overlaying the card's corner —
+/// a large, independent tap zone that never depends on the card's height.
+/// The emerald→sage gradient is animated: it slowly brightens and shifts its
+/// axis while the undo window is open (the same pulse as the outer glow),
+/// so the pill itself feels alive. Reduced motion shows the static gradient
+/// without the entrance transform or the pulse.
+class _UndoPill extends StatelessWidget {
+  const _UndoPill({
+    required this.onUndo,
+    required this.visible,
+    required this.glow,
+  });
 
   final VoidCallback onUndo;
+  final bool visible;
+  final Animation<double> glow;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 2, right: 8, bottom: 2),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: TextButton.icon(
-          onPressed: onUndo,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            minimumSize: const Size(0, 32),
-            foregroundColor: context.palette.emerald,
+    final theme = Theme.of(context);
+
+    Widget pill(BoxDecoration decoration) => Material(
+      color: Colors.transparent,
+      borderRadius: AppRadius.borderM,
+      child: Ink(
+        decoration: decoration,
+        child: InkWell(
+          borderRadius: AppRadius.borderM,
+          onTap: onUndo,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.undo_rounded, size: 18, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  'Отменить',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
-          icon: const Icon(Icons.undo_rounded, size: 15),
-          label: const Text('Отменить', style: TextStyle(fontSize: 13)),
         ),
       ),
+    );
+
+    BoxDecoration decorationFor(double v) {
+      final emerald = context.palette.emerald;
+      final sage = context.palette.sage;
+      // Slow brighten + axis shift while the window pulses (0..1).
+      return BoxDecoration(
+        borderRadius: AppRadius.borderM,
+        gradient: LinearGradient(
+          begin: Alignment(-0.6 - 0.4 * v, -0.8 + 0.3 * v),
+          end: Alignment(0.7 + 0.3 * v, 0.8 - 0.3 * v),
+          colors: [
+            Color.lerp(emerald, Colors.white, v * 0.18)!,
+            Color.lerp(sage, Colors.white, v * 0.18)!,
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: context.palette.emerald.withValues(alpha: 0.45),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      );
+    }
+
+    if (!visible) {
+      // Reduced motion: static gradient, no entrance transform, no pulse.
+      return pill(decorationFor(0));
+    }
+
+    final animated = AnimatedBuilder(
+      animation: glow,
+      builder: (context, _) => pill(decorationFor(glow.value)),
+    );
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: AppMotion.quick, // 150 ms
+      curve: AppMotion.easeOutStrong, // cubic(0.23, 1, 0.32, 1)
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.scale(scale: 0.96 + 0.04 * t, child: child),
+      ),
+      child: animated,
     );
   }
 }

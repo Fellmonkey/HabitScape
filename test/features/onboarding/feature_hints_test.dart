@@ -1,7 +1,13 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hintful/hintful.dart';
 import 'package:rythm/core/settings/exposure.dart';
+import 'package:rythm/core/settings/hintful.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/onboarding/feature_hints.dart';
+import 'package:rythm/features/onboarding/feature_intro_trigger.dart';
+import 'package:rythm/features/onboarding/hint_tour.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -41,30 +47,62 @@ void main() {
     });
   });
 
-  group('activeFeatureHint', () {
-    test('returns null on a fresh install', () async {
-      expect(activeFeatureHint(await exposureOnDay(0)), isNull);
+  group('FeatureIntroTrigger', () {
+    Future<void> pumpTrigger(
+      WidgetTester tester, {
+      required int daysSinceFirstUse,
+      required HintController controller,
+    }) async {
+      final exposure = await exposureOnDay(daysSinceFirstUse);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            exposureProvider.overrideWith((ref) async => exposure),
+            hintfulControllerProvider.overrideWith((ref) => controller),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: FeatureIntroTrigger(
+                targetId: 'feature-test-echo',
+                hintKey: 'feature-test-echo',
+                minDays: 3,
+                title: 'Тестовая подсказка',
+                description: 'Описание тестовой подсказки.',
+                child: tourTarget(
+                  'feature-test-echo',
+                  const SizedBox(key: Key('trigger-child'), height: 100),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('schedules showSingleHint once matured', (tester) async {
+      final controller = HintController.test(store: InMemoryHintStore());
+      await pumpTrigger(tester, daysSinceFirstUse: 30, controller: controller);
+
+      // The wrapper renders its child and the hint became active.
+      expect(find.byKey(const Key('trigger-child')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(controller.state.value, isA<HintActive>());
+
+      controller.dispose();
+      await tester.pumpWidget(const SizedBox());
     });
 
-    test('returns the newest matured, undismissed hint', () async {
-      final hint = activeFeatureHint(await exposureOnDay(30));
-      expect(hint, isNotNull);
-      expect(hint!.key, featureHints.last.key);
-    });
+    testWidgets('stays silent before maturation', (tester) async {
+      final controller = HintController.test(store: InMemoryHintStore());
+      await pumpTrigger(tester, daysSinceFirstUse: 0, controller: controller);
 
-    test('dismissed hints are skipped for the next matured one', () async {
-      final exposure = await exposureOnDay(30);
-      await exposure.dismissHint(featureHints.last.key);
-      final hint = activeFeatureHint(exposure);
-      expect(hint!.key, featureHints[featureHints.length - 2].key);
-    });
+      expect(find.byKey(const Key('trigger-child')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(controller.state.value.isIdle, isTrue);
 
-    test('all hints dismissed yields null', () async {
-      final exposure = await exposureOnDay(30);
-      for (final hint in featureHints) {
-        await exposure.dismissHint(hint.key);
-      }
-      expect(activeFeatureHint(exposure), isNull);
+      controller.dispose();
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }
