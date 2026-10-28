@@ -91,5 +91,8 @@ void main() {
     expect(find.textContaining('Лучший месяц'), findsOneWidget);
     expect(find.textContaining('1 день с моментом'), findsOneWidget);
     expect(find.text('Что выполняется лучше'), findsOneWidget);
+
+    // The year closes with a forward action.
+    expect(find.text('Поставь цель на новый год'), findsOneWidget);
   });
 }

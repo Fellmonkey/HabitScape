@@ -222,7 +222,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         minDays: 7,
         title: 'Итог недели',
         description:
-            'По воскресеньям здесь появляется мягкое резюме недели. Можно пропустить.',
+            'По воскресеньям здесь мягкое резюме недели и намерение на следующую. Можно пропустить.',
         child: tourTarget('feature-week-summary', const WeekSummaryCard()),
       ),
       _HomeBanner.monthSummary => const MonthSummaryCard(),
@@ -313,7 +313,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
               minDays: 3,
               title: 'Открылось Эхо',
               description:
-                  'Прошлые моменты теперь появляются под Моментом дня. Тапни, чтобы раскрыть.',
+                  'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
               child: tourTarget('feature-echo', const EchoCard(atTop: true)),
             ),
           ),
@@ -386,7 +386,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             minDays: 14,
             title: 'Цели месяца',
             description:
-                'Чего достичь через привычки в этом месяце? Отмечай цели прямо здесь.',
+                'Чего достичь через привычки в этом месяце? Добавь цель одним тапом.',
             child: tourTarget('feature-month-goals', const MonthGoalsCard()),
           ),
         ),
@@ -397,7 +397,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             minDays: 30,
             title: 'Капсулы времени',
             description:
-                'Письмо себе в будущее: напиши одну фразу — и через месяц получишь её.',
+                'Напиши письмо себе — и через месяц оно откроется, как маленький сюрприз.',
             child: tourTarget('feature-capsules', const CapsuleCard()),
           ),
         ),
@@ -409,7 +409,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
               minDays: 3,
               title: 'Открылось Эхо',
               description:
-                  'Прошлые моменты теперь появляются под Моментом дня. Тапни, чтобы раскрыть.',
+                  'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
               child: tourTarget('feature-echo', const EchoCard()),
             ),
           ),

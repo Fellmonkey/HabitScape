@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
@@ -155,6 +156,18 @@ class YearSummaryScreen extends ConsumerWidget {
             ),
           ),
         ],
+
+        // ── Next action ──
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: () => context.push('/month'),
+          icon: const Icon(Icons.flag_rounded),
+          label: const Text('Поставь цель на новый год'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),
+          ),
+        ),
       ],
     );
   }

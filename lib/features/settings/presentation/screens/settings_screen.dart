@@ -8,6 +8,7 @@ import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/hintful.dart';
 import '../../../../features/onboarding/app_tours.dart';
+import '../../../../features/onboarding/feature_intro_trigger.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../domain/backup_flow.dart';
@@ -41,14 +42,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── Backup section ──────────────────────────────────────
           AppSectionHeader(title: 'Резервное копирование'),
           const SizedBox(height: 8),
-          tourTarget(
-            AppHintIds.settingsExport,
-            SettingsTile(
-              key: K.settingsExport,
-              icon: Icons.upload_file,
-              title: 'Экспорт данных',
-              subtitle: 'Сохранить все привычки в файл',
-              onTap: () => _exportBackup(context, ref),
+          // The export suggestion appears only once the user has data worth
+          // saving (3+ days, same maturation as the echo intro).
+          FeatureIntroTrigger(
+            targetId: 'settings-export',
+            hintKey: 'settings-export',
+            minDays: 3,
+            title: 'Экспорт данных',
+            description:
+                'Твои данные живут только на устройстве. Советуем сохранять резервную копию в файл — хотя бы раз в месяц.',
+            child: tourTarget(
+              AppHintIds.settingsExport,
+              SettingsTile(
+                key: K.settingsExport,
+                icon: Icons.upload_file,
+                title: 'Экспорт данных',
+                subtitle: 'Сохранить все привычки в файл',
+                onTap: () => _exportBackup(context, ref),
+              ),
             ),
           ),
           const SizedBox(height: 8),

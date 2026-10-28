@@ -5,6 +5,7 @@ import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/keys.dart';
+import 'package:rythm/core/database/history_store_provider.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/features/habits/presentation/widgets/day_moment_card.dart';
@@ -31,6 +32,7 @@ void main() {
   Future<void> pumpCard(
     WidgetTester tester, {
     List<String> onboardingSeen = const [],
+    bool hasHistory = false,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       for (final tour in onboardingSeen) 'hintful.$tour': 'true',
@@ -44,6 +46,7 @@ void main() {
           todayDayNoteProvider.overrideWith(
             (ref) => Stream<DayNote?>.value(null),
           ),
+          hasAnyDayNoteProvider.overrideWith((ref) async => hasHistory),
           sharedPrefsProvider.overrideWith((_) async => prefs),
         ],
         child: MaterialApp(
@@ -98,8 +101,19 @@ void main() {
     expect(field.focusNode?.hasFocus, isFalse);
   });
 
-  testWidgets('autofocus after the greenhouse tour was seen', (tester) async {
+  testWidgets('no autofocus on a fresh install even after the tour', (
+    tester,
+  ) async {
+    // The tour is seen, but the user never wrote a moment — the keyboard
+    // must not pop open on a fresh install.
     await pumpCard(tester, onboardingSeen: ['greenhouse']);
+
+    final field = tester.widget<TextField>(find.byKey(K.dayMomentField));
+    expect(field.focusNode?.hasFocus, isFalse);
+  });
+
+  testWidgets('autofocus after tour seen and history exists', (tester) async {
+    await pumpCard(tester, onboardingSeen: ['greenhouse'], hasHistory: true);
 
     final field = tester.widget<TextField>(find.byKey(K.dayMomentField));
     expect(field.focusNode?.hasFocus, isTrue);

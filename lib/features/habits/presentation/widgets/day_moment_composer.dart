@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/database/history_store_provider.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/hintful.dart';
@@ -47,6 +48,10 @@ class _DayMomentComposerState extends ConsumerState<DayMomentComposer> {
     // Autofocus only once the greenhouse tour has been seen (recorded in the
     // hintful store). `shouldShow` is the inverse: true = not seen yet.
     if (store.shouldShow(AppTourIds.greenhouse)) return;
+    // And only for users who already did the ritual — a fresh install must
+    // not get a keyboard popped into its face on the very first open.
+    if (!await ref.read(hasAnyDayNoteProvider.future)) return;
+    if (!mounted || _controller.text.isNotEmpty || _focusNode.hasFocus) return;
     _focusNode.requestFocus();
   }
 
