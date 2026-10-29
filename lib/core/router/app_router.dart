@@ -7,6 +7,7 @@ import '../../features/habits/presentation/screens/archived_habits_screen.dart';
 import '../../features/habits/presentation/screens/greenhouse_screen.dart';
 import '../../features/habits/presentation/screens/habit_detail_screen.dart';
 import '../../features/habits/presentation/screens/month_spread_screen.dart';
+import '../../features/settings/presentation/screens/changelog_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import '../../features/stats/presentation/screens/year_summary_screen.dart';
@@ -63,6 +64,13 @@ GoRouter buildAppRouter({
         pageBuilder: (context, state) => _motionPage(
           name: state.uri.toString(),
           child: const ArchivedHabitsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/changelog',
+        pageBuilder: (context, state) => _motionPage(
+          name: state.uri.toString(),
+          child: const ChangelogScreen(),
         ),
       ),
       GoRoute(

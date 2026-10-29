@@ -54,6 +54,11 @@ No servers. No accounts. No subscriptions. Your data lives on your device.
 * 🎨 **Small comforts** — system/light/dark theme, haptics, one-time guided
   tours, Russian UI.
 
+## 📝 Changelog
+
+Release notes live in [CHANGELOG.md](CHANGELOG.md). The same file is shown in
+the app under **Settings → About → What's new**.
+
 ## 🚀 Quick Start
 
 Prerequisites, setup commands and the full developer guide (testing,

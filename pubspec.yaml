@@ -52,6 +52,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # The root CHANGELOG.md is the single source of truth for release notes:
+  # it is shown in-app under Settings → About → What's new.
+  assets:
+    - CHANGELOG.md
+
   # Nunito & Inter (variable fonts, OFL) — the app's typography system.
   # Both ship as a single variable TTF; TextStyle.fontWeight drives the
   # `wght` variation axis.

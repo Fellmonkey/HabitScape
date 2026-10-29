@@ -67,6 +67,26 @@ Feature code follows Clean Architecture: `data` (DAOs) → `domain` (pure logic)
 * **Dates:** stored as unix-seconds (UTC midnight via `toMidnight`); check-off
   time as `loggedHour`.
 
+## 📝 Changelog
+
+`CHANGELOG.md` is the single source of truth for release notes. The same file
+is bundled into the app and shown under **Settings → About → What's new**, so
+Git history and the in-app copy never diverge. Entries are written in Russian
+because they are user-facing copy.
+
+Add every user-visible change under `## [Unreleased]` using the
+[Keep a Changelog](https://keepachangelog.com/) sections (`Добавлено`,
+`Изменено`, `Исправлено`, …). The in-app history hides `[Unreleased]`, so only
+shipped versions are shown. When releasing:
+
+1. Rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`. Don't add an empty
+   `[Unreleased]` back — start a fresh one when the next change lands.
+2. Bump `version` in `pubspec.yaml`.
+3. Update `AppConstants.appVersion` in `lib/core/config/app_constants.dart`.
+4. Run `flutter test test/core/config/version_sync_test.dart` (or the full
+   suite). It fails if the pubspec, the constant and the newest changelog entry
+   drift apart.
+
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

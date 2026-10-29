@@ -97,6 +97,12 @@ abstract final class K {
   static const themeModePicker = Key('theme_mode_picker');
   static const settingsShowHints = Key('settings_show_hints');
   static const settingsAboutAuthor = Key('settings_about_author');
+  static const settingsChangelog = Key('settings_changelog');
+  static const changelogScreen = Key('changelog_screen');
+
+  /// Per-release card on the changelog screen: `changelog_release_$version`
+  static Key changelogRelease(String version) =>
+      Key('changelog_release_$version');
 
   // ── Capsules (time capsules) ───────────────────────────────
   static const capsuleCard = Key('capsule_card');

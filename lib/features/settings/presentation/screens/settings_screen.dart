@@ -153,7 +153,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── About section ───────────────────────────────────────
           AppSectionHeader(title: 'О приложении'),
           const SizedBox(height: 8),
-          AboutCard(onOpenSource: () => _openSource(context)),
+          AboutCard(
+            onOpenSource: () => _openSource(context),
+            onOpenChangelog: () => context.push('/changelog'),
+          ),
 
           const SizedBox(height: 40),
         ],

@@ -19,6 +19,7 @@ import 'package:rythm/features/habits/providers/echo_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
 import 'package:rythm/features/habits/providers/month_goal_providers.dart';
 import 'package:rythm/features/habits/providers/month_summary_providers.dart';
+import 'package:rythm/features/settings/presentation/screens/changelog_screen.dart';
 import 'package:rythm/features/settings/presentation/screens/settings_screen.dart';
 import 'package:rythm/features/stats/presentation/screens/stats_screen.dart';
 import 'package:rythm/features/week/domain/week_summary.dart';
@@ -141,6 +142,14 @@ void main() {
     // The export tile is at the top; deeper tiles may sit below the fold at
     // a 2.0 scale (lazy ListView) — the guard is "no overflow/exception".
     expect(find.text('Экспорт данных'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('changelog screen survives a 2.0 font scale', (tester) async {
+    await pumpWithLargeText(tester, const ChangelogScreen());
+
+    expect(find.text('Что нового'), findsOneWidget);
+    expect(find.text('Текущая версия'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
