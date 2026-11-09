@@ -35,19 +35,28 @@ class _BannerStackState extends ConsumerState<BannerStack> {
 
   Widget _cardFor(String id, {required bool top, int? pile}) {
     final theme = Theme.of(context);
-    final Widget child = switch (id) {
-      'week-summary' => FeatureIntroTrigger(
-        targetId: 'feature-week-summary',
-        hintKey: 'feature-week-summary',
-        minDays: 7,
-        title: 'Итог недели',
-        description:
-            'По воскресеньям здесь мягкое резюме недели и намерение на следующую. Можно пропустить.',
-        child: tourTarget('feature-week-summary', const WeekSummaryCard()),
-      ),
+
+    // Feature intros must only ever spotlight the FRONT card of the pile:
+    // back cards are clipped "paper", and a spotlight targeting a hidden
+    // card would confuse. So the intro wrapper is built for the front card
+    // only; back cards render the raw banner.
+    final Widget raw = switch (id) {
+      'week-summary' => const WeekSummaryCard(),
       'month-summary' => const MonthSummaryCard(),
       _ => const TimeSuggestionBanner(),
     };
+
+    final Widget child = top && id == 'week-summary'
+        ? FeatureIntroTrigger(
+            targetId: 'feature-week-summary',
+            hintKey: 'feature-week-summary',
+            minDays: 7,
+            title: 'Итог недели',
+            description:
+                'По воскресеньям здесь мягкий итог недели и намерение на следующую. Можно пропустить.',
+            child: tourTarget('feature-week-summary', raw),
+          )
+        : raw;
 
     return Stack(
       children: [

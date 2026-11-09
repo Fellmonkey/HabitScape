@@ -124,6 +124,7 @@ abstract final class K {
 
   static const letterScreen = Key('letter_screen');
   static const letterClose = Key('letter_close');
+  static const letterBack = Key('letter_back');
   static const letterCloseText = Key('letter_close_text');
   static const letterNewCapsule = Key('letter_new_capsule');
   static const letterReplyField = Key('letter_reply_field');
@@ -143,6 +144,9 @@ abstract final class K {
   static const debugMonthSummaryPreview = Key('debug_month_summary_preview');
   static const debugSuggestionsPreview = Key('debug_suggestions_preview');
   static const greenhouseSuggestionBanner = Key('greenhouse_suggestion_banner');
+
+  /// Action on the time-suggestion banner that opens the habit's screen.
+  static const greenhouseSuggestionAction = Key('greenhouse_suggestion_action');
 
   // ── Stacked banner pile ────────────────────────────────────
   static const bannerStack = Key('banner_stack');

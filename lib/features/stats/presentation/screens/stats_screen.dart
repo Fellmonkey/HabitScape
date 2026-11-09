@@ -11,6 +11,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/year_summary_providers.dart';
+import '../../../onboarding/feature_intro_trigger.dart';
+import '../../../onboarding/hint_tour.dart';
 import '../widgets/archive_card.dart';
 import '../widgets/heatmap_card.dart';
 import '../widgets/intentions_card.dart';
@@ -59,26 +61,37 @@ class StatsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Статистика',
-                        key: K.statsTitle,
-                        style: theme.textTheme.headlineLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        formatFullDate(today),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
+                  child: FeatureIntroTrigger(
+                    targetId: 'stats-intro',
+                    hintKey: 'stats-intro',
+                    minDays: AppConstants.statsInviteDays,
+                    title: 'Статистика',
+                    description:
+                        'Карточки появляются по мере накопления данных. Здесь тренды и выводы о привычках.',
+                    child: tourTarget(
+                      'stats-intro',
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Статистика',
+                            key: K.statsTitle,
+                            style: theme.textTheme.headlineLarge,
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            formatFullDate(today),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

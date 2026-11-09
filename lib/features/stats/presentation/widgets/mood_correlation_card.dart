@@ -61,6 +61,16 @@ class MoodCorrelationCard extends StatelessWidget {
                   percent: corr.badShareOnEmpty,
                   days: corr.emptyDays,
                 ),
+                if (corr.goodShareOnFull != null &&
+                    corr.badShareOnEmpty != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _summary(corr),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Text(
                   'Это наблюдение, а не причина: совпадение не значит, что '
@@ -92,6 +102,21 @@ class MoodCorrelationCard extends StatelessWidget {
               ],
             ),
     );
+  }
+
+  /// A plain-language reading of the two bars, so the user doesn't have to
+  /// perform the comparison themselves. Throws no judgment — the
+  /// "correlation ≠ causation" disclaimer below stays.
+  static String _summary(MoodCorrelation corr) {
+    final good = corr.goodShareOnFull!;
+    final bad = corr.badShareOnEmpty!;
+    if (good - bad >= 15) {
+      return 'В выполненные дни хорошее настроение встречается заметно чаще.';
+    }
+    if (bad - good >= 15) {
+      return 'В пустые дни плохое настроение встречается чаще.';
+    }
+    return 'Явной связи между выполнением и настроением пока не видно.';
   }
 }
 

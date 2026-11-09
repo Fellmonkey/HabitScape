@@ -161,7 +161,10 @@ void main() {
 
     expect(find.byKey(K.weekSummaryCard), findsOneWidget);
     expect(find.text('Итог недели'), findsOneWidget);
-    expect(find.textContaining('2 из 3 зелёных дней'), findsOneWidget);
+    expect(
+      find.textContaining('2 из 3 дней с хорошим настроением'),
+      findsOneWidget,
+    );
     expect(find.textContaining('82% выполнения'), findsOneWidget);
     expect(find.textContaining('Меньше всего — Бег'), findsOneWidget);
     expect(find.textContaining('лучший'), findsOneWidget);

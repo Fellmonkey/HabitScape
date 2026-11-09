@@ -10,9 +10,11 @@ import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../core/notifications/reminder_settings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/settings/exposure.dart';
+import '../../../core/settings/hintful.dart';
 import '../../../core/settings/shared_prefs.dart';
 import '../../../core/settings/today.dart';
 import '../../habits/providers/day_note_providers.dart';
+import '../../onboarding/app_tours.dart';
 import '../../habits/providers/habit_streams.dart';
 import '../../habits/providers/month_summary_providers.dart';
 import '../../week/providers/week_providers.dart';
@@ -31,10 +33,19 @@ import '../domain/reminder_templates.dart';
 /// arrive and that it is not spam (local, offline). Renders nothing; it is a
 /// side-effect host mounted above the router.
 class ReminderGate extends ConsumerStatefulWidget {
-  const ReminderGate({required this.child, super.key});
+  const ReminderGate({
+    required this.child,
+    this.waitForOnboarding = true,
+    super.key,
+  });
 
   /// The app tree this gate hosts.
   final Widget child;
+
+  /// Whether the first-launch explainer waits for the first-run greenhouse
+  /// tour to settle before showing itself — so two teaching surfaces never
+  /// stack on the very first frame. Tests without a screen pass false.
+  final bool waitForOnboarding;
 
   @override
   ConsumerState<ReminderGate> createState() => _ReminderGateState();
@@ -71,6 +82,12 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
       return;
     }
 
+    // Serialize the very first-frame teaching: let the greenhouse tour show
+    // (and finish/skip) first, so the dialog never stacks on top of it.
+    if (widget.waitForOnboarding) {
+      await _waitForGreenhouseTour();
+    }
+
     final context = rootNavigatorKey.currentContext;
     if (context == null || !context.mounted) return;
 
@@ -98,6 +115,20 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
           },
           allowed: allowed,
         );
+  }
+
+  /// Waits up to a few seconds for the first-run greenhouse tour to finish
+  /// (the tour marks itself on any exit — finish / skip / abort), so the
+  /// reminders explainer never stacks on top of it. If the tour never
+  /// starts (e.g. there is no screen to host it), the timeout bounds the
+  /// wait so the prompt is never lost.
+  Future<void> _waitForGreenhouseTour() async {
+    final store = await ref.read(hintfulStoreProvider.future);
+    final deadline = DateTime.now().add(const Duration(seconds: 12));
+    while (DateTime.now().isBefore(deadline)) {
+      if (!store.shouldShow(AppTourIds.greenhouse)) return;
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
   }
 
   @override

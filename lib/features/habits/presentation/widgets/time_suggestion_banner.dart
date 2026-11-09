@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/providers/time_suggestions_provider.dart';
@@ -32,26 +33,48 @@ class TimeSuggestionBanner extends ConsumerWidget {
             color: theme.colorScheme.surface,
             borderRadius: AppRadius.borderL,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.lightbulb_outline_rounded,
-                    size: 18,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '${suggestion.habit.name}: чаще отмечаешь '
-                      '${_timeLabel(suggestion.actualBucket)} — попробуй '
-                      'перенести время (на основе '
-                      '${suggestion.sampleSize} отметок)',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.75,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${suggestion.habit.name}: чаще отмечаешь '
+                          '${_timeLabel(suggestion.actualBucket)} — попробуй '
+                          'перенести время (на основе '
+                          '${suggestion.sampleSize} отметок)',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.75,
+                            ),
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      key: K.greenhouseSuggestionAction,
+                      onPressed: () =>
+                          context.push('/habit/${suggestion.habit.id}'),
+                      icon: const Icon(Icons.schedule_rounded, size: 16),
+                      label: const Text('Перенести время'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ),

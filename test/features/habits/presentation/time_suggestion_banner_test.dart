@@ -59,5 +59,7 @@ void main() {
     expect(find.textContaining('Бег: чаще отмечаешь утром'), findsOneWidget);
     expect(find.textContaining('Чтение'), findsNothing);
     expect(find.textContaining('на основе 14 отметок'), findsOneWidget);
+    expect(find.byKey(K.greenhouseSuggestionAction), findsOneWidget);
+    expect(find.text('Перенести время'), findsOneWidget);
   });
 }

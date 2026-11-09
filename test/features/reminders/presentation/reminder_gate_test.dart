@@ -130,7 +130,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: overridesFor(logs: logs, notes: notes),
-        child: const ReminderGate(child: SizedBox()),
+        child: const ReminderGate(waitForOnboarding: false, child: SizedBox()),
       ),
     );
     await tester.pumpAndSettle();
@@ -215,7 +215,7 @@ void main() {
         overrides: overridesFor(logs: Stream.value(const [])),
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
-          home: const ReminderGate(child: SizedBox()),
+          home: const ReminderGate(waitForOnboarding: false, child: SizedBox()),
         ),
       ),
     );
@@ -249,7 +249,7 @@ void main() {
         overrides: overridesFor(logs: Stream.value(const [])),
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
-          home: const ReminderGate(child: SizedBox()),
+          home: const ReminderGate(waitForOnboarding: false, child: SizedBox()),
         ),
       ),
     );

@@ -125,7 +125,7 @@ class MonthSummaryBody extends StatelessWidget {
     );
   }
 
-  /// "62% выполнения · 10 из 14 зелёных дней · 22 дня с моментом"
+  /// "62% выполнения · 10 из 14 дней с хорошим настроением · 22 дня с моментом"
   static String headline(BuildContext context, MonthSummary summary) {
     final parts = <String>[];
     final pct = summary.spread.completionPct;
@@ -135,7 +135,7 @@ class MonthSummaryBody extends StatelessWidget {
     final moodDays = summary.spread.moodCounts.values.fold(0, (a, b) => a + b);
     if (moodDays > 0) {
       final green = summary.spread.moodCounts[DayMood.good] ?? 0;
-      parts.add('$green из $moodDays зелёных дней');
+      parts.add('$green из $moodDays дней с хорошим настроением');
     }
     if (summary.spread.momentsCount > 0) {
       parts.add(
@@ -143,6 +143,6 @@ class MonthSummaryBody extends StatelessWidget {
         '${pluralDays(summary.spread.momentsCount)} с моментом',
       );
     }
-    return parts.isEmpty ? 'Месяц отмечен в дневнике' : parts.join(' · ');
+    return parts.isEmpty ? 'Пока нет данных за месяц' : parts.join(' · ');
   }
 }

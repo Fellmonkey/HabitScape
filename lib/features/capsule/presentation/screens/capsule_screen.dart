@@ -383,9 +383,15 @@ class _CapsuleTile extends StatelessWidget {
           if (opened || due) {
             context.push('/letter', extra: capsule);
           } else {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Письмо ещё закрыто')));
+            final opensAt = formatShortDate(
+              dateFromUnix(capsule.deliverAt),
+              today: today,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Это письмо ещё закрыто — откроется $opensAt'),
+              ),
+            );
           }
         },
         child: Padding(

@@ -15,11 +15,15 @@ import '../../providers/month_goal_providers.dart';
 
 /// Month goals — things to achieve this month, with checkboxes.
 class MonthGoalsCard extends ConsumerStatefulWidget {
-  const MonthGoalsCard({super.key, this.monthTs});
+  const MonthGoalsCard({super.key, this.monthTs, this.readOnly = false});
 
   /// First-of-month unix timestamp of the month whose goals to show.
   /// Defaults to the current month.
   final int? monthTs;
+
+  /// Read-only rendering (used by the PNG month export): no add/delete, no
+  /// toggling — just the goal list.
+  final bool readOnly;
 
   @override
   ConsumerState<MonthGoalsCard> createState() => _MonthGoalsCardState();
@@ -102,16 +106,17 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
                           ),
                         ),
                       ),
-                    IconButton(
-                      key: K.monthGoalsAdd,
-                      tooltip: 'Добавить цель',
-                      onPressed: () => _openAddGoalSheet(ts),
-                      icon: Icon(
-                        Icons.add_circle_outline_rounded,
-                        size: 20,
-                        color: theme.colorScheme.primary,
+                    if (!widget.readOnly)
+                      IconButton(
+                        key: K.monthGoalsAdd,
+                        tooltip: 'Добавить цель',
+                        onPressed: () => _openAddGoalSheet(ts),
+                        icon: Icon(
+                          Icons.add_circle_outline_rounded,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                    ),
                     Icon(
                       _expanded
                           ? Icons.expand_less_rounded
@@ -140,15 +145,14 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
                 for (final goal in goals)
                   _GoalRow(
                     goal: goal,
+                    readOnly: widget.readOnly,
                     onToggle: () {
                       Haptics.tap(ref.read(hapticsEnabledProvider));
                       ref
                           .read(monthGoalActionsProvider.notifier)
                           .setMonthGoalDone(goal.id, isDone: !goal.isDone);
                     },
-                    onDelete: () => ref
-                        .read(monthGoalActionsProvider.notifier)
-                        .deleteMonthGoal(goal.id),
+                    onDelete: () => _confirmDeleteGoal(context, goal),
                   ),
             ],
           ],
@@ -165,6 +169,41 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
     // Show the just-added goal: expand the card once the sheet closes.
     if (added == true && mounted) setState(() => _expanded = true);
   }
+
+  /// Deleting a goal is immediate and destructive — ask first, so a
+  /// mis-tap on the small × never silently removes a goal (F-10).
+  Future<void> _confirmDeleteGoal(
+    BuildContext context,
+    MonthlyGoal goal,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(ctx).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+        title: const Text('Удалить цель?'),
+        content: Text(
+          '«${goal.title}» будет удалена без возможности отменить.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      ref.read(monthGoalActionsProvider.notifier).deleteMonthGoal(goal.id);
+    }
+  }
 }
 
 /// A single goal row: checkbox + title + delete.
@@ -173,11 +212,15 @@ class _GoalRow extends StatelessWidget {
     required this.goal,
     required this.onToggle,
     required this.onDelete,
+    this.readOnly = false,
   });
 
   final MonthlyGoal goal;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
+
+  /// When true the row is a plain read-only line (PNG export).
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +228,7 @@ class _GoalRow extends StatelessWidget {
     return InkWell(
       key: K.monthGoal(goal.id),
       borderRadius: AppRadius.borderS,
-      onTap: onToggle,
+      onTap: readOnly ? null : onToggle,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Row(
@@ -230,7 +273,7 @@ class _GoalRow extends StatelessWidget {
             IconButton(
               tooltip: 'Удалить цель',
               visualDensity: VisualDensity.compact,
-              onPressed: onDelete,
+              onPressed: readOnly ? null : onDelete,
               icon: Icon(
                 Icons.close_rounded,
                 size: 16,

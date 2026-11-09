@@ -13,6 +13,7 @@ class MonthSpreadStyle {
     required this.debugDayKeys,
     required this.wrapGridInHint,
     required this.includeGoals,
+    required this.goalsReadOnly,
     required this.momentsTitleInsets,
     required this.momentsListInsets,
     required this.momentsKey,
@@ -24,6 +25,9 @@ class MonthSpreadStyle {
   final bool debugDayKeys;
   final bool wrapGridInHint;
   final bool includeGoals;
+
+  /// Goals render read-only when true (PNG export).
+  final bool goalsReadOnly;
   final EdgeInsets momentsTitleInsets;
   final EdgeInsets momentsListInsets;
   final Key? momentsKey;
@@ -35,6 +39,7 @@ class MonthSpreadStyle {
     debugDayKeys: true,
     wrapGridInHint: true,
     includeGoals: true,
+    goalsReadOnly: false,
     momentsTitleInsets: EdgeInsets.fromLTRB(20, 8, 20, 4),
     momentsListInsets: EdgeInsets.fromLTRB(20, 0, 20, 24),
     momentsKey: K.monthSpreadMoments,
@@ -46,7 +51,8 @@ class MonthSpreadStyle {
     gridKey: Key('month_spread_grid_capture'),
     debugDayKeys: false,
     wrapGridInHint: false,
-    includeGoals: false,
+    includeGoals: true,
+    goalsReadOnly: true,
     momentsTitleInsets: EdgeInsets.zero,
     momentsListInsets: EdgeInsets.zero,
     momentsKey: null,

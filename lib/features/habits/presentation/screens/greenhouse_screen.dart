@@ -277,7 +277,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             minDays: 3,
             title: 'Открылось Эхо',
             description:
-                'Прошлые моменты появляются под Моментом дня. Тапни по карточке, чтобы раскрыть.',
+                'Прошедшие моменты появляются под Моментом дня. Нажми на карточку, чтобы раскрыть.',
             child: tourTarget('feature-echo', const EchoCard(atTop: true)),
           ),
         ),
@@ -362,7 +362,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             hintKey: 'feature-capsules-reminder',
             minDays: 37,
             enabled: !openedAnyCapsule,
-            title: 'Капсулы времени',
+            title: 'Письмо из прошлого',
             description:
                 'Ты ещё не открывал письма из прошлого — загляни в Капсулы.',
             child: FeatureIntroTrigger(

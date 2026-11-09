@@ -243,7 +243,9 @@ class _WeekSummaryCardState extends ConsumerState<WeekSummaryCard> {
 
     final parts = <String>[];
     if (summary.hasMoodData) {
-      parts.add('${summary.greenDays} из ${summary.totalDays} зелёных дней');
+      parts.add(
+        '${summary.greenDays} из ${summary.totalDays} дней с хорошим настроением',
+      );
     }
     if (summary.bestDay != null) {
       parts.add('лучший — ${shortWeekdayNames[summary.bestDay!.weekday]}');

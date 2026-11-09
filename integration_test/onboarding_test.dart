@@ -32,11 +32,11 @@ Future<void> tapThrough(WidgetTester tester, Finder target) async {
   await settle(tester);
 }
 
-/// Dismisses the greenhouse tour on a fresh DB (2 steps).
+/// Dismisses the greenhouse tour on a fresh DB (single step — the spread
+/// teaches itself on its own screen).
 Future<void> dismissGreenhouseTour(WidgetTester tester) async {
   await waitForTour(tester);
   await tapThrough(tester, find.byKey(K.dayMomentCard));
-  await tapThrough(tester, find.byKey(K.openMonthSpread));
 }
 
 void main() {
@@ -53,18 +53,14 @@ void main() {
   ) async {
     db = await pumpApp(tester, sharedPrefsValues: {});
 
-    // Step 1 — day moment.
+    // Step 1 — day moment (the only greenhouse step; the spread has its own
+    // tour on first open).
     await waitForTour(tester);
     expect(find.text(TourContent.greenhouseMoment.description), findsOneWidget);
 
-    // Step 2 — month spread (calendar icon).
-    await tapThrough(tester, find.byKey(K.dayMomentCard));
-    expect(find.text(TourContent.greenhouseSpread.description), findsOneWidget);
-
     // Finish the tour — nothing else to teach.
-    await tapThrough(tester, find.byKey(K.openMonthSpread));
+    await tapThrough(tester, find.byKey(K.dayMomentCard));
     expect(find.text(TourContent.greenhouseMoment.description), findsNothing);
-    expect(find.text(TourContent.greenhouseSpread.description), findsNothing);
 
     // The tour was recorded in the hintful store once it ran.
     final prefs = await SharedPreferences.getInstance();

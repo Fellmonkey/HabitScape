@@ -25,19 +25,17 @@ abstract final class AppTours {
   /// not restated per tour.
   static HintTour greenhouse() => HintTour(
     id: AppTourIds.greenhouse,
+    // The spread step used to target the «История» button, which only
+    // appears after 3 habits — on a fresh install the step was silently
+    // skipped and the tour marked as seen. The spread teaches itself on
+    // its own screen (AppTourIds.spread), so the first-run tour stays with
+    // the moment ritual only.
     steps: [
       HintStep(
         targetId: AppHintIds.greenhouseMoment,
         content: HintStepContent(
           title: TourContent.greenhouseMoment.title,
           description: TourContent.greenhouseMoment.description,
-        ),
-      ),
-      HintStep(
-        targetId: AppHintIds.greenhouseSpread,
-        content: HintStepContent(
-          title: TourContent.greenhouseSpread.title,
-          description: TourContent.greenhouseSpread.description,
         ),
       ),
     ],

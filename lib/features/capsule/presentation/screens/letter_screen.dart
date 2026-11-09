@@ -80,6 +80,12 @@ class _LetterScreenState extends ConsumerState<LetterScreen> {
       key: K.letterScreen,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          key: K.letterBack,
+          tooltip: 'Назад',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.pop(),
+        ),
         actions: [
           IconButton(
             key: K.letterClose,

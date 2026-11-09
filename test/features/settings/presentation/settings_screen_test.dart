@@ -122,7 +122,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Давно не было бэкапа'), findsOneWidget);
+    expect(find.text('Давно не было резервной копии'), findsOneWidget);
     expect(
       find.text('Последний экспорт: ${formatFullDate(last)}'),
       findsOneWidget,

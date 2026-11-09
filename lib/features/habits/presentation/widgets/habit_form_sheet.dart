@@ -87,12 +87,19 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
       _everyXDays = 7;
       _cycle = const CycleConfig(length: 5, days: {1}, labels: {});
     }
+    _nameController.addListener(_onNameChanged);
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     super.dispose();
+  }
+
+  /// Rebuilds so the save button enables/disables with the name field.
+  void _onNameChanged() {
+    if (mounted) setState(() {});
   }
 
   HabitFrequency _buildFrequency() => switch (_frequency) {
@@ -306,7 +313,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
             // ── Save Button ──
             FilledButton(
               key: K.habitCreateButton,
-              onPressed: _save,
+              onPressed: _nameController.text.trim().isEmpty ? null : _save,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: AppRadius.borderM),

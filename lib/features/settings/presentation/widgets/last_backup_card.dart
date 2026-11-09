@@ -63,7 +63,7 @@ class _BackupStatusCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          old ? 'Давно не было бэкапа' : 'Резервная копия',
+          old ? 'Давно не было резервной копии' : 'Резервная копия',
           style: theme.textTheme.titleSmall,
         ),
         subtitle: loading

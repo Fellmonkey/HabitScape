@@ -18,7 +18,7 @@ extension FrequencyTypeVisuals on FrequencyType {
   String get localizedName => switch (this) {
     FrequencyType.daily => 'Каждый день',
     FrequencyType.weekdays => 'Дни недели',
-    FrequencyType.xPerWeek => 'X раз/нед',
+    FrequencyType.xPerWeek => 'N раз в неделю',
     FrequencyType.everyXDays => 'Каждые N дней',
     FrequencyType.cycle => 'Динамичный цикл',
   };

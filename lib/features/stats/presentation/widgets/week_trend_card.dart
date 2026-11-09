@@ -84,14 +84,17 @@ class WeekTrendCard extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                _MiniStat(label: 'Выполнено', value: '${trend.thisWeekDone}'),
+                _MiniStat(label: 'Выполнений', value: '${trend.thisWeekDone}'),
                 const SizedBox(width: 8),
                 _MiniStat(
                   label: 'Ожидалось',
                   value: '${trend.thisWeekExpected}',
                 ),
                 const SizedBox(width: 8),
-                _MiniStat(label: 'За год', value: '${stats.yearTotalDone}'),
+                _MiniStat(
+                  label: 'Всего за год',
+                  value: '${stats.yearTotalDone}',
+                ),
               ],
             ),
           ],

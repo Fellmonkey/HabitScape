@@ -36,6 +36,7 @@ class FeatureIntroTrigger extends ConsumerStatefulWidget {
 
 class _FeatureIntroTriggerState extends ConsumerState<FeatureIntroTrigger> {
   bool _attempted = false;
+  int _attemptsLeft = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -51,20 +52,28 @@ class _FeatureIntroTriggerState extends ConsumerState<FeatureIntroTrigger> {
               minDays: widget.minDays,
             )) {
           _attempted = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            showSingleHint(
-              context,
-              ref,
-              targetId: widget.targetId,
-              title: widget.title,
-              description: widget.description,
-              id: widget.hintKey,
-            );
-          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowHint());
         }
         return widget.child;
       },
     );
+  }
+
+  /// Attempts the spotlight. When the hint engine is busy (another tour is
+  /// showing), retries on the next frame a few times instead of silently
+  /// dropping the intro — so competing feature intros queue naturally
+  /// instead of being lost.
+  Future<void> _maybeShowHint() async {
+    final shown = await showSingleHint(
+      context,
+      ref,
+      targetId: widget.targetId,
+      title: widget.title,
+      description: widget.description,
+      id: widget.hintKey,
+    );
+    if (shown || !mounted) return;
+    if (_attemptsLeft-- <= 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowHint());
   }
 }

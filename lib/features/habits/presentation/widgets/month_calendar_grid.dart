@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:hintful/hintful.dart';
 
+import '../../../../core/database/enums.dart';
 import '../../../../core/domain/completion.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -93,7 +94,13 @@ class MonthCalendarGrid extends StatelessWidget {
         child: MediaQuery.withClampedTextScaling(
           maxScaleFactor: 1.4,
           child: Column(
-            children: [header, const SizedBox(height: 6), ...weeks],
+            children: [
+              header,
+              const SizedBox(height: 6),
+              ...weeks,
+              const SizedBox(height: 6),
+              _MonthGridLegend(),
+            ],
           ),
         ),
       ),
@@ -116,6 +123,53 @@ class MonthCalendarGrid extends StatelessWidget {
     );
     if (!isToday) return cellWidget;
     return HintTarget(id: AppHintIds.spreadDay, child: cellWidget);
+  }
+}
+
+/// Compact legend pinned under the month grid: mood colors on the left and
+/// the completion fraction on the right — so the dense cells never have to
+/// be decoded blind.
+class _MonthGridLegend extends StatelessWidget {
+  const _MonthGridLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+
+    Widget dot(DayMood mood, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: mood.color(context),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: theme.textTheme.labelSmall?.copyWith(color: muted)),
+      ],
+    );
+
+    return Row(
+      children: [
+        dot(DayMood.good, 'хорошо'),
+        const SizedBox(width: 10),
+        dot(DayMood.ok, 'так себе'),
+        const SizedBox(width: 10),
+        dot(DayMood.bad, 'плохо'),
+        const Spacer(),
+        Flexible(
+          child: Text(
+            '2/3 — выполнено · — без отметок',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.labelSmall?.copyWith(color: muted),
+          ),
+        ),
+      ],
+    );
   }
 }
 

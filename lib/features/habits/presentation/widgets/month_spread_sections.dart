@@ -55,7 +55,8 @@ List<Widget> buildSpreadSections(
         gridKey: style.gridKey,
         debugDayKeys: style.debugDayKeys,
       ),
-    if (style.includeGoals) MonthGoalsCard(monthTs: monthTs),
+    if (style.includeGoals)
+      MonthGoalsCard(monthTs: monthTs, readOnly: style.goalsReadOnly),
     if (moments.isNotEmpty) ...[
       if (style.preMomentsGap != 0) SizedBox(height: style.preMomentsGap),
       Padding(

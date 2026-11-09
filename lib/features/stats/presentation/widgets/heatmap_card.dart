@@ -47,6 +47,13 @@ class HeatmapCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const HeatmapLegend(),
+          const SizedBox(height: 6),
+          Text(
+            'Интенсивность цвета — доля выполненных привычек в день.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            ),
+          ),
         ],
       ),
     );

@@ -209,7 +209,11 @@ class YearSummaryScreen extends ConsumerWidget {
     }
     if (year.moodDays > 0) {
       final green = year.moodCounts[DayMood.good] ?? 0;
-      line(Icons.mood_rounded, good, '$green из ${year.moodDays} зелёных дней');
+      line(
+        Icons.mood_rounded,
+        good,
+        '$green из ${year.moodDays} дней с хорошим настроением',
+      );
     }
     if (year.momentsCount > 0) {
       line(

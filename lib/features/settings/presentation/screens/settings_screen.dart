@@ -128,8 +128,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           // ── Experience section ───────────────────────────────────
           AppSectionHeader(title: 'Ощущения'),
           const SizedBox(height: 8),
-          // Haptics exist only on native builds — hide the tile on web.
-          if (!kIsWeb) ...[HapticsTile(), const SizedBox(height: 8)],
+          // Haptics exist only on native builds — on web explain why the
+          // tile is absent instead of letting the section disappear silently.
+          if (kIsWeb) ...[
+            SettingsTile(
+              icon: Icons.vibration_rounded,
+              title: 'Вибрация',
+              subtitle: 'Недоступна в браузере — есть в мобильном приложении.',
+            ),
+            const SizedBox(height: 8),
+          ] else ...[
+            HapticsTile(),
+            const SizedBox(height: 8),
+          ],
           SettingsTile(
             key: K.settingsShowHints,
             icon: Icons.tips_and_updates_outlined,
@@ -141,14 +152,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 24),
 
           // ── Reminders section ────────────────────────────────────
-          // Local notifications exist only on native builds — hide on web
-          // (the PWA stays serverless; no Web Push without a backend).
-          if (!kIsWeb) ...[
-            AppSectionHeader(title: 'Напоминания'),
-            const SizedBox(height: 8),
+          // Local notifications exist only on native builds — on web show an
+          // honest explanation instead of hiding the section entirely.
+          AppSectionHeader(title: 'Напоминания'),
+          const SizedBox(height: 8),
+          if (kIsWeb) ...[
+            SettingsTile(
+              icon: Icons.notifications_none_rounded,
+              title: 'Напоминания',
+              subtitle:
+                  'Локальные уведомления доступны в мобильном приложении.',
+            ),
+          ] else ...[
             const NotificationsTile(),
-            const SizedBox(height: 24),
           ],
+          const SizedBox(height: 24),
 
           // ── About section ───────────────────────────────────────
           AppSectionHeader(title: 'О приложении'),
@@ -207,8 +225,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final store = await ref.read(hintfulStoreProvider.future);
     store.clear();
     // Feature-hint banners are exposure-owned, not tour-owned — clear both so
-    // the setting really shows every hint again.
+    // the setting really shows every hint again. Deferred banners are part of
+    // the learning surface too, so reset them as well (echo history and the
+    // welcome marker stay — they are not teaching hints).
     await ref.read(exposureActionsProvider.notifier).resetDismissedHints();
+    await ref.read(exposureActionsProvider.notifier).clearPendingBanners();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }

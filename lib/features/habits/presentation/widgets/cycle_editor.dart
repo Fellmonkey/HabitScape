@@ -114,31 +114,54 @@ class CycleEditor extends ConsumerWidget {
             );
           }),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'Хотя бы один день должен оставаться активным.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
         if (config.days.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(
-            'Подписи к дням (опционально):',
-            style: theme.textTheme.bodyMedium,
+          ExpansionTile(
+            initiallyExpanded: false,
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 8),
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(
+              'Подписи к дням (необязательно):',
+              style: theme.textTheme.bodyMedium,
+            ),
+            subtitle: Text(
+              'Добавь название каждому дню цикла',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+            children: [
+              ...(() {
+                final sortedDays = config.days.toList()..sort();
+                return sortedDays.map((day) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: TextFormField(
+                      key: ValueKey('cycle_label_$day'),
+                      initialValue: config.labels[day] ?? '',
+                      decoration: InputDecoration(
+                        labelText: 'Подпись для дня $day',
+                        border: OutlineInputBorder(
+                          borderRadius: AppRadius.borderS,
+                        ),
+                        isDense: true,
+                      ),
+                      onChanged: (val) => _setLabel(day, val),
+                    ),
+                  );
+                });
+              })(),
+            ],
           ),
-          const SizedBox(height: 8),
-          ...(() {
-            final sortedDays = config.days.toList()..sort();
-            return sortedDays.map((day) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TextFormField(
-                  key: ValueKey('cycle_label_$day'),
-                  initialValue: config.labels[day] ?? '',
-                  decoration: InputDecoration(
-                    labelText: 'Подпись для дня $day',
-                    border: OutlineInputBorder(borderRadius: AppRadius.borderS),
-                    isDense: true,
-                  ),
-                  onChanged: (val) => _setLabel(day, val),
-                ),
-              );
-            });
-          })(),
         ],
         const SizedBox(height: 16),
         Text('Начало отсчета цикла:', style: theme.textTheme.bodyMedium),
@@ -162,7 +185,7 @@ class CycleEditor extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   config.startDate == null
-                      ? 'Дата создания (По умолчанию)'
+                      ? 'День создания привычки (по умолчанию)'
                       : '${config.startDate!.day.toString().padLeft(2, '0')}.${config.startDate!.month.toString().padLeft(2, '0')}.${config.startDate!.year}',
                   style: theme.textTheme.bodyMedium,
                 ),

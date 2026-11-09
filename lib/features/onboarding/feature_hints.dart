@@ -18,7 +18,7 @@ const featureHints = <FeatureHint>[
   ),
   FeatureHint(
     key: 'week_summary',
-    message: 'Открылся Итог недели: по воскресеньям появляется мягкое резюме.',
+    message: 'Открылся Итог недели: по воскресеньям появляется мягкий итог.',
     minDays: 7,
   ),
   FeatureHint(

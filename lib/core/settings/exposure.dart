@@ -31,6 +31,16 @@ class Exposure {
   static const welcomeShownKey = 'welcome_shown_date';
   static const pendingBannersKey = 'pending_banners';
 
+  /// The swipe-gesture teaching strip (one-time, dismissible).
+  static const swipeHintKey = 'swipe_hint';
+
+  /// When the swipe hint was dismissed (unix midnight), so a user who closed
+  /// it without ever using the skip gesture can be quietly re-taught.
+  static const swipeHintDismissedAtKey = 'swipe_hint_dismissed_at';
+
+  /// Days after dismissing the swipe hint before it may reappear.
+  static const swipeHintRetryDays = 14;
+
   /// Absence (in days) after which the return welcome may appear.
   static const absentReturnDays = 7;
 
@@ -62,6 +72,31 @@ class Exposure {
   /// Hides [key] for good. Repeated calls keep one entry.
   Future<void> dismissHint(String key) =>
       _addToStringSet(dismissedHintsKey, key);
+
+  /// The swipe hint is dismissed and its dismissal date is remembered, so
+  /// it can quietly retry later if the gesture was never used.
+  Future<void> dismissSwipeHint() async {
+    await dismissHint(swipeHintKey);
+    await _prefs.setInt(swipeHintDismissedAtKey, today.unixSeconds);
+  }
+
+  /// The day the swipe hint was dismissed, if ever.
+  DateTime? get swipeHintDismissedAt {
+    final v = _prefs.getInt(swipeHintDismissedAtKey);
+    return v == null ? null : dateFromUnix(v);
+  }
+
+  /// Whether the swipe hint should currently show. It shows until dismissed
+  /// (as before); after a dismissal it quietly reappears once the retry
+  /// window has passed — but only if the user still never used the skip
+  /// gesture, so an already-taught user is never nagged.
+  bool shouldShowSwipeHint({required bool hasEverSkipped}) {
+    if (!dismissedHints.contains(swipeHintKey)) return true;
+    if (hasEverSkipped) return false;
+    final at = swipeHintDismissedAt;
+    if (at == null) return false;
+    return today.difference(at).inDays >= swipeHintRetryDays;
+  }
 
   /// Back to the first-run slate: every feature hint can appear again.
   Future<void> clearDismissedHints() async {
@@ -205,6 +240,11 @@ class Exposure {
     final next = [...list]..remove(id);
     await _prefs.setStringList(pendingBannersKey, next);
   }
+
+  /// Drops the whole deferred banner queue (used by "show hints again").
+  Future<void> clearPendingBanners() async {
+    await _prefs.remove(pendingBannersKey);
+  }
 }
 
 /// An [Exposure] snapshot for today, with the first-use date recorded once.
@@ -246,6 +286,9 @@ class ExposureActions extends Notifier<void> {
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
 
+  /// Dismisses the swipe hint and remembers the dismissal date.
+  Future<void> dismissSwipeHint() => _mutate((e) => e.dismissSwipeHint());
+
   /// Clears all dismissed feature hints and refreshes the snapshot.
   Future<void> resetDismissedHints() => _mutate((e) => e.clearDismissedHints());
 
@@ -262,6 +305,9 @@ class ExposureActions extends Notifier<void> {
   /// Removes a banner id from the deferred queue and refreshes the snapshot.
   Future<void> removePendingBanner(String id) =>
       _mutate((e) => e.removePendingBanner(id));
+
+  /// Drops the whole deferred banner queue (used by "show hints again").
+  Future<void> clearPendingBanners() => _mutate((e) => e.clearPendingBanners());
 }
 
 final exposureActionsProvider = NotifierProvider<ExposureActions, void>(

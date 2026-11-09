@@ -38,7 +38,7 @@ class IntentionsCard extends ConsumerWidget {
               children: [
                 const AppCardHeader(
                   icon: Icons.trending_up_rounded,
-                  title: 'Намерения недель',
+                  title: 'Намерения',
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -56,7 +56,15 @@ class IntentionsCard extends ConsumerWidget {
             children: [
               const AppCardHeader(
                 icon: Icons.trending_up_rounded,
-                title: 'Намерения недель',
+                title: 'Намерения',
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Ответы на итог недели — что ты хотел удержать, и как прошла '
+                'следующая неделя.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 12),
               for (final record in intentions.take(4)) ...[

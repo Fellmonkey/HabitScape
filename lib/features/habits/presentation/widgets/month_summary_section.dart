@@ -81,6 +81,13 @@ class MonthSummarySection extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Процент считается по прошедшим дням месяца',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
         ],
       ],
     );

@@ -28,3 +28,9 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
   final ts = ref.watch(todayProvider);
   return ref.watch(databaseProvider).habitLogsDao.watchLogsForDate(ts);
 });
+
+/// All logs ever recorded — used by the swipe-hint retry logic to detect
+/// whether the user already used the skip gesture.
+final allLogsProvider = FutureProvider<List<HabitLog>>((ref) {
+  return ref.watch(databaseProvider).habitLogsDao.getAllLogs();
+});

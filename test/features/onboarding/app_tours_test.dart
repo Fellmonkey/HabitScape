@@ -40,13 +40,10 @@ void main() {
       expect(AppTours.byId('nope'), isNull);
     });
 
-    test('the greenhouse tour covers the two greenhouse targets', () {
+    test('the greenhouse tour covers the moment step only', () {
       final tour = AppTours.greenhouse();
       final targets = tour.steps.map((s) => s.targetId).toList();
-      expect(
-        targets,
-        containsAll([AppHintIds.greenhouseMoment, AppHintIds.greenhouseSpread]),
-      );
+      expect(targets, [AppHintIds.greenhouseMoment]);
     });
   });
 }
