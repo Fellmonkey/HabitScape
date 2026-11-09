@@ -100,6 +100,28 @@ void main() {
     await disposeTree(tester);
   });
 
+  testWidgets('skip can be undone from the confirmation snack bar', (
+    tester,
+  ) async {
+    final id = await insertHabit('Бег');
+    await pumpDetail(tester, id);
+
+    await openMenu(tester);
+    await tester.tap(find.byKey(K.habitDetailSkip));
+    await tester.pumpAndSettle();
+
+    expect(await db.habitLogsDao.getAllLogs(), hasLength(1));
+    expect(find.text('Отменить'), findsOneWidget);
+
+    await tester.tap(find.text('Отменить'));
+    await tester.pumpAndSettle();
+
+    expect(await db.habitLogsDao.getAllLogs(), isEmpty);
+    expect(find.text('Отменить'), findsNothing);
+
+    await disposeTree(tester);
+  });
+
   testWidgets('focus is refused once the cap is full', (tester) async {
     for (var i = 0; i < AppConstants.maxFocusHabits; i++) {
       await insertHabit('Фокус $i', isFocus: true);

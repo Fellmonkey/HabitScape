@@ -260,4 +260,56 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 1));
   });
+
+  testWidgets('dismissing the week banner consumes it and clears the queue', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(Exposure.pendingBannersKey, ['week-summary']);
+
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Бег', timeOfDay: 'evening')],
+      suggest: false,
+      month: false,
+    );
+
+    expect(find.byKey(K.weekSummaryCard), findsOneWidget);
+
+    // Explicit «Скрыть баннер»: the banner disappears for good.
+    await tester.tap(find.byKey(K.bannerDismiss));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(K.bannerStack), findsNothing);
+    expect(find.byKey(K.weekSummaryCard), findsNothing);
+    expect(prefs.getStringList(Exposure.pendingBannersKey), isEmpty);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('dismissing the time-suggestion banner hides it for this habit', (
+    tester,
+  ) async {
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Бег', timeOfDay: 'evening')],
+      suggest: true,
+      month: false,
+    );
+
+    expect(find.byKey(K.greenhouseSuggestionBanner), findsOneWidget);
+
+    await tester.tap(find.byKey(K.bannerDismiss));
+    await tester.pumpAndSettle();
+
+    // The suggestion is gone for this habit; the week banner (still in its
+    // open window) remains as the single front card.
+    expect(find.byKey(K.greenhouseSuggestionBanner), findsNothing);
+    expect(find.byKey(K.weekSummaryCard), findsOneWidget);
+    expect(find.byKey(K.bannerStack), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
 }

@@ -152,6 +152,15 @@ abstract final class K {
   static const bannerStack = Key('banner_stack');
   static const bannerRotate = Key('banner_rotate');
 
+  /// Explicit acknowledge/dismiss on the front banner — hides it for good.
+  static const bannerDismiss = Key('banner_dismiss');
+
+  /// Web-only tile explaining how to install the app as a PWA.
+  static const settingsInstallPwa = Key('settings_install_pwa');
+
+  /// Snack bar confirming the day is fully closed (all habits done).
+  static const dayClosed = Key('day_closed');
+
   // ── Year summary (Итоги года) ──────────────────────────────
   static const yearSummaryOpen = Key('year_summary_open');
   static const yearSummaryScreen = Key('year_summary_screen');

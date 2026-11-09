@@ -125,4 +125,37 @@ void main() {
       expect(prefs.getStringList(Exposure.dismissedHintsKey), ['echo']);
     });
   });
+
+  group('banner dismissal and first-skip hint', () {
+    test('dismissed banners are remembered per window-scoped key', () async {
+      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
+
+      expect(exposure.bannerDismissed('month-summary:123'), isFalse);
+      await exposure.dismissBanner('month-summary:123');
+
+      expect(exposure.bannerDismissed('month-summary:123'), isTrue);
+      expect(exposure.bannerDismissed('time-suggestion:7'), isFalse);
+    });
+
+    test('pending banner queue keeps at most one leftover', () async {
+      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
+
+      await exposure.pushPendingBanner('week-summary');
+      await exposure.pushPendingBanner('month-summary');
+      expect(exposure.pendingBanners, ['week-summary']);
+
+      await exposure.removePendingBanner('week-summary');
+      await exposure.pushPendingBanner('month-summary');
+      expect(exposure.pendingBanners, ['month-summary']);
+    });
+
+    test('first-skip hint shows once and then never again', () async {
+      final exposure = Exposure(prefs, today: DateTime.utc(2026, 1, 1));
+
+      expect(exposure.shouldShowFirstSkipHint, isTrue);
+      await exposure.markFirstSkipHintShown();
+
+      expect(exposure.shouldShowFirstSkipHint, isFalse);
+    });
+  });
 }

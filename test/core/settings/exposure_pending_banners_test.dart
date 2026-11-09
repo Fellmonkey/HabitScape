@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('pending banner queue adds once, removes, and stays FIFO', () async {
+  test('pending banner queue keeps at most one leftover', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final exposure = Exposure(prefs, today: DateTime(2026, 10, 28));
@@ -13,14 +13,16 @@ void main() {
     expect(exposure.pendingBanners, isEmpty);
 
     await exposure.pushPendingBanner('week-summary');
-    await exposure.pushPendingBanner('month-summary');
+    await exposure.pushPendingBanner(
+      'month-summary',
+    ); // ignored: max 1 leftover
     await exposure.pushPendingBanner('week-summary'); // duplicate ignored
-    expect(exposure.pendingBanners, ['week-summary', 'month-summary']);
+    expect(exposure.pendingBanners, ['week-summary']);
 
     await exposure.removePendingBanner('week-summary');
-    expect(exposure.pendingBanners, ['month-summary']);
-
-    await exposure.removePendingBanner('month-summary');
     expect(exposure.pendingBanners, isEmpty);
+
+    await exposure.pushPendingBanner('month-summary');
+    expect(exposure.pendingBanners, ['month-summary']);
   });
 }

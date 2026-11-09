@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
+import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/settings/week_answer.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';
+import '../../../fixtures/test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,17 +20,20 @@ void main() {
     final db = createTestDatabase();
     addTearDown(db.close);
 
+    // A Tuesday to exercise the Monday-closes-previous-week rule.
+    final monday = DateTime.utc(2026, 11, 9);
     final container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPrefsProvider.overrideWith((_) async => prefs),
+        todayProvider.overrideWith(() => FixedToday(monday.unixSeconds)),
       ],
     );
     addTearDown(container.dispose);
 
-    final weekStart = weekStartOf(DateTime.utc(2026, 10, 27));
-    // Closing week in a Monday summary is the previous one.
-    final closingWeek = weekStart.subtract(const Duration(days: 7));
+    // On a Monday the summary closes the previous week; the intention is
+    // carried into the fresh (current) week.
+    final closingWeek = weekStartOf(monday).subtract(const Duration(days: 7));
 
     await container
         .read(weekIntentionActionsProvider.notifier)
@@ -38,7 +43,7 @@ void main() {
         );
 
     final saved = await db.weeklyIntentionsDao.getForWeek(
-      weekStart.unixSeconds,
+      weekStartOf(monday).unixSeconds,
     );
     expect(saved?.intention, 'Бег по вторникам');
 

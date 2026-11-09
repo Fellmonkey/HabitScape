@@ -249,6 +249,84 @@ void main() {
     await disposeTree(tester);
   });
 
+  testWidgets('mark-all opens a group undo that restores every log', (
+    tester,
+  ) async {
+    await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Первая', timeOfDay: 'morning'),
+    );
+    await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Вторая', timeOfDay: 'morning'),
+    );
+
+    await pumpGreenhouse(
+      tester,
+      habits: [
+        makeHabit(id: 1, name: 'Первая', timeOfDay: 'morning'),
+        makeHabit(id: 2, name: 'Вторая', timeOfDay: 'morning'),
+      ],
+    );
+
+    await tester.tap(find.byKey(K.markAllGroup('Утро')));
+    await tester.pumpAndSettle();
+
+    expect(await db.habitLogsDao.getAllLogs(), hasLength(2));
+    expect(find.text('Отменить всё'), findsOneWidget);
+
+    // The group undo restores the whole batch at once.
+    await tester.tap(find.text('Отменить всё'));
+    await tester.pumpAndSettle();
+
+    expect(await db.habitLogsDao.getAllLogs(), isEmpty);
+    expect(find.text('Отменить всё'), findsNothing);
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('a fully-done day celebrates once («День закрыт»)', (
+    tester,
+  ) async {
+    final today = todayTimestamp();
+    await db.habitsDao.insertHabit(
+      makeHabitCompanion(name: 'Сделано', timeOfDay: 'morning'),
+    );
+
+    await pumpGreenhouse(
+      tester,
+      habits: [makeHabit(id: 1, name: 'Сделано', timeOfDay: 'morning')],
+      logs: [
+        makeLog(
+          id: 1,
+          habitId: 1,
+          date: today,
+          status: LogStatus.done,
+          loggedHour: 8,
+        ),
+      ],
+    );
+
+    // 100% completion — the day-close confirmation appears.
+    expect(find.byKey(K.dayClosed), findsOneWidget);
+    expect(
+      find.text('День закрыт! 🎉 Все привычки выполнены.'),
+      findsOneWidget,
+    );
+
+    await disposeTree(tester);
+  });
+
+  testWidgets('reflection block stays hidden until the first habit exists', (
+    tester,
+  ) async {
+    await pumpGreenhouse(tester, habits: const []);
+
+    expect(find.text('Рефлексия'), findsNothing);
+    expect(find.byKey(K.monthGoalsCard), findsNothing);
+    expect(find.byKey(K.capsuleCard), findsNothing);
+
+    await disposeTree(tester);
+  });
+
   testWidgets('echo shows reliably once a memory exists', (tester) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toMidnight;

@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/time_suggestions_provider.dart';
 import '../../../../core/settings/exposure.dart';
+import '../../../../core/settings/haptics.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_helpers.dart';
 import '../../../onboarding/feature_intro_trigger.dart';
 import '../../../onboarding/hint_tour.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
@@ -96,6 +98,25 @@ class _BannerStackState extends ConsumerState<BannerStack> {
               ),
             ),
           ),
+        // Explicit acknowledge: «Скрыть баннер» — the front banner visibly
+        // disappears and is not offered again (week/month window or habit).
+        if (top)
+          Positioned(
+            top: 6,
+            right: 42,
+            child: Material(
+              color: theme.colorScheme.surface.withValues(alpha: 0.9),
+              shape: const CircleBorder(),
+              child: IconButton(
+                key: K.bannerDismiss,
+                tooltip: 'Скрыть баннер',
+                visualDensity: VisualDensity.compact,
+                iconSize: 18,
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _dismissFront,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -112,6 +133,52 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     setState(() {
       _deck.insert(0, _deck.removeLast());
     });
+  }
+
+  /// Explicit «Скрыть баннер»: consumes the front banner. Week summary is
+  /// answered (its natural consumption); month summary and time suggestions
+  /// are remembered as dismissed so they never nag again. The pile then
+  /// simply shrinks — the user sees the banner disappear.
+  Future<void> _dismissFront() async {
+    final deck = _visibleDeck;
+    if (deck.isEmpty) return;
+    final id = deck.last;
+
+    switch (id) {
+      case 'week-summary':
+        final view = ref.read(weekSummaryProvider).value;
+        if (view != null) {
+          await ref
+              .read(exposureActionsProvider.notifier)
+              .dismissBanner('week-summary:${view.weekStart.unixSeconds}');
+          await ref
+              .read(weekIntentionActionsProvider.notifier)
+              .answerWeek(view.weekStart);
+        }
+        await ref
+            .read(exposureActionsProvider.notifier)
+            .removePendingBanner(id);
+      case 'month-summary':
+        final view = ref.read(monthSummaryProvider).value;
+        if (view != null) {
+          await ref
+              .read(exposureActionsProvider.notifier)
+              .dismissBanner('month-summary:${view.monthStart.unixSeconds}');
+        }
+        await ref
+            .read(exposureActionsProvider.notifier)
+            .removePendingBanner(id);
+      default:
+        final suggestions = ref.read(timeSuggestionsProvider).value ?? const [];
+        if (suggestions.isNotEmpty) {
+          final key = 'time-suggestion:${suggestions.first.habit.id}';
+          await ref.read(exposureActionsProvider.notifier).dismissBanner(key);
+        }
+    }
+
+    if (!mounted) return;
+    Haptics.tap(ref.read(hapticsEnabledProvider));
+    setState(() => _deck.remove(id));
   }
 
   /// The session deck, kept in rotation order across rebuilds.
@@ -137,15 +204,40 @@ class _BannerStackState extends ConsumerState<BannerStack> {
       if (!deck.contains(id)) deck.add(id);
     }
 
-    if (weekAsync.value?.shouldShow == true) add('week-summary');
-    if (monthAsync.value?.shouldShow == true) add('month-summary');
-    if ((suggestionsAsync.value ?? const []).isNotEmpty) {
-      add('time-suggestion');
+    final weekView = weekAsync.value;
+    final weekDismissKey = weekView == null
+        ? null
+        : 'week-summary:${weekView.weekStart.unixSeconds}';
+    if (weekView?.shouldShow == true &&
+        (weekDismissKey == null || !exposure.bannerDismissed(weekDismissKey))) {
+      add('week-summary');
     }
+    final monthView = monthAsync.value;
+    final monthDismissKey = monthView == null
+        ? null
+        : 'month-summary:${monthView.monthStart.unixSeconds}';
+    if (monthView?.shouldShow == true &&
+        (monthDismissKey == null ||
+            !exposure.bannerDismissed(monthDismissKey))) {
+      add('month-summary');
+    }
+    final suggestions = suggestionsAsync.value ?? const [];
+    final liveSuggestions = suggestions
+        .where(
+          (s) => !exposure.bannerDismissed('time-suggestion:${s.habit.id}'),
+        )
+        .toList();
+    if (liveSuggestions.isNotEmpty) add('time-suggestion');
     for (final id in exposure.pendingBanners) {
       final available =
-          (id == 'week-summary' && weekAsync.value?.shouldShow == true) ||
-          (id == 'month-summary' && monthAsync.value?.shouldShow == true);
+          (id == 'week-summary' &&
+              weekView?.shouldShow == true &&
+              (weekDismissKey == null ||
+                  !exposure.bannerDismissed(weekDismissKey))) ||
+          (id == 'month-summary' &&
+              monthView?.shouldShow == true &&
+              (monthDismissKey == null ||
+                  !exposure.bannerDismissed(monthDismissKey)));
       if (available) add(id);
     }
 

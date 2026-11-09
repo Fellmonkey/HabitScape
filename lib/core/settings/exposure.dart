@@ -38,6 +38,15 @@ class Exposure {
   /// it without ever using the skip gesture can be quietly re-taught.
   static const swipeHintDismissedAtKey = 'swipe_hint_dismissed_at';
 
+  /// Banner instances the user explicitly acknowledged (dismissed). Keys are
+  /// window-scoped, e.g. `month-summary:<firstOfMonthTs>` or
+  /// `time-suggestion:<habitId>`.
+  static const dismissedBannersKey = 'dismissed_banners';
+
+  /// One-time hint on the very first skip gesture, so a user who swipes
+  /// left understands it is a skip (and not a delete/archive).
+  static const firstSkipHintKey = 'first-skip-gesture';
+
   /// Days after dismissing the swipe hint before it may reappear.
   static const swipeHintRetryDays = 14;
 
@@ -102,6 +111,23 @@ class Exposure {
   Future<void> clearDismissedHints() async {
     await _prefs.remove(dismissedHintsKey);
   }
+
+  /// Whether a banner instance (window-scoped key) was explicitly dismissed.
+  bool bannerDismissed(String key) => dismissedBanners.contains(key);
+
+  /// Banner keys the user explicitly acknowledged («Скрыть баннер»).
+  Set<String> get dismissedBanners => _stringSet(dismissedBannersKey);
+
+  /// Remembers [key] as dismissed — the banner will not be offered again.
+  Future<void> dismissBanner(String key) =>
+      _addToStringSet(dismissedBannersKey, key);
+
+  /// Whether the first-skip gesture hint is still pending.
+  bool get shouldShowFirstSkipHint =>
+      !dismissedHints.contains(firstSkipHintKey);
+
+  /// Marks the first-skip gesture hint as shown (never asks again).
+  Future<void> markFirstSkipHintShown() => dismissHint(firstSkipHintKey);
 
   // ── Echo placement ─────────────────────────────────────────
 
@@ -227,9 +253,12 @@ class Exposure {
   List<String> get pendingBanners =>
       _prefs.getStringList(pendingBannersKey) ?? const [];
 
-  /// Adds [id] to the deferred queue unless it is already there.
+  /// Adds [id] to the deferred queue unless it is already there. The queue
+  /// keeps at most one leftover — with explicit dismissal available, a pile
+  /// of stale banners should never accumulate for rare visitors.
   Future<void> pushPendingBanner(String id) async {
     if (pendingBanners.contains(id)) return;
+    if (pendingBanners.isNotEmpty) return;
     await _prefs.setStringList(pendingBannersKey, [...pendingBanners, id]);
   }
 
@@ -285,6 +314,14 @@ class ExposureActions extends Notifier<void> {
 
   /// Hides [key] for good and refreshes the snapshot.
   Future<void> dismissHint(String key) => _mutate((e) => e.dismissHint(key));
+
+  /// Marks a banner instance as dismissed (window-scoped key).
+  Future<void> dismissBanner(String key) =>
+      _mutate((e) => e.dismissBanner(key));
+
+  /// Marks the first-skip gesture hint as shown.
+  Future<void> markFirstSkipHintShown() =>
+      _mutate((e) => e.markFirstSkipHintShown());
 
   /// Dismisses the swipe hint and remembers the dismissal date.
   Future<void> dismissSwipeHint() => _mutate((e) => e.dismissSwipeHint());

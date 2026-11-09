@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
 import '../../../../core/keys.dart';
+import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -163,12 +164,34 @@ class _HabitCardState extends ConsumerState<HabitCard>
         widget.habit.id,
       ], status: status);
       widget.onStatusChanged?.call();
+      // A swipe-left is a skip — never a delete. Teach this quietly on the
+      // very first skip so the gesture isn't misread later.
+      if (status == LogStatus.skip) {
+        await _maybeTeachFirstSkip();
+      }
     } catch (_) {
       if (mounted) {
         _cancelUndoWindow();
         setState(() => _optimisticDone = false);
       }
     }
+  }
+
+  /// One-time hint attached to the first skip gesture: «это пропуск, а не
+  /// удаление». Show-once is owned by Exposure.
+  Future<void> _maybeTeachFirstSkip() async {
+    if (!mounted) return;
+    final exposure = await ref.read(exposureProvider.future);
+    if (!mounted || !exposure.shouldShowFirstSkipHint) return;
+    await ref.read(exposureActionsProvider.notifier).markFirstSkipHintShown();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Это пропуск — привычка остаётся в списке. Свайп вправо — «выполнить».',
+        ),
+      ),
+    );
   }
 
   void _openUndoWindow(LogStatus? previous) {

@@ -231,11 +231,21 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     switch (action) {
       case HabitDetailAction.skip:
+        final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
+        final previous = logs
+            .where((l) => l.habitId == habitId)
+            .firstOrNull
+            ?.status;
         await actions.logToday([habitId], status: LogStatus.skip);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Пропуск засчитан. Ничего не сброшено.'),
+            SnackBar(
+              content: const Text('Пропуск засчитан. Ничего не сброшено.'),
+              action: SnackBarAction(
+                label: 'Отменить',
+                onPressed: () =>
+                    actions.undoTodayLog(habitId, previous: previous),
+              ),
             ),
           );
         }

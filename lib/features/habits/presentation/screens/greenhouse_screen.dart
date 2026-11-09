@@ -43,6 +43,9 @@ const greenHouseHistoryMinHabits = 3;
 /// Minimum habits in a single group before the hide-completed toggle appears.
 const greenhouseToggleMinGroupHabits = 5;
 
+/// How long the group-level undo snack bar stays open after «Выполнить все».
+const groupUndoWindow = Duration(seconds: 10);
+
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
 /// One animated row of the Greenhouse board: either a group header or one
@@ -99,6 +102,22 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   /// Whether the hide-completed toggle's one-time hint was attempted.
   bool _toggleHintTriggered = false;
+
+  /// Last seen completion progress — used to detect the moment the day
+  /// crosses to 100%.
+  double _lastProgress = -1;
+
+  /// Day key (yyyymmdd) for which the «День закрыт» celebration was shown.
+  int? _celebratedDay;
+
+  /// Timer that releases the group-undo grace window («Выполнить все»).
+  Timer? _groupUndoTimer;
+
+  @override
+  void dispose() {
+    _groupUndoTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   String get tourScope => AppTourIds.greenhouse;
@@ -177,6 +196,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           if (e.value.isAfter(DateTime.now())) e.key,
       },
     );
+
+    _maybeCelebrateDayClosed(habits, dayProgress, today);
 
     // Feed the animated list: rows are derived here and diffed against the
     // current rows post-frame (build itself must not mutate the list).
@@ -334,48 +355,52 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           ),
 
         // ── Reflection block (bottom): goals first ──
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
-            child: const AppSectionHeader(
-              icon: Icons.self_improvement_rounded,
-              title: 'Рефлексия',
+        // Hidden until the first habit exists — an empty board must stay
+        // quiet, without extra meta-cards next to the empty state.
+        if (habits.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 4),
+              child: const AppSectionHeader(
+                icon: Icons.self_improvement_rounded,
+                title: 'Рефлексия',
+              ),
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: FeatureIntroTrigger(
-            targetId: 'feature-month-goals',
-            hintKey: 'feature-month-goals',
-            minDays: 14,
-            title: 'Цели месяца',
-            description:
-                'Чего достичь через привычки в этом месяце? Добавь цель одним тапом.',
-            child: tourTarget('feature-month-goals', const MonthGoalsCard()),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: FeatureIntroTrigger(
-            // Reminder: the invite matured but no capsule was opened within
-            // a week of it (30 + 7 days).
-            targetId: 'feature-capsules-reminder',
-            hintKey: 'feature-capsules-reminder',
-            minDays: 37,
-            enabled: !openedAnyCapsule,
-            title: 'Письмо из прошлого',
-            description:
-                'Ты ещё не открывал письма из прошлого — загляни в Капсулы.',
+          SliverToBoxAdapter(
             child: FeatureIntroTrigger(
-              targetId: 'feature-capsules',
-              hintKey: 'feature-capsules',
-              minDays: 30,
-              title: 'Капсулы времени',
+              targetId: 'feature-month-goals',
+              hintKey: 'feature-month-goals',
+              minDays: 14,
+              title: 'Цели месяца',
               description:
-                  'Напиши письмо себе — и через месяц оно откроется, как маленький сюрприз.',
-              child: tourTarget('feature-capsules', const CapsuleCard()),
+                  'Чего достичь через привычки в этом месяце? Добавь цель одним тапом.',
+              child: tourTarget('feature-month-goals', const MonthGoalsCard()),
             ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: FeatureIntroTrigger(
+              // Reminder: the invite matured but no capsule was opened within
+              // a week of it (30 + 7 days).
+              targetId: 'feature-capsules-reminder',
+              hintKey: 'feature-capsules-reminder',
+              minDays: 37,
+              enabled: !openedAnyCapsule,
+              title: 'Письмо из прошлого',
+              description:
+                  'Ты ещё не открывал письма из прошлого — загляни в Капсулы.',
+              child: FeatureIntroTrigger(
+                targetId: 'feature-capsules',
+                hintKey: 'feature-capsules',
+                minDays: 30,
+                title: 'Капсулы времени',
+                description:
+                    'Напиши письмо себе — и через месяц оно откроется, как маленький сюрприз.',
+                child: tourTarget('feature-capsules', const CapsuleCard()),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -637,11 +662,86 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     );
   }
 
-  void _markAllInGroup(List<Habit> habits) {
+  Future<void> _markAllInGroup(List<Habit> habits) async {
+    final ids = [for (final h in habits) h.id];
+    final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
+    final previous = {for (final l in logs) l.habitId: l.status};
+
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    ref.read(habitActionsProvider.notifier).logToday([
-      for (final h in habits) h.id,
-    ], status: LogStatus.done);
+    await ref
+        .read(habitActionsProvider.notifier)
+        .logToday(ids, status: LogStatus.done);
+    if (!mounted) return;
+
+    // Keep the just-completed cards visible while the group undo window is
+    // open, so «Отменить всё» has something visible to restore.
+    setState(() {
+      final until = DateTime.now().add(groupUndoWindow);
+      for (final id in ids) {
+        _graceUntil[id] = until;
+      }
+    });
+    _groupUndoTimer?.cancel();
+    _groupUndoTimer = Timer(groupUndoWindow, () {
+      if (!mounted) return;
+      setState(() {
+        for (final id in ids) {
+          _graceUntil.remove(id);
+        }
+      });
+    });
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: groupUndoWindow,
+        content: Text('Выполнено: ${ids.length}'),
+        action: SnackBarAction(
+          label: 'Отменить всё',
+          onPressed: () => _undoGroup(ids, previous),
+        ),
+      ),
+    );
+  }
+
+  /// Restores every habit of a group to the status it had before
+  /// «Выполнить все» — the group-level twin of the card-level undo.
+  Future<void> _undoGroup(List<int> ids, Map<int, LogStatus> previous) async {
+    final actions = ref.read(habitActionsProvider.notifier);
+    for (final id in ids) {
+      await actions.undoTodayLog(id, previous: previous[id]);
+    }
+  }
+
+  /// One quiet celebration per day when completion crosses to 100% — the
+  /// moment a day feels "closed". Never nags: fires on the transition only,
+  /// once per calendar day.
+  void _maybeCelebrateDayClosed(
+    List<Habit> habits,
+    double progress,
+    DateTime today,
+  ) {
+    if (habits.isEmpty) {
+      _lastProgress = progress;
+      return;
+    }
+    final dayKey = today.year * 10000 + today.month * 100 + today.day;
+    final crossed = _lastProgress < 1.0 && progress >= 1.0;
+    _lastProgress = progress;
+    if (!crossed || _celebratedDay == dayKey) return;
+    _celebratedDay = dayKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: K.dayClosed,
+          duration: Duration(seconds: 4),
+          content: Text('День закрыт! 🎉 Все привычки выполнены.'),
+        ),
+      );
+    });
   }
 
   String _formatToday(DateTime today) => formatFullDate(today);

@@ -52,11 +52,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           AppSectionHeader(title: 'Резервное копирование'),
           const SizedBox(height: 8),
           // The export suggestion appears only once the user has data worth
-          // saving (3+ days, same maturation as the echo intro).
+          // saving (4+ days — one day after the echo intro, so the two
+          // spotlights never land on the same day).
           FeatureIntroTrigger(
             targetId: 'settings-export',
             hintKey: 'settings-export',
-            minDays: 3,
+            minDays: 4,
             title: 'Экспорт данных',
             description:
                 'Твои данные живут только на устройстве. Советуем сохранять резервную копию в файл — хотя бы раз в месяц.',
@@ -137,6 +138,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               subtitle: 'Недоступна в браузере — есть в мобильном приложении.',
             ),
             const SizedBox(height: 8),
+            SettingsTile(
+              key: K.settingsInstallPwa,
+              icon: Icons.install_desktop_rounded,
+              title: 'Установить как приложение',
+              subtitle:
+                  'Полноэкранный режим и иконка на рабочем столе — как нативное приложение.',
+              onTap: () => _showSnackBar(
+                context,
+                'В Chrome: меню ⋮ → «Установить приложение». В Safari: Поделиться → «На экран “Домой”».',
+              ),
+            ),
+            const SizedBox(height: 8),
           ] else ...[
             HapticsTile(),
             const SizedBox(height: 8),
@@ -161,7 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               icon: Icons.notifications_none_rounded,
               title: 'Напоминания',
               subtitle:
-                  'Локальные уведомления доступны в мобильном приложении.',
+                  'Локальные уведомления доступны в мобильном приложении. На Web установите PWA для полноэкранного режима.',
             ),
           ] else ...[
             const NotificationsTile(),

@@ -9,6 +9,9 @@ import '../../../../core/settings/today.dart';
 import '../../../../core/domain/completion.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../core/utils/date_helpers.dart';
+import '../../../../shared/widgets/app_sheets.dart';
+import '../../../habits/presentation/widgets/day_moment_sheet.dart';
 import '../../providers/stats_providers.dart';
 import '../../providers/year_summary_providers.dart';
 import '../../../onboarding/feature_intro_trigger.dart';
@@ -29,22 +32,13 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsOverviewProvider);
     final today = ref.watch(todayDateProvider);
-    void showDayDetail(DayCompletion day) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Theme.of(ctx).colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
-          title: Text(formatFullDate(day.date)),
-          content: Text('Выполнено: ${day.done} из ${day.expected}'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Закрыть'),
-            ),
-          ],
-        ),
+    Future<void> showDayDetail(DayCompletion day) async {
+      await AppSheets.show<void>(
+        context,
+        builder: (_) => DayMomentSheet(dateTimestamp: day.date.unixSeconds),
       );
+      // The sheet may have edited the day (moment, mood) — refresh stats.
+      if (context.mounted) ref.invalidate(statsOverviewProvider);
     }
 
     final theme = Theme.of(context);
