@@ -1,4 +1,4 @@
-import '../../../core/database/enums.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
 
 /// Ready-made habit templates so a new habit can be created in two taps.

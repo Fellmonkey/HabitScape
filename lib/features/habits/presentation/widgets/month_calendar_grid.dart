@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:hintful/hintful.dart';
 
-import '../../../../core/database/enums.dart';
 import '../../../../core/domain/completion.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';

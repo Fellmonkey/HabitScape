@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/database/app_database.dart';
-import '../../../../core/database/enums.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_palette.dart';

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/src/framework.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/notifications/reminder_scheduler.dart';
 import 'package:rythm/core/notifications/reminder_settings.dart';
 import 'package:rythm/core/router/app_router.dart';

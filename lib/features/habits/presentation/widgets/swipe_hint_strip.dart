@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/app_database.dart';
-import '../../../../core/database/enums.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';

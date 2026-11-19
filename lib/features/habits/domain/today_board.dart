@@ -1,5 +1,5 @@
 import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
 
 /// Where a habit lands on the Today board.

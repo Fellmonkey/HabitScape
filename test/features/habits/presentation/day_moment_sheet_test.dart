@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';

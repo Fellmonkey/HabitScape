@@ -1,4 +1,4 @@
-import '../database/enums.dart';
+import '../domain/enums.dart';
 
 /// The generation-side mood↔completion curve used by the debug seeder.
 ///

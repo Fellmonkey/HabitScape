@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';

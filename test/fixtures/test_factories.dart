@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 
 /// Default creation timestamp: 2026-01-01 midnight UTC.

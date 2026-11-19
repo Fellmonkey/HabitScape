@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/database/enums.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';

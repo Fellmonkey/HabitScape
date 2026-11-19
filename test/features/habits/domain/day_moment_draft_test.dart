@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/enums.dart';
+import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/features/habits/domain/day_moment_draft.dart';
 
 import '../../../fixtures/test_factories.dart';

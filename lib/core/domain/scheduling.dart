@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../database/app_database.dart';
-import '../database/enums.dart';
+import '../domain/enums.dart';
 import '../utils/date_helpers.dart';
 
 // ── Frequency value object ───────────────────────────────────

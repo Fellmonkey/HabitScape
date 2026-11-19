@@ -1,6 +1,6 @@
 import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
 import '../../../core/domain/completion.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/domain/moment.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';

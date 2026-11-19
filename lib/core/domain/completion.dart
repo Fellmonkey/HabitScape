@@ -1,5 +1,5 @@
 import '../database/app_database.dart';
-import '../database/enums.dart';
+import '../domain/enums.dart';
 import '../utils/date_helpers.dart';
 
 import 'moment.dart' as moment_kernel;

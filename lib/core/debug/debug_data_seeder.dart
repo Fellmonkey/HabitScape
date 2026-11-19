@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
 import '../database/database_reset.dart';
-import '../database/enums.dart';
+import '../domain/enums.dart';
 import '../domain/scheduling.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';

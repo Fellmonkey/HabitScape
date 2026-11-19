@@ -1,6 +1,6 @@
 import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
 import '../../../core/domain/completion.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 
 /// Insight: on fully-done days the mood is 🟢 in X% of cases; on empty days

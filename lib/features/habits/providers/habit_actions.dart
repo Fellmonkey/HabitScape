@@ -5,7 +5,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/daos/habit_logs_dao.dart';
 import '../../../core/database/daos/habits_dao.dart';
 import '../../../core/database/database_provider.dart';
-import '../../../core/database/enums.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';

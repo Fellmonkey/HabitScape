@@ -1,5 +1,5 @@
 import '../../../core/database/app_database.dart';
-import '../../../core/database/enums.dart';
+import '../../../core/domain/enums.dart';
 import '../../../core/domain/week_policy.dart';
 import '../../../core/utils/date_helpers.dart';
 import 'reminder_spec.dart';

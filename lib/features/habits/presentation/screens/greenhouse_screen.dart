@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
-import '../../../../core/database/enums.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
