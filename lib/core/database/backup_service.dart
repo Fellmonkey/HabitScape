@@ -5,13 +5,13 @@ import 'package:drift/drift.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 import 'app_database.dart';
-import 'database_reset.dart';
 import 'daos/day_notes_dao.dart';
 import 'daos/habit_logs_dao.dart';
 import 'daos/habits_dao.dart';
 import 'daos/letters_dao.dart';
 import 'daos/monthly_goals_dao.dart';
 import 'daos/weekly_intentions_dao.dart';
+import 'database_reset.dart';
 import 'enums.dart';
 
 // Backup format version for forward compatibility.

@@ -49,6 +49,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+  riverpod: any
 flutter:
   uses-material-design: true
 

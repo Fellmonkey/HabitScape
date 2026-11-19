@@ -81,7 +81,7 @@ void main() {
         child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
       ),
     );
-    router.push('/letter', extra: capsule);
+    unawaited(router.push('/letter', extra: capsule));
     letterController.add(capsule);
     await tester.pumpAndSettle();
   }

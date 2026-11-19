@@ -16,12 +16,12 @@ void main() {
     for (final entity in lib.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       final source = entity.readAsStringSync();
-      if (!source.contains("package:flutter/material.dart")) continue;
+      if (!source.contains('package:flutter/material.dart')) continue;
       if (!enumsImport.hasMatch(source)) continue;
 
       final materialImport = source
           .split('\n')
-          .firstWhere((line) => line.contains("package:flutter/material.dart"));
+          .firstWhere((line) => line.contains('package:flutter/material.dart'));
       if (!materialImport.contains('hide TimeOfDay')) {
         violations.add(entity.path);
       }

@@ -91,19 +91,23 @@ void main() {
       expect(allDone.where((s) => s.id == ReminderIds.eveningNudge), isEmpty);
     });
 
-    test('week summary fires only on Sunday inside the closing window', () {
+    test('week summary fires across the shared Sunday/Monday closing window',
+        () {
       final sunday = DateTime(2026, 11, 1); // Sunday
       final monday = DateTime(2026, 11, 2);
+      final tuesday = DateTime(2026, 11, 3);
 
-      final specs = build(week: true, on: sunday);
-      final week = specs.singleWhere((s) => s.id == ReminderIds.weekSummary);
-      expect(week.hour, 19);
-      expect(week.date, sunday.toMidnight);
+      for (final day in <DateTime>[sunday, monday]) {
+        final specs = build(week: true, on: day);
+        final week = specs.singleWhere((s) => s.id == ReminderIds.weekSummary);
+        expect(week.hour, 19);
+        expect(week.date, day.toMidnight);
+      }
 
       expect(
         build(
           week: true,
-          on: monday,
+          on: tuesday,
         ).where((s) => s.id == ReminderIds.weekSummary),
         isEmpty,
       );

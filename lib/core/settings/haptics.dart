@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,19 +32,21 @@ class HapticsEnabled extends Notifier<bool> {
 
 /// Haptic feedback wrappers that respect the [hapticsEnabledProvider] setting.
 abstract final class Haptics {
-  static Future<void> tap(bool enabled) async {
-    if (enabled) await HapticFeedback.selectionClick();
+  // Feedback is fire-and-forget: callers never need to await it, and dropping
+  // the Future here keeps widget callbacks free of unawaited-future lint noise.
+  static void tap(bool enabled) {
+    if (enabled) unawaited(HapticFeedback.selectionClick());
   }
 
-  static Future<void> light(bool enabled) async {
-    if (enabled) await HapticFeedback.lightImpact();
+  static void light(bool enabled) {
+    if (enabled) unawaited(HapticFeedback.lightImpact());
   }
 
-  static Future<void> medium(bool enabled) async {
-    if (enabled) await HapticFeedback.mediumImpact();
+  static void medium(bool enabled) {
+    if (enabled) unawaited(HapticFeedback.mediumImpact());
   }
 
-  static Future<void> heavy(bool enabled) async {
-    if (enabled) await HapticFeedback.heavyImpact();
+  static void heavy(bool enabled) {
+    if (enabled) unawaited(HapticFeedback.heavyImpact());
   }
 }

@@ -1,6 +1,6 @@
 import '../database/app_database.dart';
-import 'completion.dart';
 import '../utils/date_helpers.dart';
+import 'completion.dart';
 
 /// One habit's life-span summary: how long it has existed (or lived, if
 /// archived), and how stable its completion was over that period.

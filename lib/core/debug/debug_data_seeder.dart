@@ -5,11 +5,11 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/database_reset.dart';
 import '../database/enums.dart';
-import '../domain/mood_rule.dart';
+import '../domain/scheduling.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 import '../utils/time_bucket.dart';
-import '../domain/scheduling.dart';
+import 'mood_rule.dart';
 
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {
@@ -845,7 +845,7 @@ class DebugDataSeeder {
   }
 
   /// Maps a day's completion ratio to a mood with noise — the shared
-  /// generation curve in `core/domain/mood_rule.dart`, which mirrors the
+  /// generation curve in `core/debug/mood_rule.dart`, which mirrors the
   /// relationship the stats insight measures.
 
   bool _shouldLogDay(_HabitMeta meta, DateTime date) {

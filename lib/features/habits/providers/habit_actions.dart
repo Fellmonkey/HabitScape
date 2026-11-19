@@ -2,9 +2,9 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/daos/habit_logs_dao.dart';
 import '../../../core/database/daos/habits_dao.dart';
+import '../../../core/database/database_provider.dart';
 import '../../../core/database/enums.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/settings/today.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/daos/day_notes_dao.dart';
+import '../../../core/database/database_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../domain/day_moment_draft.dart';

@@ -7,9 +7,9 @@ import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/features/habits/domain/habit_engine.dart';
 import 'package:rythm/features/habits/providers/habit_metrics_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
-import 'package:rythm/features/habits/domain/habit_engine.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

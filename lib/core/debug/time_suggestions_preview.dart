@@ -2,8 +2,8 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/habits/presentation/widgets/time_suggestion_banner.dart';
-import '../providers/time_suggestions_provider.dart';
 import '../keys.dart';
+import '../providers/time_suggestions_provider.dart';
 
 /// Debug preview of «Подсказка»: shows the stats time-suggestion card with
 /// live data, or an explanation when there is nothing to suggest yet.

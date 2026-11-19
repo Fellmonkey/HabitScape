@@ -34,9 +34,9 @@ void main() {
     addTearDown(container.dispose);
 
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('hintful.greenhouse', 'true');
-    prefs.setString('hintful.settings', 'true');
-    prefs.setString('app_own_key', 'keep-me');
+    await prefs.setString('hintful.greenhouse', 'true');
+    await prefs.setString('hintful.settings', 'true');
+    await prefs.setString('app_own_key', 'keep-me');
 
     final store = await container.read(hintfulStoreProvider.future);
     store.clear();

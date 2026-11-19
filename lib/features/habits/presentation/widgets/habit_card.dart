@@ -6,16 +6,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/enums.dart';
+import '../../../../core/domain/scheduling.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
-import '../../../../core/domain/scheduling.dart';
-import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_streams.dart';
 

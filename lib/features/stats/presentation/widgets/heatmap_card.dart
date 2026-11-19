@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/domain/completion.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/domain/completion.dart';
 import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/stats_engine.dart';
 import 'github_heatmap.dart';

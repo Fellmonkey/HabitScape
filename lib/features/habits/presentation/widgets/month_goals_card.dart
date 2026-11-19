@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../../../core/theme/motion_tokens.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
-import '../../../../core/settings/today.dart';
 import '../../providers/month_goal_providers.dart';
 
 /// Month goals — things to achieve this month, with checkboxes.
@@ -201,7 +201,7 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
       ),
     );
     if (confirmed == true && mounted) {
-      ref.read(monthGoalActionsProvider.notifier).deleteMonthGoal(goal.id);
+      await ref.read(monthGoalActionsProvider.notifier).deleteMonthGoal(goal.id);
     }
   }
 }

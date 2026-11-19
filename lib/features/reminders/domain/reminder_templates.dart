@@ -1,5 +1,6 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
+import '../../../core/domain/week_policy.dart';
 import '../../../core/utils/date_helpers.dart';
 import 'reminder_spec.dart';
 
@@ -24,7 +25,7 @@ const absentReminderMinDays = 3;
 /// Scenarios:
 /// 1. Habit reminders — daily at the habit's configured time of day.
 /// 2. Evening nudge — if active habits are still undone today.
-/// 3. Week summary — Sunday closing window (one shot at 19:00).
+/// 3. Week summary — closing window (Sunday or Monday, one shot at 19:00).
 /// 4. Month summary — each remaining day of the last-3-days window.
 /// 5. Moment of the day — evening invite when nothing is written today.
 ///
@@ -94,10 +95,10 @@ List<ReminderSpec> buildReminderSpecs({
     }
   }
 
-  // 3. Week summary: the Sunday closing window only.
+  // 3. Week summary: the same closing window the week card uses.
   if (enabledKinds.contains(ReminderKind.weekSummary) &&
       weekSummaryAvailable &&
-      midnight.weekday == DateTime.sunday) {
+      isWeekSummaryWindow(midnight)) {
     specs.add(
       ReminderSpec(
         id: ReminderIds.weekSummary,

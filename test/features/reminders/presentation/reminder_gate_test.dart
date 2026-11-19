@@ -3,19 +3,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/src/framework.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/database/enums.dart';
 import 'package:rythm/core/notifications/reminder_scheduler.dart';
 import 'package:rythm/core/notifications/reminder_settings.dart';
+import 'package:rythm/core/router/app_router.dart';
+import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/habits/domain/month_summary.dart';
 import 'package:rythm/features/habits/providers/day_note_providers.dart';
 import 'package:rythm/features/habits/providers/habit_streams.dart';
 import 'package:rythm/features/habits/providers/month_summary_providers.dart';
-import 'package:rythm/core/router/app_router.dart';
-import 'package:rythm/core/settings/exposure.dart';
 import 'package:rythm/features/reminders/domain/reminder_spec.dart';
 import 'package:rythm/features/reminders/presentation/reminder_gate.dart';
 import 'package:rythm/features/week/domain/week_summary.dart';
@@ -82,7 +83,7 @@ void main() {
 
   tearDown(() async => db.close());
 
-  overridesFor({
+  List<Override> overridesFor({
     required Stream<List<HabitLog>> logs,
     Stream<DayNote?>? notes,
   }) {

@@ -9,6 +9,7 @@ import '../../../../core/database/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
+import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/feature_intro_trigger.dart';
@@ -17,12 +18,12 @@ import '../../../../features/onboarding/single_hint.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
+import '../../../capsule/presentation/widgets/capsule_card.dart';
+import '../../../capsule/providers/letter_providers.dart';
 import '../../domain/today_board.dart';
-import '../../../../core/settings/today.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
-
 import '../widgets/banner_stack.dart';
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
@@ -34,8 +35,6 @@ import '../widgets/progress_ring.dart';
 import '../widgets/swipe_hint_strip.dart';
 import '../widgets/today_group_visuals.dart';
 import '../widgets/welcome_back_gate.dart';
-import '../../../capsule/presentation/widgets/capsule_card.dart';
-import '../../../capsule/providers/letter_providers.dart';
 
 /// Minimum active habits before the «История» shortcut appears in the header.
 const greenHouseHistoryMinHabits = 3;

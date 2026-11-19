@@ -1,8 +1,10 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/database/enums.dart';
-import '../../../core/utils/date_helpers.dart';
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/scheduling.dart';
+import '../../../core/utils/date_helpers.dart';
+
+export '../../../core/domain/week_policy.dart';
 
 /// The auto-summary of a finished/ending week, computed on the fly.
 class WeekSummary {
@@ -38,22 +40,6 @@ class WeekSummary {
   bool get hasMoodData => totalDays > 0;
   bool get hasHabitData => completionPct != null;
 }
-
-/// The Monday of the week the summary closes.
-///
-/// A Sunday closes the week that is ending today; a Monday closes the week
-/// that just ended, not the fresh one. The rest of the week has no closing
-/// window.
-DateTime closingWeekStart(DateTime today) {
-  final currentWeekStart = weekStartOf(today);
-  return today.weekday == DateTime.monday
-      ? currentWeekStart.subtract(const Duration(days: 7))
-      : currentWeekStart;
-}
-
-/// Whether the weekly summary is due today.
-bool isWeekSummaryWindow(DateTime today) =>
-    today.weekday == DateTime.sunday || today.weekday == DateTime.monday;
 
 /// Everything the summary card needs to decide whether and what to render:
 /// which week is closing, the summary itself, and whether the user already

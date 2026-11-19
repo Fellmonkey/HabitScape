@@ -2,10 +2,9 @@ import '../database/enums.dart';
 
 /// The generation-side mood↔completion curve used by the debug seeder.
 ///
-/// The stats insight (`computeMoodCorrelation`) *measures* this relationship
+/// The stats insight (`computeMoodCorrelation`) measures this relationship
 /// from real data; this rule is the expectation the seeder generates data
-/// from. Keeping it in core means seeded history and the insight share one
-/// documented understanding of how moods correlate with completion.
+/// from. It lives in `core/debug` because only seeded debug history uses it.
 DayMood moodForCompletionRatio(double ratio, double roll) {
   if (ratio >= 0.8) {
     return roll < 0.75

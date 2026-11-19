@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/src/framework.dart';
 import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/keys.dart';
@@ -52,7 +53,7 @@ void main() {
 
   /// Static provider overrides so no drift stream stays alive past the test;
   /// the point here is layout under a 2.0 text scale, not live data.
-  staticOverrides(SharedPreferences prefs) => [
+  List<Override> staticOverrides(SharedPreferences prefs) => [
     databaseProvider.overrideWithValue(db),
     sharedPrefsProvider.overrideWith((_) async => prefs),
     activeHabitsProvider.overrideWith((ref) => Stream.value(const [])),

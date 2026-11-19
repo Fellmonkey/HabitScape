@@ -184,11 +184,11 @@ CREATE TABLE letters (
       raw.execute(v1Habits);
       raw.execute(v1HabitLogs);
       raw.execute(
-        "INSERT INTO habits (name, seed_archetype, created_at) "
+        'INSERT INTO habits (name, seed_archetype, created_at) '
         "VALUES ('Бег', 'check', 1700000000)",
       );
       raw.execute(
-        "INSERT INTO habit_logs (habit_id, date, status, logged_hour) "
+        'INSERT INTO habit_logs (habit_id, date, status, logged_hour) '
         "VALUES (1, 1700086400, 'fail', 9)",
       );
       raw.execute('PRAGMA user_version = 1');
@@ -237,7 +237,7 @@ CREATE TABLE letters (
       "INSERT INTO habits (name, created_at) VALUES ('Бег', 1700000000)",
     );
     raw.execute(
-      "INSERT INTO day_notes (date, moment, mood) "
+      'INSERT INTO day_notes (date, moment, mood) '
       "VALUES (1700086400, 'закат', 'good')",
     );
     raw.execute('PRAGMA user_version = 4');

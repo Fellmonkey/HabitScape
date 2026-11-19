@@ -3,24 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/app_constants.dart';
+import '../../../../core/domain/completion.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
-import '../../../../core/domain/completion.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../habits/presentation/widgets/day_moment_sheet.dart';
-import '../../providers/stats_providers.dart';
-import '../../providers/year_summary_providers.dart';
 import '../../../onboarding/feature_intro_trigger.dart';
 import '../../../onboarding/hint_tour.dart';
+import '../../providers/stats_providers.dart';
+import '../../providers/year_summary_providers.dart';
 import '../widgets/archive_card.dart';
 import '../widgets/heatmap_card.dart';
 import '../widgets/intentions_card.dart';
-import '../widgets/mood_correlation_card.dart';
 import '../widgets/month_trend_card.dart';
+import '../widgets/mood_correlation_card.dart';
 import '../widgets/rhythm_card.dart';
 import '../widgets/week_trend_card.dart';
 
