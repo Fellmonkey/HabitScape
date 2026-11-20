@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/app_database.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
+import '../../../domain/models/entities.dart';
 import '../domain/habit_history.dart';
 import 'habit_history_controller.dart';
 
@@ -86,12 +86,12 @@ class HistoryPager extends AsyncNotifier<HistoryPagerState> {
 
   HistoryPagerState _snapshot(HabitHistory history, {bool isLoading = false}) {
     return HistoryPagerState(
-      rows: [
+      rows: List.unmodifiable([
         for (final month in history.months) ...[
           HistoryMonthRow(month),
           for (final log in month.logs) HistoryLogRow(log),
         ],
-      ],
+      ]),
       isLoading: isLoading || history.isLoading,
       isExhausted: history.isExhausted,
     );

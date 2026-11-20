@@ -1,8 +1,8 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/models/entities.dart';
 
 export '../../../core/domain/week_policy.dart';
 

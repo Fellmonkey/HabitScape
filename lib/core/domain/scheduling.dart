@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../database/app_database.dart';
+import '../../domain/models/entities.dart';
 import '../domain/enums.dart';
 import '../utils/date_helpers.dart';
 

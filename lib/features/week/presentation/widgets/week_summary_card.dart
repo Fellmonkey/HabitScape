@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../domain/models/entities.dart';
 import '../../domain/week_summary.dart';
 import '../../providers/week_providers.dart';
 

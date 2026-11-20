@@ -1,7 +1,7 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/week_policy.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/models/entities.dart';
 import 'reminder_spec.dart';
 
 /// The habit-reminder fire hour for a configured time of day. Habits without

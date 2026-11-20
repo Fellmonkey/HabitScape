@@ -1,6 +1,7 @@
+import '../../data/mappers/row_mappers.dart';
+import '../../domain/models/entities.dart';
 import '../config/app_constants.dart';
 import '../utils/date_helpers.dart';
-import 'app_database.dart';
 import 'daos/day_notes_dao.dart';
 import 'daos/habit_logs_dao.dart';
 import 'daos/habits_dao.dart';
@@ -69,9 +70,9 @@ class HistoryStore {
     return WindowSnapshot(
       start: start,
       end: end,
-      habits: habits,
-      logs: logs,
-      notes: notes,
+      habits: habits.mapToDomain((r) => r.toDomain()),
+      logs: logs.mapToDomain((r) => r.toDomain()),
+      notes: notes.mapToDomain((r) => r.toDomain()),
     );
   }
 
@@ -118,8 +119,8 @@ class HistoryStore {
     return WindowSnapshot(
       start: s,
       end: e,
-      habits: [habit],
-      logs: logs,
+      habits: [habit.toDomain()],
+      logs: logs.mapToDomain((r) => r.toDomain()),
       notes: const [],
     );
   }
@@ -147,9 +148,9 @@ class HistoryStore {
     return WindowSnapshot(
       start: s,
       end: e,
-      habits: habits,
-      logs: logs,
-      notes: notes,
+      habits: habits.mapToDomain((r) => r.toDomain()),
+      logs: logs.mapToDomain((r) => r.toDomain()),
+      notes: notes.mapToDomain((r) => r.toDomain()),
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/settings/week_answer.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
+import '../../../domain/models/entities.dart';
 import '../domain/week_summary.dart';
 
 // ── Streams ──────────────────────────────────────────────────
@@ -14,9 +14,9 @@ import '../domain/week_summary.dart';
 final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
   final today = ref.watch(todayDateProvider);
   return ref
-      .watch(databaseProvider)
-      .weeklyIntentionsDao
-      .watchForWeek(weekStartOf(today).unixSeconds);
+      .watch(repositoriesProvider)
+      .goals
+      .watchIntention(weekStartOf(today).unixSeconds);
 });
 
 /// The previous week's intention — shown in the next summary as a gentle
@@ -24,9 +24,9 @@ final currentWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
 final previousWeekIntentionProvider = StreamProvider<WeeklyIntention?>((ref) {
   final today = ref.watch(todayDateProvider);
   return ref
-      .watch(databaseProvider)
-      .weeklyIntentionsDao
-      .watchForWeek(
+      .watch(repositoriesProvider)
+      .goals
+      .watchIntention(
         weekStartOf(today).subtract(const Duration(days: 7)).unixSeconds,
       );
 });
@@ -66,8 +66,8 @@ class WeekIntentionActions extends Notifier<void> {
   /// Saves the current week's intention.
   Future<void> save(String intention) {
     return ref
-        .read(databaseProvider)
-        .weeklyIntentionsDao
+        .read(repositoriesProvider)
+        .goals
         .setIntention(weekStartOf(_today).unixSeconds, intention);
   }
 

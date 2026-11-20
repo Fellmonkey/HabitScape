@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/repository_providers.dart';
 import '../../features/habits/domain/month_summary.dart';
 import '../../features/habits/presentation/widgets/month_summary_card.dart';
-import '../database/database_provider.dart';
 import '../database/history_store_provider.dart';
 import '../keys.dart';
 import '../settings/today.dart';
@@ -39,9 +39,9 @@ class _MonthSummaryPreviewSheetState
       final monthStart = firstOfMonth(today);
       final snapshot = await ref.read(historyStoreProvider).month(monthStart);
       final goals = await ref
-          .read(databaseProvider)
-          .monthlyGoalsDao
-          .getGoalsForMonth(monthStart.unixSeconds);
+          .read(repositoriesProvider)
+          .goals
+          .getGoals(monthStart.unixSeconds);
       final summary = computeMonthSummary(
         habits: snapshot.habits,
         logs: snapshot.logs,

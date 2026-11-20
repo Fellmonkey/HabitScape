@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
@@ -10,6 +9,7 @@ import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../domain/capsule.dart';

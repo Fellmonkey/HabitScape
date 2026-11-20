@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/models/entities.dart';
 import '../../features/capsule/presentation/screens/capsule_screen.dart';
 import '../../features/capsule/presentation/screens/letter_screen.dart';
 import '../../features/habits/presentation/screens/archived_habits_screen.dart';
@@ -11,7 +12,6 @@ import '../../features/settings/presentation/screens/changelog_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/stats/presentation/screens/stats_screen.dart';
 import '../../features/stats/presentation/screens/year_summary_screen.dart';
-import '../database/app_database.dart';
 import '../theme/motion_tokens.dart';
 import 'shell_scaffold.dart';
 

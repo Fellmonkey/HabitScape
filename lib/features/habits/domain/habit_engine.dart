@@ -1,8 +1,8 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../core/utils/time_bucket.dart';
+import '../../../domain/models/entities.dart';
 
 /// Pure engine for habit metrics — no side effects, no DB access.
 class HabitEngine {

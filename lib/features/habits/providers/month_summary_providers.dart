@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
 import '../domain/month_summary.dart';
 
 /// The closing month's summary, or null outside the last days of the month.
@@ -21,9 +21,9 @@ final monthSummaryProvider = FutureProvider<MonthSummaryView>((ref) async {
 
   final snapshot = await ref.watch(historyStoreProvider).month(monthStart);
   final goals = await ref
-      .watch(databaseProvider)
-      .monthlyGoalsDao
-      .getGoalsForMonth(monthStart.unixSeconds);
+      .watch(repositoriesProvider)
+      .goals
+      .getGoals(monthStart.unixSeconds);
 
   final summary = computeMonthSummary(
     habits: snapshot.habits,

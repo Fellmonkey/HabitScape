@@ -3,7 +3,6 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/moment.dart';
 import '../../../core/notifications/reminder_scheduler.dart';
@@ -13,6 +12,7 @@ import '../../../core/settings/exposure.dart';
 import '../../../core/settings/hintful.dart';
 import '../../../core/settings/shared_prefs.dart';
 import '../../../core/settings/today.dart';
+import '../../../domain/models/entities.dart';
 import '../../habits/providers/day_note_providers.dart';
 import '../../habits/providers/habit_streams.dart';
 import '../../habits/providers/month_summary_providers.dart';

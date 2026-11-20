@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/database/history_store_provider.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../../features/capsule/providers/letter_providers.dart';
 import '../../../../features/stats/providers/year_summary_providers.dart';
 import '../../providers/habit_streams.dart';

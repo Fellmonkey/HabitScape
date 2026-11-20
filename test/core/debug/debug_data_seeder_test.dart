@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/debug/debug_data_seeder.dart';
 import 'package:rythm/core/domain/completion.dart';
 import 'package:rythm/core/domain/enums.dart';
@@ -8,6 +8,7 @@ import 'package:rythm/core/domain/time_suggestion.dart';
 import 'package:rythm/core/settings/today.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
+import 'package:rythm/data/mappers/row_mappers.dart';
 
 import '../../fixtures/test_db.dart';
 
@@ -81,9 +82,9 @@ void main() {
       );
       final monthStart = DateTime.utc(today.year, today.month, 1);
       final points = computeMonthSpreadDays(
-        habits: habits,
-        logs: logs,
-        notes: notes,
+        habits: habits.map((h) => h.toDomain()).toList(),
+        logs: logs.map((l) => l.toDomain()).toList(),
+        notes: notes.map((n) => n.toDomain()).toList(),
         monthStart: monthStart,
       );
 
@@ -271,8 +272,8 @@ void main() {
 
       // The stats domain should flag the mismatch.
       final suggestions = computeTimeSuggestions(
-        habits: habits,
-        logs: logs,
+        habits: habits.map((h) => h.toDomain()).toList(),
+        logs: logs.map((l) => l.toDomain()).toList(),
         now: pinned.toMidnight,
       );
       expect(suggestions, hasLength(1));
@@ -295,8 +296,8 @@ void main() {
       expect(logs, hasLength(120)); // 90 + 30 done logs
 
       final lifecycles = computeHabitLifecycles(
-        habits: archived,
-        logs: logs,
+        habits: archived.map((h) => h.toDomain()).toList(),
+        logs: logs.map((l) => l.toDomain()).toList(),
         now: pinned.toMidnight,
       );
       final yoga = lifecycles.singleWhere((l) => l.habit.name == 'Йога');

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import 'day_moment_sheet.dart';
 

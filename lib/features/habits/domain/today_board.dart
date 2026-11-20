@@ -1,6 +1,6 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
+import '../../../domain/models/entities.dart';
 
 /// Where a habit lands on the Today board.
 enum TodayGroupKind { focus, morning, afternoon, evening, anytime, notToday }

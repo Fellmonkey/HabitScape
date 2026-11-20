@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
+import 'package:rythm/data/mappers/row_mappers.dart';
+import 'package:rythm/domain/models/entities.dart';
 import 'package:rythm/features/habits/presentation/widgets/habit_form_sheet.dart';
 import 'package:rythm/shared/widgets/app_sheets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,7 +111,7 @@ void main() {
       makeHabitCompanion(name: 'Старое имя', icon: 'check'),
     );
     final habit = await db.habitsDao.getHabit(id);
-    await pumpSheet(tester, habit: habit);
+    await pumpSheet(tester, habit: habit.toDomain());
 
     expect(find.text('Редактировать'), findsOneWidget);
     await tester.enterText(find.byKey(K.habitNameField), 'Новое имя');

@@ -1,6 +1,6 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/moment.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/models/entities.dart';
 
 /// How far back an echo comes from. Chosen automatically, nearest memory
 /// first: a year → a month → a week → yesterday. Anything else falls through

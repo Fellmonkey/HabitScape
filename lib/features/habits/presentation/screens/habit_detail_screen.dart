@@ -2,14 +2,13 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_constants.dart';
-import '../../../../core/database/app_database.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_palette.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/confirm_delete_dialog.dart';
-
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';

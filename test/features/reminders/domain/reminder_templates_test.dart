@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/domain/models/entities.dart';
 import 'package:rythm/features/reminders/domain/reminder_spec.dart';
 import 'package:rythm/features/reminders/domain/reminder_templates.dart';
 
@@ -91,34 +91,38 @@ void main() {
       expect(allDone.where((s) => s.id == ReminderIds.eveningNudge), isEmpty);
     });
 
-    test('week summary fires across the shared Sunday/Monday closing window',
-        () {
-      final sunday = DateTime(2026, 11, 1); // Sunday
-      final monday = DateTime(2026, 11, 2);
-      final tuesday = DateTime(2026, 11, 3);
+    test(
+      'week summary fires across the shared Sunday/Monday closing window',
+      () {
+        final sunday = DateTime(2026, 11, 1); // Sunday
+        final monday = DateTime(2026, 11, 2);
+        final tuesday = DateTime(2026, 11, 3);
 
-      for (final day in <DateTime>[sunday, monday]) {
-        final specs = build(week: true, on: day);
-        final week = specs.singleWhere((s) => s.id == ReminderIds.weekSummary);
-        expect(week.hour, 19);
-        expect(week.date, day.toMidnight);
-      }
+        for (final day in <DateTime>[sunday, monday]) {
+          final specs = build(week: true, on: day);
+          final week = specs.singleWhere(
+            (s) => s.id == ReminderIds.weekSummary,
+          );
+          expect(week.hour, 19);
+          expect(week.date, day.toMidnight);
+        }
 
-      expect(
-        build(
-          week: true,
-          on: tuesday,
-        ).where((s) => s.id == ReminderIds.weekSummary),
-        isEmpty,
-      );
-      expect(
-        build(
-          week: false,
-          on: sunday,
-        ).where((s) => s.id == ReminderIds.weekSummary),
-        isEmpty,
-      );
-    });
+        expect(
+          build(
+            week: true,
+            on: tuesday,
+          ).where((s) => s.id == ReminderIds.weekSummary),
+          isEmpty,
+        );
+        expect(
+          build(
+            week: false,
+            on: sunday,
+          ).where((s) => s.id == ReminderIds.weekSummary),
+          isEmpty,
+        );
+      },
+    );
 
     test('month summary covers every remaining day of the closing window', () {
       // 31-day month, window opens on the 29th.

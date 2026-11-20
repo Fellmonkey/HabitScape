@@ -1,4 +1,4 @@
-import '../database/app_database.dart';
+import '../../domain/models/entities.dart';
 import '../utils/date_helpers.dart';
 import 'completion.dart';
 

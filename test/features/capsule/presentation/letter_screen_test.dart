@@ -1,16 +1,17 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/keys.dart';
 import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/data/mappers/row_mappers.dart';
+import 'package:rythm/domain/models/entities.dart';
 import 'package:rythm/features/capsule/presentation/screens/letter_screen.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,7 +68,7 @@ void main() {
       body: 'Помни: ты сильнее, чем кажется',
       createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
-    return (await db.lettersDao.getAllLetters()).single;
+    return (await db.lettersDao.getAllLetters()).single.toDomain();
   }
 
   Future<void> pumpLetter(WidgetTester tester, Letter capsule) async {
@@ -131,7 +132,7 @@ void main() {
     expect(letters.single.reply, 'Я справился!');
 
     // The live provider emits the updated row; the field keeps the saved text.
-    letterController.add(capsule.copyWith(reply: const Value('Я справился!')));
+    letterController.add(capsule.copyWith(reply: 'Я справился!'));
     await tester.pumpAndSettle();
     expect(
       tester.widget<TextField>(find.byKey(K.letterReplyField)).controller!.text,

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/domain/time_suggestion.dart';
@@ -14,6 +14,8 @@ import 'package:rythm/core/settings/shared_prefs.dart';
 import 'package:rythm/core/theme/app_theme.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/core/utils/time_bucket.dart';
+import 'package:rythm/data/mappers/row_mappers.dart';
+import 'package:rythm/domain/models/entities.dart';
 import 'package:rythm/features/capsule/domain/capsule.dart';
 import 'package:rythm/features/capsule/providers/letter_providers.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
@@ -415,7 +417,7 @@ void main() {
       expect(logs.single.date, today);
 
       // …and the stream now reports it — the state stays confirmed.
-      logsController.add(logs);
+      logsController.add(logs.map((l) => l.toDomain()).toList());
       await tester.pumpAndSettle();
 
       expect(
@@ -466,7 +468,9 @@ void main() {
     await pumpGreenhouse(
       tester,
       habits: [makeHabit(id: id, name: 'Сделано', timeOfDay: 'morning')],
-      logsStream: db.habitLogsDao.watchLogsForDate(todayTimestamp()),
+      logsStream: db.habitLogsDao
+          .watchLogsForDate(todayTimestamp())
+          .map((list) => list.map((l) => l.toDomain()).toList()),
     );
 
     final check = find.byKey(K.habitCheck(id));

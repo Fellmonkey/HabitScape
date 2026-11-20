@@ -7,7 +7,7 @@ library;
 
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../database/app_database.dart';
+import '../../domain/models/entities.dart';
 import '../domain/enums.dart';
 import '../domain/scheduling.dart';
 import '../formatting/russian_plural.dart';

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
 import '../domain/year_summary.dart';
 
 /// The year's summary over the same trailing 365-day window as the stats
@@ -14,9 +14,9 @@ final yearSummaryProvider = FutureProvider.autoDispose<YearSummary>((
 ) async {
   final now = dateFromUnix(ref.watch(todayProvider));
   final snapshot = await ref.watch(historyStoreProvider).stats(now);
-  final db = ref.watch(databaseProvider);
-  final goals = await db.monthlyGoalsDao.getAllGoals();
-  final intentions = await db.weeklyIntentionsDao.getAllIntentions();
+  final goalsRepo = ref.watch(repositoriesProvider).goals;
+  final goals = await goalsRepo.getAllGoals();
+  final intentions = await goalsRepo.getAllIntentions();
 
   return computeYearSummary(
     habits: snapshot.habits,

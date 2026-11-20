@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/database/history_store_provider.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
@@ -10,6 +9,7 @@ import '../../../../core/settings/hintful.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../onboarding/app_tours.dart';
 import '../../domain/day_moment_draft.dart';
 import '../../providers/day_note_providers.dart';

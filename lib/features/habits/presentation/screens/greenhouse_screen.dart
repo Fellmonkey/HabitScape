@@ -4,13 +4,13 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/database/app_database.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/models/entities.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/feature_intro_trigger.dart';
 import '../../../../features/onboarding/hint_tour.dart';

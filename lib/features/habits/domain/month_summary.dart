@@ -1,6 +1,6 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/domain/completion.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/models/entities.dart';
 
 /// Whether the month summary should be offered today: the last three days of
 /// the calendar month (the same closing window idea as the week summary).

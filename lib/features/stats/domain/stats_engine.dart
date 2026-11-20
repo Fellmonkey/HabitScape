@@ -1,6 +1,5 @@
-import '../../../core/database/app_database.dart';
-
 import '../../../core/domain/completion.dart';
+import '../../../domain/models/entities.dart';
 import 'mood_correlation.dart';
 import 'rhythm_stats.dart';
 import 'week_trend.dart';

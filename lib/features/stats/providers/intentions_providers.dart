@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_provider.dart';
 import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
 import '../domain/year_summary.dart';
 
 /// The intention archive: the newest stored weekly intentions with the
@@ -13,8 +13,10 @@ final intentionsProvider =
     FutureProvider.autoDispose<List<WeekIntentionRecord>>((ref) async {
       final now = dateFromUnix(ref.watch(todayProvider));
       final snapshot = await ref.watch(historyStoreProvider).stats(now);
-      final db = ref.watch(databaseProvider);
-      final intentions = await db.weeklyIntentionsDao.getAllIntentions();
+      final intentions = await ref
+          .watch(repositoriesProvider)
+          .goals
+          .getAllIntentions();
 
       return computeIntentionRecords(
         habits: snapshot.habits,

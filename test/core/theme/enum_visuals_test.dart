@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/domain/scheduling.dart';
 import 'package:rythm/core/theme/enum_visuals.dart';
+import 'package:rythm/domain/models/entities.dart';
 
 /// Presentation label mapping for the scheduling kernel — the one place a
 /// frequency's Russian label is defined. The kernel itself never carries

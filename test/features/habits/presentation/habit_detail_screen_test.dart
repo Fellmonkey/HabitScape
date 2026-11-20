@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rythm/core/config/app_constants.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/database/database_provider.dart';
 import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/keys.dart';

@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/app_database.dart';
-import '../../../core/database/daos/day_notes_dao.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
+import '../../../domain/models/entities.dart';
 import '../domain/day_moment_draft.dart';
 
 // ── Day note ─────────────────────────────────────────────────
@@ -12,9 +11,9 @@ import '../domain/day_moment_draft.dart';
 /// Today's day note: the most memorable moment + mood.
 final todayDayNoteProvider = StreamProvider<DayNote?>((ref) {
   return ref
-      .watch(databaseProvider)
-      .dayNotesDao
-      .watchNoteForDate(ref.watch(todayProvider));
+      .watch(repositoriesProvider)
+      .dayNotes
+      .watchForDate(ref.watch(todayProvider));
 });
 
 /// One day's note for a specific date — the single seam screens use to read
@@ -23,24 +22,21 @@ final dayNoteProvider = FutureProvider.autoDispose.family<DayNote?, int>((
   ref,
   dateTs,
 ) {
-  return ref.watch(databaseProvider).dayNotesDao.getNoteForDate(dateTs);
+  return ref.watch(repositoriesProvider).dayNotes.getForDate(dateTs);
 });
 
-/// Commands for day notes — the write surface beside the read providers, so
-/// the whole concept (read + save + clear) lives in one module instead of
-/// being split across two.
+/// Commands for day notes — the write surface beside the read providers.
 class DayNoteActions extends Notifier<void> {
   @override
   void build() {}
 
-  DayNotesDao get _dayNotesDao => ref.read(databaseProvider).dayNotesDao;
-
   /// Persists a day note under one policy: an empty draft clears the row;
   /// anything else upserts. [dateTimestamp] defaults to today.
-  Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) {
+  Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) async {
     final ts = dateTimestamp ?? ref.read(todayDateProvider).unixSeconds;
-    if (draft.isEmpty) return _dayNotesDao.clearNote(ts);
-    return _dayNotesDao.upsertNote(
+    final repo = ref.read(repositoriesProvider).dayNotes;
+    if (draft.isEmpty) return repo.clear(ts);
+    return repo.upsert(
       ts,
       moment: draft.momentOrNull,
       mood: draft.mood,

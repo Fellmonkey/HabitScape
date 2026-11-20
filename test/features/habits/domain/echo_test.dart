@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
 import 'package:rythm/core/domain/enums.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:rythm/domain/models/entities.dart';
 import 'package:rythm/features/habits/domain/echo.dart';
 
 import '../../../fixtures/test_factories.dart';

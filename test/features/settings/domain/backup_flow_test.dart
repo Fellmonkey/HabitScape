@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
+import 'package:rythm/core/database/app_database.dart' show AppDatabase;
 import 'package:rythm/core/database/backup_service.dart';
 import 'package:rythm/core/utils/date_helpers.dart';
 import 'package:rythm/features/settings/domain/backup_flow.dart';

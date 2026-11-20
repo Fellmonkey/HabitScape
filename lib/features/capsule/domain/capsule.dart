@@ -1,5 +1,5 @@
-import '../../../core/database/app_database.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/models/entities.dart';
 
 /// Preset delays for a new capsule. The first is the default — one month,
 /// matching the promise "a sentence to yourself in a month".
