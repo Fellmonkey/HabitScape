@@ -6,7 +6,6 @@ import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
-import 'package:habitscape/data/mappers/row_mappers.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/widgets/habit_form_sheet.dart';
 import 'package:habitscape/shared/widgets/app_sheets.dart';
@@ -111,7 +110,7 @@ void main() {
       makeHabitCompanion(name: 'Старое имя', icon: 'check'),
     );
     final habit = await db.habitsDao.getHabit(id);
-    await pumpSheet(tester, habit: habit.toDomain());
+    await pumpSheet(tester, habit: habit);
 
     expect(find.text('Редактировать'), findsOneWidget);
     await tester.enterText(find.byKey(K.habitNameField), 'Новое имя');

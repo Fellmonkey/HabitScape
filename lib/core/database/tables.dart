@@ -1,7 +1,11 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/models/entities.dart';
 import 'enums.dart';
 
+/// The domain entity is the row class: Drift reads/writes it directly, so no
+/// raw-row → domain mapper layer is needed.
+@UseRowClass(Habit)
 class Habits extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 200)();
@@ -16,6 +20,7 @@ class Habits extends Table {
 }
 
 /// One row per day: moment + day mood + time quality (1–5).
+@UseRowClass(DayNote)
 class DayNotes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get date => integer().unique()();
@@ -25,6 +30,7 @@ class DayNotes extends Table {
 }
 
 /// Things to achieve this month.
+@UseRowClass(MonthlyGoal)
 class MonthlyGoals extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -36,6 +42,7 @@ class MonthlyGoals extends Table {
 
 /// A time capsule: one message to your future self. No title, no recipient —
 /// just a body and a delivery date.
+@UseRowClass(Letter)
 class Letters extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get createdAt => integer()();
@@ -54,6 +61,7 @@ class Letters extends Table {
 
 /// One intention per week («Что беру в следующую неделю?»). The summary is
 /// computed on the fly; only the intention itself is stored.
+@UseRowClass(WeeklyIntention)
 class WeeklyIntentions extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get weekStart => integer().unique()();
@@ -66,6 +74,7 @@ class WeeklyIntentions extends Table {
   columns: {#habitId, #date},
   unique: true,
 )
+@UseRowClass(HabitLog)
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get habitId =>

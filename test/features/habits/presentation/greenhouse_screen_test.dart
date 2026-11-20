@@ -14,7 +14,6 @@ import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
-import 'package:habitscape/data/mappers/row_mappers.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/capsule/domain/capsule.dart';
 import 'package:habitscape/features/capsule/providers/letter_providers.dart';
@@ -417,7 +416,7 @@ void main() {
       expect(logs.single.date, today);
 
       // …and the stream now reports it — the state stays confirmed.
-      logsController.add(logs.map((l) => l.toDomain()).toList());
+      logsController.add(logs);
       await tester.pumpAndSettle();
 
       expect(
@@ -470,7 +469,7 @@ void main() {
       habits: [makeHabit(id: id, name: 'Сделано', timeOfDay: 'morning')],
       logsStream: db.habitLogsDao
           .watchLogsForDate(todayTimestamp())
-          .map((list) => list.map((l) => l.toDomain()).toList()),
+          .map((list) => list),
     );
 
     final check = find.byKey(K.habitCheck(id));

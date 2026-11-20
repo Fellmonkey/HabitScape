@@ -5,12 +5,11 @@ import '../../core/database/daos/habit_logs_dao.dart';
 import '../../core/database/daos/habits_dao.dart';
 import '../../core/database/enums.dart';
 import '../../domain/models/entities.dart';
-import '../mappers/row_mappers.dart';
 
 /// Single source of truth for habits and their logs.
 ///
-/// Owns Drift access and returns domain entities only. No UI or business
-/// policy lives here.
+/// With `@UseRowClass`, Drift returns the domain entities directly — there is
+/// no row→domain conversion layer. Only writes build Drift companions.
 class HabitRepository {
   HabitRepository(rows.AppDatabase db)
     : _habitsDao = db.habitsDao,
@@ -19,45 +18,29 @@ class HabitRepository {
   final HabitsDao _habitsDao;
   final HabitLogsDao _logsDao;
 
-  Stream<List<Habit>> watchActive() => _habitsDao.watchActiveHabits().map(
-    (list) => list.mapToDomain((r) => r.toDomain()),
-  );
+  Stream<List<Habit>> watchActive() => _habitsDao.watchActiveHabits();
 
-  Stream<List<Habit>> watchArchived() => _habitsDao.watchArchivedHabits().map(
-    (list) => list.mapToDomain((r) => r.toDomain()),
-  );
+  Stream<List<Habit>> watchArchived() => _habitsDao.watchArchivedHabits();
 
-  Stream<Habit> watchOne(int id) =>
-      _habitsDao.watchHabit(id).map((r) => r.toDomain());
+  Stream<Habit> watchOne(int id) => _habitsDao.watchHabit(id);
 
-  Future<Habit> getOne(int id) async =>
-      (await _habitsDao.getHabit(id)).toDomain();
+  Future<Habit> getOne(int id) => _habitsDao.getHabit(id);
 
-  Future<List<Habit>> getAll() async =>
-      (await _habitsDao.getAllHabits()).mapToDomain((r) => r.toDomain());
+  Future<List<Habit>> getAll() => _habitsDao.getAllHabits();
 
-  Stream<List<HabitLog>> watchLogsForDate(int timestamp) => _logsDao
-      .watchLogsForDate(timestamp)
-      .map((list) => list.mapToDomain((r) => r.toDomain()));
+  Stream<List<HabitLog>> watchLogsForDate(int timestamp) =>
+      _logsDao.watchLogsForDate(timestamp);
 
-  Future<List<HabitLog>> getAllLogs() async =>
-      (await _logsDao.getAllLogs()).mapToDomain((r) => r.toDomain());
+  Future<List<HabitLog>> getAllLogs() => _logsDao.getAllLogs();
 
   Future<List<HabitLog>> getLogsForHabitInRange(
     int habitId,
     int start,
     int end,
-  ) async => (await _logsDao.getLogsForHabitInRange(
-    habitId,
-    start,
-    end,
-  )).mapToDomain((r) => r.toDomain());
+  ) => _logsDao.getLogsForHabitInRange(habitId, start, end);
 
-  Future<List<HabitLog>> getLogsInRange(int start, int end) async =>
-      (await _logsDao.getLogsInRange(
-        start,
-        end,
-      )).mapToDomain((r) => r.toDomain());
+  Future<List<HabitLog>> getLogsInRange(int start, int end) =>
+      _logsDao.getLogsInRange(start, end);
 
   Future<int> create({
     required String name,

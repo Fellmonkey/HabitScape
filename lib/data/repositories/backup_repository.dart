@@ -13,6 +13,7 @@ import '../../core/database/database_reset.dart';
 import '../../core/database/enums.dart';
 import '../../core/settings/today.dart';
 import '../../core/utils/date_helpers.dart';
+import '../../domain/models/entities.dart';
 import '../../domain/use_cases/backup_flow.dart';
 
 // Backup format version for forward compatibility.

@@ -1,22 +1,17 @@
 import '../../core/database/daos/letters_dao.dart';
 import '../../domain/models/entities.dart';
-import '../mappers/row_mappers.dart';
 
-/// Single source of truth for time capsules.
+/// Single source of truth for time capsules. `@UseRowClass` means no mapping.
 class LetterRepository {
   LetterRepository(this._dao);
 
   final LettersDao _dao;
 
-  Stream<List<Letter>> watchAll() => _dao.watchAllLetters().map(
-    (list) => list.mapToDomain((r) => r.toDomain()),
-  );
+  Stream<List<Letter>> watchAll() => _dao.watchAllLetters();
 
-  Stream<Letter?> watchOne(int id) =>
-      _dao.watchLetter(id).map((r) => r?.toDomain());
+  Stream<Letter?> watchOne(int id) => _dao.watchLetter(id);
 
-  Future<List<Letter>> getAll() async =>
-      (await _dao.getAllLetters()).mapToDomain((r) => r.toDomain());
+  Future<List<Letter>> getAll() => _dao.getAllLetters();
 
   Future<int> add({
     required int createdAt,

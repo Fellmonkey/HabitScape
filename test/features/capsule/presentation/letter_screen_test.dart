@@ -10,7 +10,6 @@ import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
-import 'package:habitscape/data/mappers/row_mappers.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/capsule/presentation/screens/letter_screen.dart';
 import 'package:habitscape/features/capsule/providers/letter_providers.dart';
@@ -68,7 +67,7 @@ void main() {
       body: 'Помни: ты сильнее, чем кажется',
       createdAt: DateTime.utc(2026, 10, 1).unixSeconds,
     );
-    return (await db.lettersDao.getAllLetters()).single.toDomain();
+    return (await db.lettersDao.getAllLetters()).single;
   }
 
   Future<void> pumpLetter(WidgetTester tester, Letter capsule) async {

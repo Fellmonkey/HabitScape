@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../domain/models/entities.dart';
 import 'daos/day_notes_dao.dart';
 import 'daos/habit_logs_dao.dart';
 import 'daos/habits_dao.dart';

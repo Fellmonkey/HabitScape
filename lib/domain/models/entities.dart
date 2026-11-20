@@ -1,7 +1,8 @@
 import '../../core/domain/enums.dart';
 
 /// Immutable domain entities. These are the types the rest of the app works
-/// with; Drift row classes stay inside `core/database` and are mapped here.
+/// with — and, via `@UseRowClass` on the Drift tables, they ARE the row classes.
+/// Drift reads and writes them directly, so no mapper layer is needed.
 ///
 /// Hand-written value objects (no freezed dependency): `const`, `final`
 /// fields, structural `==`/`hashCode` and `copyWith`.

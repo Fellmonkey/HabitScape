@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../domain/models/entities.dart';
 
 import '../app_database.dart';
 import '../tables.dart';

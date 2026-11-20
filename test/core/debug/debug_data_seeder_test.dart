@@ -8,7 +8,6 @@ import 'package:habitscape/core/domain/time_suggestion.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
-import 'package:habitscape/data/mappers/row_mappers.dart';
 
 import '../../fixtures/test_db.dart';
 
@@ -82,9 +81,9 @@ void main() {
       );
       final monthStart = DateTime.utc(today.year, today.month, 1);
       final points = computeMonthSpreadDays(
-        habits: habits.map((h) => h.toDomain()).toList(),
-        logs: logs.map((l) => l.toDomain()).toList(),
-        notes: notes.map((n) => n.toDomain()).toList(),
+        habits: habits,
+        logs: logs,
+        notes: notes,
         monthStart: monthStart,
       );
 
@@ -272,8 +271,8 @@ void main() {
 
       // The stats domain should flag the mismatch.
       final suggestions = computeTimeSuggestions(
-        habits: habits.map((h) => h.toDomain()).toList(),
-        logs: logs.map((l) => l.toDomain()).toList(),
+        habits: habits,
+        logs: logs,
         now: pinned.toMidnight,
       );
       expect(suggestions, hasLength(1));
@@ -296,8 +295,8 @@ void main() {
       expect(logs, hasLength(120)); // 90 + 30 done logs
 
       final lifecycles = computeHabitLifecycles(
-        habits: archived.map((h) => h.toDomain()).toList(),
-        logs: logs.map((l) => l.toDomain()).toList(),
+        habits: archived,
+        logs: logs,
         now: pinned.toMidnight,
       );
       final yoga = lifecycles.singleWhere((l) => l.habit.name == 'Йога');
