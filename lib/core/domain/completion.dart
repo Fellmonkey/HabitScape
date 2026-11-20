@@ -46,6 +46,17 @@ class Completion {
 
   static const empty = Completion._(done: 0, expected: 0, skipped: 0);
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Completion &&
+          done == other.done &&
+          expected == other.expected &&
+          skipped == other.skipped;
+
+  @override
+  int get hashCode => Object.hash(done, expected, skipped);
+
   /// How many expectations were met.
   final int done;
 
@@ -364,7 +375,7 @@ MonthSpreadSummary summarizeMonthSpread({
   }
   return MonthSpreadSummary(
     completionPct: monthCompletionPct(days: days, today: today),
-    moodCounts: moodCounts,
+    moodCounts: Map.unmodifiable(moodCounts),
     momentsCount: moments,
   );
 }

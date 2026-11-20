@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import '../../../core/database/backup_service.dart';
 import 'backup_status.dart';
 
 /// What the platform file picker returned.
@@ -30,6 +29,14 @@ abstract interface class BackupFilePicker {
 /// Platform seam for opening the system share sheet.
 abstract interface class BackupSharer {
   Future<void> share(Uint8List bytes);
+}
+
+/// Persistence seam for the backup payload — the domain never imports the
+/// concrete repository or database.
+abstract interface class BackupPort {
+  Future<Uint8List> exportBackup();
+
+  Future<int> importBackup(Uint8List bytes);
 }
 
 /// Persistence seam for the last-export marker.
@@ -82,12 +89,12 @@ class BackupImportFailed extends BackupImportOutcome {
 /// Orchestrates everything around the bytes: pick a file, open the share
 /// sheet, and record when a backup was last made.
 ///
-/// [BackupService] stays the owner of the database payload; this module owns
+/// [BackupPort] stays the owner of the database payload; this module owns
 /// the flow, so the settings screen only starts it and maps the outcome to a
 /// message.
 class BackupFlow {
   BackupFlow({
-    required BackupService service,
+    required BackupPort service,
     required BackupFilePicker picker,
     required BackupSharer sharer,
     required BackupStatusStore statusStore,
@@ -98,7 +105,7 @@ class BackupFlow {
        _statusStore = statusStore,
        _clock = clock;
 
-  final BackupService _service;
+  final BackupPort _service;
   final BackupFilePicker _picker;
   final BackupSharer _sharer;
   final BackupStatusStore _statusStore;

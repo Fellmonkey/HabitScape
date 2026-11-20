@@ -19,6 +19,7 @@ import '../../onboarding/app_tours.dart';
 import '../../week/providers/week_providers.dart';
 import '../domain/reminder_spec.dart';
 import '../domain/reminder_templates.dart';
+import '../providers/reminder_sync_provider.dart';
 
 /// Owns the live reminder schedule. It watches the app state (habits, today's
 /// logs, week/month windows, today's note, the toggle, the chosen scope) and
@@ -51,21 +52,11 @@ class ReminderGate extends ConsumerStatefulWidget {
 }
 
 class _ReminderGateState extends ConsumerState<ReminderGate> {
-  String? _sig;
-  final Map<int, String> _scheduled = {};
-
   @override
   void initState() {
     super.initState();
-    final scheduler = ref.read(reminderSchedulerProvider);
-    scheduler.initialize();
-    scheduler.setNotificationTapHandler(_handleTap);
+    ref.read(reminderSyncProvider.notifier).initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAskFirstLaunch());
-  }
-
-  void _handleTap(String? payload) {
-    if (payload == null || payload == '/') return;
-    ref.read(appRouterProvider).push(payload);
   }
 
   /// One-time first-launch explainer. Skips on web (no notifications) and
@@ -133,7 +124,6 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
   Widget build(BuildContext context) {
     final enabled = ref.watch(notificationEnabledProvider).value ?? false;
     final kinds = ref.watch(notificationKindsProvider).value;
-    final scheduler = ref.watch(reminderSchedulerProvider);
     final habits = ref.watch(activeHabitsProvider).value ?? const <Habit>[];
     final logs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
     final week = ref.watch(weekSummaryProvider).value;
@@ -158,49 +148,11 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
           )
         : const <ReminderSpec>[];
 
-    final sig = specs.map((s) => s.signature).join('\n');
-    if (sig != _sig) {
-      _sig = sig;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _apply(scheduler, specs, enabled),
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(reminderSyncProvider.notifier).sync(specs, enabled);
+    });
     return widget.child;
-  }
-
-  Future<void> _apply(
-    ReminderScheduler scheduler,
-    List<ReminderSpec> specs,
-    bool enabled,
-  ) async {
-    if (!enabled || !await scheduler.permissionGranted()) {
-      await scheduler.cancelAll();
-      _scheduled.clear();
-      return;
-    }
-
-    final next = {for (final spec in specs) spec.id: spec.signature};
-    final wanted = next.keys.toSet();
-
-    for (final id in _scheduled.keys.toList()) {
-      if (!wanted.contains(id)) {
-        await scheduler.cancel(id);
-        _scheduled.remove(id);
-      }
-    }
-
-    for (final spec in specs) {
-      if (_scheduled[spec.id] == spec.signature) continue;
-      if (_scheduled.containsKey(spec.id)) {
-        await scheduler.cancel(spec.id);
-      }
-      if (spec.repeatsDaily) {
-        await scheduler.scheduleDaily(spec);
-      } else {
-        await scheduler.scheduleOneShot(spec);
-      }
-      _scheduled[spec.id] = spec.signature;
-    }
   }
 }
 

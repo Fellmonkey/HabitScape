@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/database/history_store_provider.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/models/entities.dart';
-import '../../../../features/capsule/providers/letter_providers.dart';
-import '../../../../features/stats/providers/year_summary_providers.dart';
-import '../../providers/habit_streams.dart';
+import '../../providers/welcome_back_provider.dart';
 
 /// The return-welcome: shown once per absence episode (7+ days without
 /// opening the app). Records every visit and only appears when the episode
@@ -34,45 +30,17 @@ class _WelcomeBackGateState extends ConsumerState<WelcomeBackGate> {
     if (_checked) return;
     _checked = true;
 
-    final exposure = await ref.read(exposureProvider.future);
-    // Eligibility is read BEFORE the visit — Exposure getters read the store
-    // live, and recording the visit would immediately reset the absence.
-    final eligible = exposure.shouldShowWelcomeBack;
-    // Every open is a visit; the welcome is a one-off per absence episode.
-    await ref.read(exposureActionsProvider.notifier).recordVisit();
-    if (!mounted || !eligible) return;
-    await ref.read(exposureActionsProvider.notifier).markWelcomeShown();
-    if (!mounted) return;
+    final data = await ref.read(welcomeBackProvider.notifier).check();
+    if (!mounted || !data.eligible) return;
 
-    // Gather the "what you built" facts up front.
-    final habitCount = ref.read(activeHabitsProvider).value?.length ?? 0;
-    final hasMoments = ref.read(hasAnyDayNoteProvider).value ?? false;
-    final hasYear = ref.read(yearSummaryProvider).value?.hasData ?? false;
-    final dueCapsule = ref.read(capsuleFeedProvider).value?.due.firstOrNull;
-
-    if (!mounted) return;
-    await _showWelcome(
-      habitCount: habitCount,
-      hasMoments: hasMoments,
-      hasYear: hasYear,
-      dueCapsule: dueCapsule,
-    );
-  }
-
-  Future<void> _showWelcome({
-    required int habitCount,
-    required bool hasMoments,
-    required bool hasYear,
-    required Letter? dueCapsule,
-  }) {
-    return showDialog<void>(
+    await showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (context) => _WelcomeBackDialog(
-        habitCount: habitCount,
-        hasMoments: hasMoments,
-        hasYear: hasYear,
-        dueCapsule: dueCapsule,
+        habitCount: data.habitCount,
+        hasMoments: data.hasMoments,
+        hasYear: data.hasYear,
+        dueCapsule: data.dueCapsule,
         onStartDay: () => Navigator.of(context).pop(),
         onOpenYear: () {
           Navigator.of(context).pop();

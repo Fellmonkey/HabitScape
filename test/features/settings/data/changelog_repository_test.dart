@@ -6,7 +6,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('the bundled CHANGELOG.md is the app version source', () async {
-    final changelog = await const ChangelogRepository().load();
+    final changelog = await ChangelogRepository().load();
 
     expect(changelog.releases, isNotEmpty);
     expect(changelog.latest!.version, AppConstants.appVersion);

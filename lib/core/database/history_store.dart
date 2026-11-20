@@ -9,13 +9,15 @@ import 'daos/habits_dao.dart';
 /// Everything the analytic modules need from one time window: its normalized
 /// boundaries, the active habits, and their logs and day notes in [start, end).
 class WindowSnapshot {
-  const WindowSnapshot({
+  WindowSnapshot({
     required this.start,
     required this.end,
-    required this.habits,
-    required this.logs,
-    required this.notes,
-  });
+    required List<Habit> habits,
+    required List<HabitLog> logs,
+    required List<DayNote> notes,
+  }) : habits = List.unmodifiable(habits),
+       logs = List.unmodifiable(logs),
+       notes = List.unmodifiable(notes);
 
   final DateTime start;
   final DateTime end;

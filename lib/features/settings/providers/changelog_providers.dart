@@ -5,7 +5,7 @@ import '../domain/changelog.dart';
 
 /// Swappable seam for tests; production reads the bundled asset.
 final changelogRepositoryProvider = Provider<ChangelogRepository>(
-  (ref) => const ChangelogRepository(),
+  (ref) => ChangelogRepository(),
 );
 
 /// The parsed release notes shown by the «Что нового» screen.

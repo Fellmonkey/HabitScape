@@ -62,7 +62,7 @@ StatsOverview buildStatsOverview({
   final noteDates = {for (final n in yearNotes) n.date};
 
   return StatsOverview(
-    days: days,
+    days: List.unmodifiable(days),
     yearTotalDone: yearTotalDone,
     moodCorrelation: computeMoodCorrelation(days: days, notes: yearNotes),
     weekTrend: computeWeekTrend(habits: habits, logs: yearLogs, now: now),

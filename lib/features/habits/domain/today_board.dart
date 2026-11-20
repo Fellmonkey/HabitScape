@@ -8,11 +8,11 @@ enum TodayGroupKind { focus, morning, afternoon, evening, anytime, notToday }
 /// One section of the Today board: the habits in it and whether they can be
 /// marked all done with one tap.
 class TodayGroup {
-  const TodayGroup({
+  TodayGroup({
     required this.kind,
-    required this.habits,
+    required List<Habit> habits,
     required this.canMarkAll,
-  });
+  }) : habits = List.unmodifiable(habits);
 
   final TodayGroupKind kind;
   final List<Habit> habits;
