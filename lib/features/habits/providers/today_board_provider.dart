@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/settings/today.dart';
@@ -85,14 +87,45 @@ class TodayBoardSnapshot {
   final Map<int, HabitLog> logByHabit;
 }
 
+/// Current instant, refreshed exactly when an undo-grace window is about to
+/// expire. Watching this (instead of calling `Clock.now()` once in a `Provider`
+/// build) makes the board drop expired cards without waiting for an unrelated
+/// rebuild. No timer runs when there is no open grace window.
+final graceNowProvider = NotifierProvider<GraceNowNotifier, DateTime>(
+  GraceNowNotifier.new,
+);
+
+class GraceNowNotifier extends Notifier<DateTime> {
+  Timer? _timer;
+
+  @override
+  DateTime build() {
+    final graceUntil = ref.watch(todayBoardViewControllerProvider).graceUntil;
+    final now = ref.read(clockProvider).now();
+
+    _timer?.cancel();
+    final next = graceUntil.values.where((t) => t.isAfter(now)).toList();
+    if (next.isNotEmpty) {
+      final expiry = next.reduce((a, b) => a.isBefore(b) ? a : b);
+      _timer = Timer(expiry.difference(now) + const Duration(milliseconds: 10), () {
+        if (ref.mounted) state = ref.read(clockProvider).now();
+      });
+    }
+    ref.onDispose(() => _timer?.cancel());
+    return now;
+  }
+}
+
 final todayBoardProvider = Provider<TodayBoardSnapshot>((ref) {
   final view = ref.watch(todayBoardViewControllerProvider);
   final habits = ref.watch(activeHabitsProvider).value ?? const <Habit>[];
   final logs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
   final today = ref.watch(todayDateProvider);
-  final now = ref.read(clockProvider).now();
+  final now = ref.watch(graceNowProvider);
 
-  final logByHabit = {for (final log in logs) log.habitId: log};
+  final logByHabit = Map<int, HabitLog>.unmodifiable({
+    for (final log in logs) log.habitId: log,
+  });
   final keepVisible = {
     for (final entry in view.graceUntil.entries)
       if (entry.value.isAfter(now)) entry.key,

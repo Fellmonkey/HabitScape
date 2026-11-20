@@ -276,15 +276,14 @@ class Exposure {
   }
 }
 
-/// An [Exposure] snapshot for today, with the first-use date recorded once.
+/// An [Exposure] snapshot for today. Pure read: the first-use date is
+/// recorded once by the explicit startup step, not by reading this provider.
 final exposureProvider = FutureProvider<Exposure>((ref) async {
   final prefs = await ref.watch(sharedPrefsProvider.future);
-  final exposure = Exposure(
+  return Exposure(
     prefs,
     today: dateFromUnix(ref.watch(todayProvider)),
   );
-  await exposure.recordFirstUse();
-  return exposure;
 });
 
 /// The one command surface over [Exposure] state. Widgets and mixins must
@@ -296,6 +295,11 @@ class ExposureActions extends Notifier<void> {
   void build() {}
 
   Future<Exposure> get _exposure => ref.read(exposureProvider.future);
+
+  /// Records the first-use day once. Called by startup so read providers never
+  /// write to storage; safe to call again on every launch.
+  Future<void> recordFirstUseIfNeeded() =>
+      _mutate((e) => e.recordFirstUse());
 
   Future<void> _mutate(Future<void> Function(Exposure) op) async {
     final exposure = await _exposure;

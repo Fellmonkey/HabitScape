@@ -120,7 +120,7 @@ void main() {
     final first = sync.sync([spec(1)], true);
     final second = sync.sync([spec(2)], true);
     var secondDone = false;
-    second.then((_) => secondDone = true);
+    unawaited(second.then((_) => secondDone = true));
     await Future<void>.delayed(Duration.zero);
 
     expect(secondDone, isFalse, reason: 'second call waits for the first');

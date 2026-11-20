@@ -30,6 +30,38 @@ class _BannerStackState extends ConsumerState<BannerStack> {
   static const _maxVisible = 3;
 
   bool _bookkeepingScheduled = false;
+  bool _syncScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleSync();
+  }
+
+  void _scheduleSync() {
+    if (_syncScheduled) return;
+    _syncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncScheduled = false;
+      _syncDeck();
+    });
+  }
+
+  /// Keeps the session rotation order in step with the eligible deck. Called
+  /// from lifecycle callbacks/listeners, so build only renders.
+  void _syncDeck() {
+    if (!mounted) return;
+    final deck = ref.read(bannerDeckProvider);
+    final next = [
+      ..._deck.where((id) => deck.contains(id)),
+      ...deck.where((id) => !_deck.contains(id)),
+    ];
+    if (next.length != _deck.length ||
+        !_deck.asMap().entries.every((e) => e.value == next[e.key])) {
+      setState(() => _deck = next);
+    }
+    _scheduleOverflowBookkeeping();
+  }
 
   Widget _cardFor(String id, {required bool top, int? pile}) {
     final theme = Theme.of(context);
@@ -157,23 +189,9 @@ class _BannerStackState extends ConsumerState<BannerStack> {
   @override
   Widget build(BuildContext context) {
     // Eligibility lives in bannerDeckProvider; this widget only keeps the
-    // rotation order of the visible pile.
-    final deck = ref.watch(bannerDeckProvider);
-
-    // Sync the rotation order and persist overflow after the frame: `build`
-    // only derives the candidate deck, it never mutates widget state.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final next = [
-        ..._deck.where((id) => deck.contains(id)),
-        ...deck.where((id) => !_deck.contains(id)),
-      ];
-      if (next.length != _deck.length ||
-          !_deck.asMap().entries.every((e) => e.value == next[e.key])) {
-        setState(() => _deck = next);
-      }
-      _scheduleOverflowBookkeeping();
-    });
+    // rotation order of the visible pile. The listener syncs `_deck` after the
+    // frame, so build never mutates state.
+    ref.listen(bannerDeckProvider, (_, _) => _scheduleSync());
 
     final visible = _visibleDeck;
     if (visible.isEmpty) return const SizedBox.shrink();

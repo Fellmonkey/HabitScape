@@ -70,7 +70,7 @@ void main() {
           }),
         ],
       );
-      final subscription = container.listen(monthSummaryProvider, (_, __) {});
+      final subscription = container.listen(monthSummaryProvider, (_, _) {});
       container.read(monthSummaryProvider);
       expect(builds, 1);
 

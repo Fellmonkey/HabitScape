@@ -45,9 +45,17 @@ class _EchoCardState extends ConsumerState<EchoCard> {
     final feedAsync = ref.watch(echoFeedProvider);
     final today = ref.watch(todayDateProvider);
 
+    ref.listen(echoFeedProvider, (_, next) {
+      final current = next.value;
+      if (current == null || identical(current, _lastFeed)) return;
+      // Cache after the frame so build stays free of state writes.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _lastFeed = current);
+      });
+    });
+
     final current = feedAsync.value;
-    if (current != null) _lastFeed = current;
-    final feed = _lastFeed;
+    final feed = _lastFeed ?? current;
     if (feed == null) return const SizedBox.shrink();
 
     // A live empty feed means the notes are really gone — never resurrect

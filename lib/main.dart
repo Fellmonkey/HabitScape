@@ -4,14 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/debug/debug_menu_overlay.dart';
 import 'core/router/app_router.dart';
+import 'core/settings/app_startup.dart';
 import 'core/settings/text_scale.dart';
 import 'core/settings/theme_mode.dart';
 import 'core/theme/app_theme.dart';
 import 'features/reminders/presentation/widgets/reminder_gate.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: RythmApp()));
+  final container = ProviderContainer();
+  await container.read(appStartupProvider.future);
+  runApp(UncontrolledProviderScope(container: container, child: const RythmApp()));
 }
 
 class RythmApp extends ConsumerWidget {

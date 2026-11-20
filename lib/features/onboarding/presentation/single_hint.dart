@@ -16,8 +16,7 @@ Future<bool> showSingleHint(
   required String description,
   String? id,
 }) async {
-  await ref.read(hintfulStoreProvider.future);
-  final controller = ref.read(hintfulControllerProvider);
+  final controller = await ref.read(hintfulControllerProvider.future);
   return controller.showHint(
     HintStep(
       targetId: targetId,
