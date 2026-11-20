@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/notifications/reminder_scheduler.dart';
 import '../../../../core/notifications/reminder_settings.dart';
+import '../../../reminders/providers/reminder_actions.dart';
 
 /// Opt-in toggle for local reminders. Enabling asks the OS for permission
 /// first (Android 13+); a denial keeps reminders off with a hint.
@@ -37,24 +37,19 @@ class _NotificationsTileState extends ConsumerState<NotificationsTile> {
   Future<void> _toggle(bool value) async {
     setState(() => _busy = true);
     try {
-      if (value) {
-        final scheduler = ref.read(reminderSchedulerProvider);
-        final granted = await scheduler.requestPermission();
-        if (!granted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Разрешение на уведомления не выдано — '
-                  'включите его в настройках системы',
-                ),
-              ),
-            );
-          }
-          return;
-        }
+      final result = await ref
+          .read(reminderActionsProvider.notifier)
+          .toggle(value);
+      if (result == ReminderToggleResult.permissionDenied && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Разрешение на уведомления не выдано — '
+              'включите его в настройках системы',
+            ),
+          ),
+        );
       }
-      await ref.read(notificationActionsProvider.notifier).setEnabled(value);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

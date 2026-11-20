@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../domain/models/changelog.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/glass_card.dart';
-import '../../domain/changelog.dart';
 
 /// One release block: version + date, then its grouped bullet points.
 class ChangelogReleaseCard extends StatelessWidget {

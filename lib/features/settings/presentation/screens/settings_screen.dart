@@ -2,15 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../domain/use_cases/backup_flow.dart';
 import '../../../../features/capsule/providers/letter_providers.dart';
-import '../../../../features/onboarding/app_tours.dart';
-import '../../../../features/onboarding/feature_intro_trigger.dart';
-import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../features/onboarding/presentation/app_tours.dart';
+import '../../../../features/onboarding/presentation/feature_intro_trigger.dart';
+import '../../../../features/onboarding/presentation/hint_tour.dart';
 import '../../../../features/onboarding/providers/onboarding_actions.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/error_feedback.dart';
@@ -243,10 +242,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Future<void> _openSource(BuildContext context) async {
     const url = 'https://github.com/Fellmonkey/HabitScape';
     try {
-      final opened = await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
+      final opened = await ref
+          .read(externalLinkLauncherProvider)
+          .open(url);
       if (!opened && context.mounted) {
         _showSnackBar(context, 'Не удалось открыть ссылку');
       }

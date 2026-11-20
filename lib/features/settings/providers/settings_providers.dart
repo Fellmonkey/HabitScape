@@ -5,8 +5,14 @@ import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../data/repository_providers.dart';
 import '../../../data/services/backup_io.dart';
+import '../../../data/services/external_link_launcher.dart';
 import '../../../domain/models/backup_status.dart';
 import '../../../domain/use_cases/backup_flow.dart';
+
+/// Platform seam for opening external links. Screens never call the plugin.
+final externalLinkLauncherProvider = Provider<ExternalLinkLauncher>((ref) {
+  return const ExternalLinkLauncher();
+});
 
 // ── Backup flow ────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hintful/hintful.dart';
 
-import '../../core/settings/hintful.dart';
+import '../../../core/settings/hintful.dart';
 
 /// Shows one targeted hint (a one-step spotlight) anchored at [targetId].
 /// Show-once is owned by the hintful store ([mark] on any exit). Returns

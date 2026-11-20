@@ -7,7 +7,7 @@ import 'core/router/app_router.dart';
 import 'core/settings/text_scale.dart';
 import 'core/settings/theme_mode.dart';
 import 'core/theme/app_theme.dart';
-import 'features/reminders/presentation/reminder_gate.dart';
+import 'features/reminders/presentation/widgets/reminder_gate.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

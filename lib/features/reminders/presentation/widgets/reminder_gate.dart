@@ -2,15 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/notifications/reminder_scheduler.dart';
-import '../../../core/notifications/reminder_settings.dart';
-import '../../../core/router/app_router.dart';
-import '../../../core/settings/hintful.dart';
-import '../../../core/settings/today.dart';
-import '../../onboarding/app_tours.dart';
-import '../domain/reminder_spec.dart';
-import '../providers/reminder_specs_provider.dart';
-import '../providers/reminder_sync_provider.dart';
+import '../../../../core/router/app_router.dart';
+import '../../domain/reminder_spec.dart';
+import '../../providers/reminder_actions.dart';
+import '../../providers/reminder_specs_provider.dart';
+import '../../providers/reminder_sync_provider.dart';
 
 /// Side-effect host for the live reminder schedule. The expected spec set is
 /// derived by `reminderSpecsProvider`; this widget only reconciles it with the
@@ -52,62 +48,24 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
   /// when a decision is already recorded.
   Future<void> _maybeAskFirstLaunch() async {
     if (kIsWeb || !mounted) return;
-    if (await ref
-        .read(notificationActionsProvider.notifier)
-        .promptAlreadyAnswered()) {
-      return;
-    }
+    final actions = ref.read(reminderActionsProvider.notifier);
+    if (!await actions.isFirstLaunchPromptDue()) return;
 
-    // Serialize the very first-frame teaching: let the greenhouse tour show
-    // (and finish/skip) first, so the dialog never stacks on top of it.
-    if (widget.waitForOnboarding) {
-      await _waitForGreenhouseTour();
-    }
+    // Let the greenhouse tour finish first so the two teaching surfaces never
+    // stack on the very first frame. The wait itself is owned by the Notifier.
+    if (widget.waitForOnboarding) await actions.waitForOnboarding();
+    if (!mounted) return;
 
     final context = ref.read(rootNavigatorKeyProvider).currentContext;
     if (context == null || !context.mounted) return;
 
-    final choice = await showDialog<String>(
+    final scope = await showDialog<ReminderScope>(
       context: context,
       builder: (context) => const _FirstLaunchPromptDialog(),
     );
-    if (!mounted || choice == null) return;
+    if (!mounted || scope == null) return;
 
-    final allowed = choice == 'all' || choice == 'essentials'
-        ? await ref.read(reminderSchedulerProvider).requestPermission()
-        : false;
-
-    await ref
-        .read(notificationActionsProvider.notifier)
-        .finishFirstLaunchPrompt(
-          kinds: switch (choice) {
-            'all' => ReminderKind.values.toSet(),
-            'essentials' => {
-              ReminderKind.weekSummary,
-              ReminderKind.monthSummary,
-              ReminderKind.moment,
-            },
-            _ => null,
-          },
-          allowed: allowed,
-        );
-  }
-
-  /// Waits up to a few seconds for the first-run greenhouse tour to finish
-  /// (the tour marks itself on any exit — finish / skip / abort), so the
-  /// reminders explainer never stacks on top of it. If the tour never
-  /// starts (e.g. there is no screen to host it), the timeout bounds the
-  /// wait so the prompt is never lost.
-  Future<void> _waitForGreenhouseTour() async {
-    final store = await ref.read(hintfulStoreProvider.future);
-    final clock = ref.read(clockProvider);
-    final deadline = clock.now().add(const Duration(seconds: 12));
-    // The iteration cap keeps a pinned test clock from turning this into an
-    // endless poll; production exits as soon as the tour marks itself done.
-    for (var i = 0; i < 48 && clock.now().isBefore(deadline); i++) {
-      if (!store.shouldShow(AppTourIds.greenhouse)) return;
-      await Future<void>.delayed(const Duration(milliseconds: 250));
-    }
+    await actions.applyFirstLaunchChoice(scope);
   }
 
   @override
@@ -154,15 +112,15 @@ class _FirstLaunchPromptDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop('essentials'),
+          onPressed: () => Navigator.of(context).pop(ReminderScope.essentials),
           child: const Text('Только итоги и момент'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop('all'),
+          onPressed: () => Navigator.of(context).pop(ReminderScope.all),
           child: const Text('Включить все'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop('none'),
+          onPressed: () => Navigator.of(context).pop(ReminderScope.none),
           child: const Text('Не сейчас'),
         ),
       ],

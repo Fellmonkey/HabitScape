@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../core/router/app_router.dart';
+import '../domain/reconcile_reminders.dart';
 import '../domain/reminder_spec.dart';
+import 'reminder_scheduler_provider.dart';
 
 /// Immutable snapshot of the live OS schedule. Exposed through Riverpod so
 /// state is observable and testable instead of hidden in private fields.
@@ -52,30 +53,29 @@ class ReminderSync extends Notifier<ReminderSyncState> {
 
   Future<void> _apply(List<ReminderSpec> specs, bool enabled) async {
     final scheduler = ref.read(reminderSchedulerProvider);
-    final current = Map<int, String>.from(state.scheduled);
-    if (!enabled || !await scheduler.permissionGranted()) {
+    final plan = planReminderReconciliation(
+      specs: specs,
+      current: state.scheduled,
+      enabled: enabled,
+      permissionGranted: await scheduler.permissionGranted(),
+    );
+
+    if (plan.clearAll) {
       await scheduler.cancelAll();
       state = state.copyWith(scheduled: const {});
       return;
     }
 
-    final wanted = {for (final spec in specs) spec.id};
-    for (final id in current.keys.toList()) {
-      if (!wanted.contains(id)) {
-        await scheduler.cancel(id);
-        current.remove(id);
-      }
+    for (final id in plan.cancelIds) {
+      await scheduler.cancel(id);
     }
-    for (final spec in specs) {
-      if (current[spec.id] == spec.signature) continue;
-      if (current.containsKey(spec.id)) await scheduler.cancel(spec.id);
+    for (final spec in plan.toSchedule) {
       if (spec.repeatsDaily) {
         await scheduler.scheduleDaily(spec);
       } else {
         await scheduler.scheduleOneShot(spec);
       }
-      current[spec.id] = spec.signature;
     }
-    state = state.copyWith(scheduled: Map.unmodifiable(current));
+    state = state.copyWith(scheduled: plan.scheduled);
   }
 }

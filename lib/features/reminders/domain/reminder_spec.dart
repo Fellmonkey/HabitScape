@@ -32,6 +32,10 @@ enum ReminderKind {
   };
 }
 
+/// Scope picked in the first-launch explainer. Typed so the widget cannot
+/// pass an arbitrary string into the command that applies the answer.
+enum ReminderScope { all, essentials, none }
+
 /// A single scheduled notification. Pure data — no plugin imports, so the
 /// templates can be unit-tested without a device.
 class ReminderSpec {
@@ -86,4 +90,14 @@ abstract final class ReminderIds {
   static const returning = 8000;
 
   static int habit(int habitId) => 1000 + habitId;
+}
+
+/// User-facing names of the platform notification channels.
+///
+/// Owned by domain so the platform service depends on a port, never on the
+/// feature's copy or on the notification plugin.
+abstract interface class ReminderChannelLabels {
+  String get habits;
+  String get summaries;
+  String get reflection;
 }

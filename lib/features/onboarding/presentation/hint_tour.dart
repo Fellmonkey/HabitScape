@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hintful/hintful.dart';
 
-import '../../core/settings/hintful.dart';
+import '../../../core/settings/hintful.dart';
 import 'app_tours.dart';
 
 /// Wraps [child] as a tour target for hintful. The only facade screens need:

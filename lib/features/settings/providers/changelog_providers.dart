@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/services/changelog_repository.dart';
-import '../domain/changelog.dart';
+import '../../../domain/models/changelog.dart';
 
 /// Swappable seam for tests; production reads the bundled asset.
 final changelogRepositoryProvider = Provider<ChangelogRepository>(

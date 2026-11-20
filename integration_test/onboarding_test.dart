@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
-import 'package:habitscape/features/onboarding/tour_content.dart';
+import 'package:habitscape/features/onboarding/presentation/tour_content.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

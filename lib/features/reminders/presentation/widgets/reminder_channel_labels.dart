@@ -1,7 +1,8 @@
-import '../../../core/notifications/reminder_scheduler.dart';
+import '../../domain/reminder_spec.dart';
 
-/// Russian copy for the platform notification channels. Kept in the feature
-/// layer so the notification service stays free of UI strings.
+/// Russian copy for the platform notification channels. Kept in presentation:
+/// it is UI text, not business logic, and the platform service only sees the
+/// [ReminderChannelLabels] port.
 class RussianReminderChannelLabels implements ReminderChannelLabels {
   const RussianReminderChannelLabels();
 

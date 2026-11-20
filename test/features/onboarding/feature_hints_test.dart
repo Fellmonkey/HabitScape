@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/settings/exposure.dart';
 import 'package:habitscape/core/settings/hintful.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
-import 'package:habitscape/features/onboarding/feature_hints.dart';
-import 'package:habitscape/features/onboarding/feature_intro_trigger.dart';
-import 'package:habitscape/features/onboarding/hint_tour.dart';
+import 'package:habitscape/features/onboarding/presentation/feature_hints.dart';
+import 'package:habitscape/features/onboarding/presentation/feature_intro_trigger.dart';
+import 'package:habitscape/features/onboarding/presentation/hint_tour.dart';
 import 'package:hintful/hintful.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
