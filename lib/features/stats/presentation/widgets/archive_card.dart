@@ -7,7 +7,7 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_card_header.dart';
-import '../../providers/habit_lifecycle_providers.dart';
+import '../../providers/habit_lifecycle_overview_providers.dart';
 
 /// «Архив»: retired habits with their life span and overall completion — the
 /// only place archived habits' numbers survive (the heatmap and year summary

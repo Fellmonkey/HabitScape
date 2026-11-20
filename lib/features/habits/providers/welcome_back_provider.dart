@@ -7,6 +7,23 @@ import '../../capsule/providers/letter_providers.dart';
 import '../../stats/providers/year_summary_providers.dart';
 import 'habit_streams.dart';
 
+/// Live facts for the dialog. Each source is watched, so the dialog updates
+/// as soon as streams/futures produce their first value instead of freezing
+/// the `0/false` placeholders from the first frame.
+final welcomeBackFactsProvider = Provider<WelcomeBackData>((ref) {
+  final habits = ref.watch(activeHabitsProvider).value;
+  final hasMoments = ref.watch(hasAnyDayNoteProvider).value;
+  final year = ref.watch(yearSummaryProvider).value;
+  final capsuleFeed = ref.watch(capsuleFeedProvider).value;
+  return WelcomeBackData(
+    eligible: true,
+    habitCount: habits?.length ?? 0,
+    hasMoments: hasMoments ?? false,
+    hasYear: year?.hasData ?? false,
+    dueCapsule: capsuleFeed?.due.firstOrNull,
+  );
+});
+
 /// Eligibility plus the "what you built" facts for the return-welcome dialog.
 class WelcomeBackData {
   const WelcomeBackData({
@@ -53,13 +70,18 @@ class WelcomeBackNotifier extends Notifier<WelcomeBackData?> {
     }
     await ref.read(exposureActionsProvider.notifier).markWelcomeShown();
 
-    final data = WelcomeBackData(
+    // Await every fact source. Reading `.value` here silently degraded to
+    // 0/false while a provider was still loading, which could show an empty
+    // welcome dialog to a user with history.
+    // The dialog watches `welcomeBackFactsProvider` for live facts, so these
+    // first-frame values are only an immediate fallback, not a silent final
+    // answer while the streams are still loading.
+    return state = WelcomeBackData(
       eligible: true,
       habitCount: ref.read(activeHabitsProvider).value?.length ?? 0,
       hasMoments: ref.read(hasAnyDayNoteProvider).value ?? false,
       hasYear: ref.read(yearSummaryProvider).value?.hasData ?? false,
       dueCapsule: ref.read(capsuleFeedProvider).value?.due.firstOrNull,
     );
-    return state = data;
   }
 }

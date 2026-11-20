@@ -6,7 +6,7 @@ import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/features/stats/presentation/widgets/archive_card.dart';
-import 'package:habitscape/features/stats/providers/habit_lifecycle_providers.dart';
+import 'package:habitscape/features/stats/providers/habit_lifecycle_overview_providers.dart';
 
 import '../../../fixtures/test_factories.dart';
 

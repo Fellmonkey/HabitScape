@@ -5,14 +5,13 @@ import 'shared_prefs.dart';
 /// In-app text scale options. `system` follows the OS setting; the others
 /// override it with a fixed factor.
 enum TextScaleOption {
-  system('Как в системе', 1.0),
-  standard('Стандартная', 1.0),
-  larger('Крупная', 1.15),
-  extraLarge('Очень крупная', 1.3);
+  system(1.0),
+  standard(1.0),
+  larger(1.15),
+  extraLarge(1.3);
 
-  const TextScaleOption(this.label, this.factor);
+  const TextScaleOption(this.factor);
 
-  final String label;
   final double factor;
 }
 

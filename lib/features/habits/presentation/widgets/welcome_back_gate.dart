@@ -37,10 +37,6 @@ class _WelcomeBackGateState extends ConsumerState<WelcomeBackGate> {
       context: context,
       barrierDismissible: true,
       builder: (context) => _WelcomeBackDialog(
-        habitCount: data.habitCount,
-        hasMoments: data.hasMoments,
-        hasYear: data.hasYear,
-        dueCapsule: data.dueCapsule,
         onStartDay: () => Navigator.of(context).pop(),
         onOpenYear: () {
           Navigator.of(context).pop();
@@ -58,28 +54,26 @@ class _WelcomeBackGateState extends ConsumerState<WelcomeBackGate> {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// The dialog itself — pure content, no providers.
-class _WelcomeBackDialog extends StatelessWidget {
+/// The dialog itself. Facts are watched live so a first-frame `0/false`
+/// placeholder is replaced as soon as the underlying streams produce values.
+class _WelcomeBackDialog extends ConsumerWidget {
   const _WelcomeBackDialog({
-    required this.habitCount,
-    required this.hasMoments,
-    required this.hasYear,
-    required this.dueCapsule,
     required this.onStartDay,
     required this.onOpenYear,
     required this.onOpenLetter,
   });
 
-  final int habitCount;
-  final bool hasMoments;
-  final bool hasYear;
-  final Letter? dueCapsule;
   final VoidCallback onStartDay;
   final VoidCallback onOpenYear;
   final ValueChanged<Letter> onOpenLetter;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final facts = ref.watch(welcomeBackFactsProvider);
+    final habitCount = facts.habitCount;
+    final hasMoments = facts.hasMoments;
+    final hasYear = facts.hasYear;
+    final dueCapsule = facts.dueCapsule;
     final theme = Theme.of(context);
     return Dialog(
       backgroundColor: theme.colorScheme.surface,
@@ -163,7 +157,7 @@ class _WelcomeBackDialog extends StatelessWidget {
             if (dueCapsule != null) ...[
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => onOpenLetter(dueCapsule!),
+                onPressed: () => onOpenLetter(dueCapsule),
                 child: const Text('Открыть письмо'),
               ),
             ],

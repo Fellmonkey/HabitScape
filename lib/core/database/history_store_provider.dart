@@ -18,6 +18,10 @@ final historyStoreProvider = Provider<HistoryStore>((ref) {
 
 /// The one full-table stream of day notes, owned by core so every feature
 /// that needs "any note" watches the same stream instead of opening a second.
+///
+/// Deliberately a `Provider<Stream<...>>`, not a `StreamProvider`: consumers
+/// compose it with `asyncMap`/`map` inside their own StreamProviders. Wrapping
+/// it into an AsyncValue here would break that composition for no benefit.
 final dayNotesStreamProvider = Provider<Stream<List<DayNote>>>((ref) {
   return ref.watch(repositoriesProvider).dayNotes.watchAll();
 });
