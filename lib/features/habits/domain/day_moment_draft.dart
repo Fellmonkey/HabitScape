@@ -1,6 +1,6 @@
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/moment.dart' as moment_kernel;
+import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/moment.dart' as moment_kernel;
 
 /// The editable state of one day note.
 ///

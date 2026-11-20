@@ -1,6 +1,6 @@
-import '../../../core/domain/completion.dart';
-import '../../../core/domain/habit_ranking.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/completion.dart';
+import '../../../domain/habit_ranking.dart';
 import '../../../domain/models/entities.dart';
 
 /// Whether the month summary should be offered today: the last three days of

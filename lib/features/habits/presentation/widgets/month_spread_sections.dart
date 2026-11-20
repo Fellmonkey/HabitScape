@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:hintful/hintful.dart';
 
-import '../../../../core/domain/completion.dart';
-import '../../../onboarding/app_tours.dart';
+import '../../../../domain/completion.dart';
+import '../../../onboarding/presentation/app_tours.dart';
 import 'month_calendar_grid.dart';
 import 'month_goals_card.dart';
 import 'month_moment_row.dart';

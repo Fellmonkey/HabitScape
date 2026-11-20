@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 
 /// Row of info chips for a habit: icon, frequency, preferred time of day.

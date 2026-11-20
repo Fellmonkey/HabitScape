@@ -28,6 +28,13 @@ final dayNoteProvider = FutureProvider.autoDispose.family<DayNote?, int>((
   return ref.watch(repositoriesProvider).dayNotes.getForDate(dateTs);
 });
 
+/// One-shot "has the user ever written a day note" fact. Owned by the feature
+/// so presentation never reaches into the data layer's providers.
+final hasAnyDayNoteProvider = FutureProvider<bool>((ref) async {
+  final notes = await ref.watch(repositoriesProvider).dayNotes.getAll();
+  return notes.isNotEmpty;
+});
+
 /// Commands for day notes — the write surface beside the read providers.
 class DayNoteActions extends Notifier<void> {
   @override
@@ -55,6 +62,7 @@ class DayNoteActions extends Notifier<void> {
   /// never have to call `ref.invalidate` after saving a day.
   void _refreshDerivedFacts(int ts) {
     ref.invalidate(dayNoteProvider(ts));
+    ref.invalidate(hasAnyDayNoteProvider);
     ref.invalidate(monthSpreadProvider);
     ref.invalidate(statsOverviewProvider);
     ref.invalidate(yearSummaryProvider);

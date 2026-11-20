@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/result.dart';
+import '../../../domain/result.dart';
 import 'png_share_contract.dart';
 import 'png_share_stub.dart' if (dart.library.js_interop) 'png_share_web.dart';
 

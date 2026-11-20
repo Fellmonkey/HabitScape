@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/domain/result.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../../../features/onboarding/app_tours.dart';
-import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../domain/result.dart';
+import '../../../../features/onboarding/presentation/app_tours.dart';
+import '../../../../features/onboarding/presentation/hint_tour.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/error_feedback.dart';
 import '../../providers/month_spread_providers.dart';

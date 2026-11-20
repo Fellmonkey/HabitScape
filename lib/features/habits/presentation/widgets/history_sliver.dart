@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../domain/habit_history.dart';
 import '../../providers/history_pager_provider.dart';

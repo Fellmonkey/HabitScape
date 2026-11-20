@@ -1,5 +1,5 @@
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/scheduling.dart';
+import '../../../domain/enums.dart';
+import '../../../domain/scheduling.dart';
 
 /// Ready-made habit templates so a new habit can be created in two taps.
 class HabitTemplate {

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/today.dart';
+import '../../../data/history_store_providers.dart';
 import '../../../domain/models/entities.dart';
 import '../domain/habit_history.dart';
 import 'habit_history_controller.dart';

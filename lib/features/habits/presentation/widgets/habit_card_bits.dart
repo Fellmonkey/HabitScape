@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/enums.dart';
+import '../../../../domain/models/entities.dart';
+import '../../../../domain/scheduling.dart';
 
 /// Circular check indicator with color-coded states and a water-drop ripple
 /// burst on tap. The visible circle stays 28 px; the hit area is the
@@ -133,6 +135,24 @@ class _CheckCircleState extends State<CheckCircle>
       ),
     );
   }
+}
+
+/// Pure display rules for a habit card, kept out of the card's build method.
+bool habitShowsFrequencyBadge(Habit habit) {
+  final type = FrequencyType.fromString(habit.frequencyType);
+  return type == FrequencyType.weekdays ||
+      type == FrequencyType.xPerWeek ||
+      type == FrequencyType.everyXDays ||
+      type == FrequencyType.cycle;
+}
+
+/// Card title: the name plus today's cycle label when the habit uses a cycle.
+String habitCardTitle(Habit habit, DateTime today) {
+  if (FrequencyType.fromString(habit.frequencyType) != FrequencyType.cycle) {
+    return habit.name;
+  }
+  final label = getCycleLabelForDate(habit, today);
+  return label == null || label.isEmpty ? habit.name : '${habit.name}: $label';
 }
 
 /// Small icon representing the habit.

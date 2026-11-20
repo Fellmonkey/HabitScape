@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/domain/completion.dart';
-import '../../../../core/domain/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
+import '../../../../domain/completion.dart';
+import '../../../../domain/enums.dart';
 
 /// Mood chips, completion over the month's elapsed days, and the
 /// written-moments counter. Pure presentation: everything numeric arrives

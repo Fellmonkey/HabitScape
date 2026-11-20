@@ -4,17 +4,17 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
-import '../../../../features/onboarding/app_tours.dart';
-import '../../../../features/onboarding/feature_intro_trigger.dart';
-import '../../../../features/onboarding/hint_tour.dart';
-import '../../../../features/onboarding/single_hint.dart';
+import '../../../../features/onboarding/presentation/app_tours.dart';
+import '../../../../features/onboarding/presentation/feature_intro_trigger.dart';
+import '../../../../features/onboarding/presentation/hint_tour.dart';
+import '../../../../features/onboarding/presentation/single_hint.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -26,6 +26,7 @@ import '../../providers/habit_group_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
 import '../../providers/today_board_gating_provider.dart';
+import '../../providers/today_board_provider.dart';
 import '../widgets/banner_stack.dart';
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
@@ -53,17 +54,8 @@ class GreenhouseScreen extends ConsumerStatefulWidget {
 
 class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     with OnboardingTourMixin<GreenhouseScreen> {
-  bool _hideCompleted = false;
-
-  /// Habit ids created in this session — they get a one-shot entrance.
-  final Set<int> _enteringIds = <int>{};
-
-  /// Just-completed habits that stay visible past the hide-completed filter
-  /// while their card-level undo window is still open (deadline per id).
-  final Map<int, DateTime> _graceUntil = <int, DateTime>{};
-
   /// The board's visible rows (group headers + habit cards) rendered by the
-  /// animated sliver list. Kept in sync with [groupToday]'s output; when the
+  /// animated sliver list. Kept in sync with `todayBoardProvider`; when the
   /// two differ, the difference is applied as insert/remove animations.
   final GlobalKey<SliverAnimatedListState> _groupListKey =
       GlobalKey<SliverAnimatedListState>();
@@ -95,7 +87,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(activeHabitsProvider);
-    final logsAsync = ref.watch(todayLogsProvider);
+    final board = ref.watch(todayBoardProvider);
     final dayProgress = ref.watch(dayProgressProvider);
     final today = ref.watch(todayDateProvider);
     final gating = ref.watch(todayBoardGatingProvider);
@@ -111,19 +103,16 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             habitsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Ошибка: $e')),
-              data: (habits) {
-                final logs = logsAsync.value ?? [];
-                return _buildContent(
-                  context,
-                  theme,
-                  habits,
-                  logs,
-                  dayProgress,
-                  today,
-                  openedAnyCapsule,
-                  gating,
-                );
-              },
+              data: (habits) => _buildContent(
+                context,
+                theme,
+                habits,
+                dayProgress,
+                today,
+                openedAnyCapsule,
+                gating,
+                board,
+              ),
             ),
             // Renders nothing; owns the once-per-absence return welcome.
             const WelcomeBackGate(),
@@ -144,31 +133,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     BuildContext context,
     ThemeData theme,
     List<Habit> habits,
-    List<HabitLog> logs,
     double dayProgress,
     DateTime today,
     bool openedAnyCapsule,
     TodayBoardGating gating,
+    TodayBoardSnapshot board,
   ) {
-    // Section ordering comes from the TodayBoard module — the screen only
-    // renders. The hide-completed filter is a board rule too, so the toggle
-    // just feeds it. Recently completed habits stay visible during their undo
-    // window ([_graceUntil]) so the card can offer «Отменить» before it
-    // slides away. Logs are indexed by habit id once here and shared with
-    // both the board filter and the card list, so the index is never built
-    // twice per frame.
-    final logByHabit = {for (final l in logs) l.habitId: l};
-    final groups = groupToday(
-      habits: habits,
-      today: today,
-      logs: logs,
-      hideCompleted: _hideCompleted,
-      logByHabit: logByHabit,
-      keepVisible: {
-        for (final e in _graceUntil.entries)
-          if (e.value.isAfter(ref.read(clockProvider).now())) e.key,
-      },
-    );
+    // The board shape (grouping, hide-completed filter, undo grace) is derived
+    // by `todayBoardProvider`; this method only renders it.
 
     // ── Header gating for newcomers ──
     // «История» only helps once there is something to look back on; the
@@ -182,7 +154,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _maybeCelebrateDayClosed(habits, dayProgress, today);
-      _syncEntries(buildBoardEntries(groups, logByHabit));
+      _syncEntries(buildBoardEntries(board.groups, board.logByHabit));
       _maybeShowToggleHint(canSeeToggle);
     });
 
@@ -234,17 +206,18 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                     'greenhouse-hide-toggle',
                     IconButton(
                       key: K.hideCompletedToggle,
-                      onPressed: () =>
-                          setState(() => _hideCompleted = !_hideCompleted),
+                      onPressed: () => ref
+                          .read(todayBoardViewControllerProvider.notifier)
+                          .toggleHideCompleted(),
                       icon: Icon(
-                        _hideCompleted
+                        board.view.hideCompleted
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
                         ),
                       ),
-                      tooltip: _hideCompleted
+                      tooltip: board.view.hideCompleted
                           ? 'Показать выполненные'
                           : 'Скрыть выполненные',
                     ),
@@ -404,13 +377,12 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// hide-completed filter is on, so the card can show «Отменить» before it
   /// slides away.
   void _onHabitStatusChanged(int habitId) {
-    if (!_hideCompleted) return;
-    setState(() {
-      _graceUntil[habitId] = ref.read(clockProvider).now().add(habitUndoWindow);
-    });
+    if (!ref.read(todayBoardViewControllerProvider).hideCompleted) return;
+    final controller = ref.read(todayBoardViewControllerProvider.notifier);
+    controller.keepVisible([habitId], ref.read(clockProvider).now().add(habitUndoWindow));
     Timer(habitUndoWindow, () {
       if (!mounted) return;
-      setState(() => _graceUntil.remove(habitId));
+      controller.release([habitId]);
     });
   }
 
@@ -563,14 +535,17 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   Widget _buildHabitRow(Habit habit, HabitLog? log) {
     // The Dismissible lives inside the card itself — the card owns its status
     // changes, so the undo affordance works identically for taps and swipes.
+    final entering = ref.read(todayBoardViewControllerProvider).enteringIds;
     return RepaintBoundary(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-        child: _enteringIds.contains(habit.id)
+        child: entering.contains(habit.id)
             ? Entrance(
                 onComplete: () {
                   if (mounted) {
-                    setState(() => _enteringIds.remove(habit.id));
+                    ref
+                        .read(todayBoardViewControllerProvider.notifier)
+                        .removeEntering(habit.id);
                   }
                 },
                 child: HabitCard(
@@ -599,20 +574,15 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
     // Keep the just-completed cards visible while the group undo window is
     // open, so «Отменить всё» has something visible to restore.
-    setState(() {
-      final until = ref.read(clockProvider).now().add(groupUndoWindow);
-      for (final id in ids) {
-        _graceUntil[id] = until;
-      }
-    });
+    final controller = ref.read(todayBoardViewControllerProvider.notifier);
+    controller.keepVisible(
+      ids,
+      ref.read(clockProvider).now().add(groupUndoWindow),
+    );
     _groupUndoTimer?.cancel();
     _groupUndoTimer = Timer(groupUndoWindow, () {
       if (!mounted) return;
-      setState(() {
-        for (final id in ids) {
-          _graceUntil.remove(id);
-        }
-      });
+      controller.release(ids);
     });
 
     final messenger = ScaffoldMessenger.of(context);
@@ -647,7 +617,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       _lastProgress = progress;
       return;
     }
-    final dayKey = today.year * 10000 + today.month * 100 + today.day;
+    final dayKey = dayKeyOf(today);
     final celebrate = shouldCelebrateDayClose(
       previousProgress: _lastProgress,
       progress: progress,
@@ -678,7 +648,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       builder: (ctx) => const HabitFormSheet(),
     );
     if (createdId != null && mounted) {
-      setState(() => _enteringIds.add(createdId));
+      ref
+          .read(todayBoardViewControllerProvider.notifier)
+          .addEntering(createdId);
     }
   }
 }

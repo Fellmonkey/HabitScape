@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/features/habits/domain/today_board.dart';
 
 import '../../../fixtures/test_factories.dart';

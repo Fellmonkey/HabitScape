@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:hintful/hintful.dart';
 
-import '../../../../core/domain/completion.dart';
-import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
@@ -10,7 +8,9 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../../core/utils/localized_dates.dart';
-import '../../../onboarding/app_tours.dart';
+import '../../../../domain/completion.dart';
+import '../../../../domain/enums.dart';
+import '../../../onboarding/presentation/app_tours.dart';
 
 /// The month grid: weekday header plus one cell per day, mood-tinted,
 /// with habit progress and a moment dot. One module owns the cell geometry

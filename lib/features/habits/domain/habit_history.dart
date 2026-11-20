@@ -1,5 +1,5 @@
-import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/date_helpers.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 
 /// One month of a habit's history, newest months first in the list.
@@ -41,7 +41,7 @@ List<HabitHistoryMonth> groupLogsByMonth(List<HabitLog> logs) {
       HabitHistoryMonth(
         year: int.parse(key.split('-')[0]),
         month: int.parse(key.split('-')[1]),
-        logs: byMonth[key]!,
+        logs: List.unmodifiable(byMonth[key]!),
       ),
   ];
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/exposure.dart';
+import '../../../data/history_store_providers.dart';
 import '../domain/echo.dart';
 
 /// The echo card's data: past moments ordered for display.

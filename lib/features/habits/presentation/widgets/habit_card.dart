@@ -4,16 +4,14 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/domain/enums.dart';
-import '../../../../core/domain/scheduling.dart';
 import '../../../../core/keys.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/error_feedback.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -83,26 +81,6 @@ class _HabitCardState extends ConsumerState<HabitCard>
       status == LogStatus.done || _optimisticDone;
 
   bool get _showUndo => _undoOpen;
-
-  bool get _showFreqBadge {
-    final type = FrequencyType.fromString(widget.habit.frequencyType);
-    return type == FrequencyType.weekdays ||
-        type == FrequencyType.xPerWeek ||
-        type == FrequencyType.everyXDays ||
-        type == FrequencyType.cycle;
-  }
-
-  String _buildTitle(DateTime today) {
-    final name = widget.habit.name;
-    final type = FrequencyType.fromString(widget.habit.frequencyType);
-    if (type != FrequencyType.cycle) return name;
-
-    final label = getCycleLabelForDate(widget.habit, today); // "today" view
-    if (label != null && label.isNotEmpty) {
-      return '$name: $label';
-    }
-    return name;
-  }
 
   @override
   void initState() {
@@ -186,10 +164,8 @@ class _HabitCardState extends ConsumerState<HabitCard>
   /// удаление». Show-once is owned by Exposure.
   Future<void> _maybeTeachFirstSkip() async {
     if (!mounted) return;
-    final exposure = await ref.read(exposureProvider.future);
-    if (!mounted || !exposure.shouldShowFirstSkipHint) return;
-    await ref.read(exposureActionsProvider.notifier).markFirstSkipHintShown();
-    if (!mounted) return;
+    final show = await ref.read(habitActionsProvider.notifier).takeFirstSkipHint();
+    if (!mounted || !show) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -252,7 +228,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
     // truth for "is it done" is the stream, not the prop.
     // Watch the stream so a write rebuilds the row; read the value without
     // mutating widget state during build.
-    ref.watch(todayLogsProvider);
+    ref.watch(todayLogForHabitProvider(widget.habit.id));
     final status = _statusNow();
     final today = ref.watch(todayDateProvider);
 
@@ -284,7 +260,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _buildTitle(today),
+                        habitCardTitle(widget.habit, today),
                         style: theme.textTheme.titleMedium?.copyWith(
                           decoration: _isDone(status)
                               ? TextDecoration.lineThrough
@@ -317,7 +293,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                           ),
                         ),
                       // Frequency badge (weekdays / x-per-week / every-x-days)
-                      if (_showFreqBadge)
+                      if (habitShowsFrequencyBadge(widget.habit))
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(

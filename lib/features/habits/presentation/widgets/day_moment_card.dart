@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/domain/moment.dart' as moment_kernel;
 import '../../../../core/theme/motion_tokens.dart';
+import '../../../../domain/moment.dart' as moment_kernel;
 import '../../providers/day_note_providers.dart';
 import 'day_moment_composer.dart';
 import 'day_moment_saved.dart';

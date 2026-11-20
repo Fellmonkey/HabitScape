@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/history_store_provider.dart';
 import '../../../core/settings/exposure.dart';
 import '../../../domain/models/entities.dart';
 import '../../capsule/providers/letter_providers.dart';
 import '../../stats/providers/year_summary_providers.dart';
+import 'day_note_providers.dart';
 import 'habit_streams.dart';
 
 /// Live facts for the dialog. Each source is watched, so the dialog updates

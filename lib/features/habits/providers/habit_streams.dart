@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/enums.dart';
 import '../../../core/settings/today.dart';
 import '../../../data/repository_providers.dart';
+import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
 
 // ── Habit streams ────────────────────────────────────────────

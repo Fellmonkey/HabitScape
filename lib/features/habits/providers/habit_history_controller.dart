@@ -1,5 +1,5 @@
-import '../../../core/database/history_store.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repositories/history_store.dart';
 import '../domain/habit_history.dart';
 
 /// Paging controller for one habit's history.

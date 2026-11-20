@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/scheduling.dart';
+import '../../../core/settings/exposure.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../data/repository_providers.dart';
+import '../../../domain/enums.dart';
+import '../../../domain/scheduling.dart';
 
 /// Notifier for creating/updating/deleting habits and logging completions.
 final habitActionsProvider = NotifierProvider<HabitActions, void>(
@@ -12,7 +13,7 @@ final habitActionsProvider = NotifierProvider<HabitActions, void>(
 );
 
 /// Lifecycle states a habit can be moved between.
-enum HabitLifecycle { archive, restore, delete }
+enum HabitLifecycleAction { archive, restore, delete }
 
 class HabitActions extends Notifier<void> {
   @override
@@ -67,17 +68,26 @@ class HabitActions extends Notifier<void> {
         .undoLog(habitId, today, previous: previous);
   }
 
+  /// Consumes the one-time "swipe is skip, not delete" hint. Returns whether
+  /// the caller should show the snackbar; the show-once fact is recorded here.
+  Future<bool> takeFirstSkipHint() async {
+    final exposure = await ref.read(exposureProvider.future);
+    if (!exposure.shouldShowFirstSkipHint) return false;
+    await ref.read(exposureActionsProvider.notifier).markFirstSkipHintShown();
+    return true;
+  }
+
   /// Moves a habit between lifecycle states: archive, restore, or delete.
-  Future<void> setLifecycle(int habitId, HabitLifecycle action) async {
+  Future<void> setLifecycle(int habitId, HabitLifecycleAction action) async {
     final repo = ref.read(repositoriesProvider).habits;
     switch (action) {
-      case HabitLifecycle.archive:
+      case HabitLifecycleAction.archive:
         await repo.setArchived(habitId, isArchived: true);
         return;
-      case HabitLifecycle.restore:
+      case HabitLifecycleAction.restore:
         await repo.setArchived(habitId, isArchived: false);
         return;
-      case HabitLifecycle.delete:
+      case HabitLifecycleAction.delete:
         await repo.delete(habitId);
         return;
     }

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/enums.dart';
+import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
 import 'habit_actions.dart';
 import 'habit_streams.dart';

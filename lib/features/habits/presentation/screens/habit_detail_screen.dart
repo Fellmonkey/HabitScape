@@ -2,10 +2,10 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_constants.dart';
-import '../../../../core/domain/enums.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_palette.dart';
+import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/confirm_delete_dialog.dart';
@@ -261,7 +261,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         await actions.setFocus(habitId, isFocus: false);
         return;
       case HabitDetailAction.archive:
-        await actions.setLifecycle(habitId, HabitLifecycle.archive);
+        await actions.setLifecycle(habitId, HabitLifecycleAction.archive);
         if (context.mounted) nav.pop();
         return;
       case HabitDetailAction.delete:
@@ -270,7 +270,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
           habitName: habit.name,
         );
         if (confirmed == true) {
-          await actions.setLifecycle(habitId, HabitLifecycle.delete);
+          await actions.setLifecycle(habitId, HabitLifecycleAction.delete);
           if (context.mounted) nav.pop();
         }
         return;

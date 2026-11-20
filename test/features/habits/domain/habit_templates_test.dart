@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/enums.dart';
-import 'package:habitscape/core/domain/scheduling.dart';
+import 'package:habitscape/domain/enums.dart';
+import 'package:habitscape/domain/scheduling.dart';
 import 'package:habitscape/features/habits/domain/habit_templates.dart';
 
 void main() {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/enum_visuals.dart';
+import '../../../../domain/enums.dart';
 import '../../domain/today_board.dart';
 
 /// Presentation mapping for a Today board section — the only place that

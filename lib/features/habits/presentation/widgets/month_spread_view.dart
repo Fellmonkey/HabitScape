@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/domain/completion.dart';
 import '../../../../core/settings/today.dart';
+import '../../../../domain/completion.dart';
 import 'month_spread_sections.dart';
 
 /// The month spread composition: summary, calendar, goals, and moments.

@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/config/app_constants.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
-import 'package:habitscape/core/domain/enums.dart';
-import 'package:habitscape/core/domain/scheduling.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
+import 'package:habitscape/domain/scheduling.dart';
 import 'package:habitscape/features/habits/providers/habit_actions.dart';
 import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
 
@@ -175,16 +175,16 @@ void main() {
   group('setLifecycle', () {
     test('archive then restore toggles isArchived', () async {
       final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'C'));
-      await actions.setLifecycle(id, HabitLifecycle.archive);
+      await actions.setLifecycle(id, HabitLifecycleAction.archive);
       expect((await db.habitsDao.getHabit(id)).isArchived, isTrue);
 
-      await actions.setLifecycle(id, HabitLifecycle.restore);
+      await actions.setLifecycle(id, HabitLifecycleAction.restore);
       expect((await db.habitsDao.getHabit(id)).isArchived, isFalse);
     });
 
     test('delete removes the habit', () async {
       final id = await db.habitsDao.insertHabit(makeHabitCompanion(name: 'D'));
-      await actions.setLifecycle(id, HabitLifecycle.delete);
+      await actions.setLifecycle(id, HabitLifecycleAction.delete);
       expect(db.habitsDao.getHabit(id), throwsStateError);
     });
   });

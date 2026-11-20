@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart'
     show AppDatabase, HabitLogsCompanion;
 import 'package:habitscape/core/database/database_provider.dart';
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
