@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habitscape/core/settings/exposure.dart';
+import 'package:habitscape/core/settings/hintful.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/onboarding/feature_hints.dart';
+import 'package:habitscape/features/onboarding/feature_intro_trigger.dart';
+import 'package:habitscape/features/onboarding/hint_tour.dart';
 import 'package:hintful/hintful.dart';
-import 'package:rythm/core/settings/exposure.dart';
-import 'package:rythm/core/settings/hintful.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/onboarding/feature_hints.dart';
-import 'package:rythm/features/onboarding/feature_intro_trigger.dart';
-import 'package:rythm/features/onboarding/hint_tour.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

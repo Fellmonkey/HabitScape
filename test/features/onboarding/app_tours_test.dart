@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/features/onboarding/app_tours.dart';
+import 'package:habitscape/features/onboarding/app_tours.dart';
 
 void main() {
   group('AppTours', () {

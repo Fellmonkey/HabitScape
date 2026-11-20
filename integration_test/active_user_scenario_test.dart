@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habitscape/core/database/app_database.dart';
+import 'package:habitscape/core/database/enums.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/database/enums.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
 
 import 'helpers/pump_app.dart';
 

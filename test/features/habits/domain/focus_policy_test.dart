@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:rythm/core/config/app_constants.dart';
-import 'package:rythm/features/habits/domain/focus_policy.dart';
+import 'package:habitscape/core/config/app_constants.dart';
+import 'package:habitscape/features/habits/domain/focus_policy.dart';
 
 void main() {
   group('FocusPolicy.canSetFocus', () {

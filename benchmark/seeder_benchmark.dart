@@ -19,8 +19,8 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/debug/debug_data_seeder.dart';
+import 'package:habitscape/core/database/app_database.dart';
+import 'package:habitscape/core/debug/debug_data_seeder.dart';
 
 import '../test/fixtures/test_db.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/theme/motion_tokens.dart';
+import 'package:habitscape/core/theme/motion_tokens.dart';
 
 void main() {
   group('AppMotion durations', () {

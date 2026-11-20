@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/moment.dart';
@@ -65,9 +64,8 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
   }
 
   void _handleTap(String? payload) {
-    final context = rootNavigatorKey.currentContext;
-    if (context == null || payload == null || payload == '/') return;
-    GoRouter.of(context).push(payload);
+    if (payload == null || payload == '/') return;
+    ref.read(appRouterProvider).push(payload);
   }
 
   /// One-time first-launch explainer. Skips on web (no notifications) and

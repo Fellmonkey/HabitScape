@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/entities.dart';
@@ -106,6 +107,10 @@ GoRouter buildAppRouter({
 }
 
 final appRouter = buildAppRouter();
+
+/// The app's single router, injected through Riverpod so widgets never reach
+/// for a global `NavigatorState`. Tests override this with their own router.
+final appRouterProvider = Provider<GoRouter>((ref) => appRouter);
 
 /// Custom-transition page for pushed screens: fade + slight rise + scale,
 /// strong ease-out, transform/opacity only. Both forward and back use the

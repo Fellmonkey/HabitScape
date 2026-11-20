@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/settings/today.dart';
-import 'package:rythm/core/settings/week_answer.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/week/providers/week_providers.dart';
+import 'package:habitscape/core/database/database_provider.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/settings/today.dart';
+import 'package:habitscape/core/settings/week_answer.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

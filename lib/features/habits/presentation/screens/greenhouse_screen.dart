@@ -192,7 +192,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       logByHabit: logByHabit,
       keepVisible: {
         for (final e in _graceUntil.entries)
-          if (e.value.isAfter(DateTime.now())) e.key,
+          if (e.value.isAfter(ref.read(clockProvider).now())) e.key,
       },
     );
 
@@ -429,7 +429,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   void _onHabitStatusChanged(int habitId) {
     if (!_hideCompleted) return;
     setState(() {
-      _graceUntil[habitId] = DateTime.now().add(habitUndoWindow);
+      _graceUntil[habitId] =
+          ref.read(clockProvider).now().add(habitUndoWindow);
     });
     Timer(habitUndoWindow, () {
       if (!mounted) return;
@@ -675,7 +676,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     // Keep the just-completed cards visible while the group undo window is
     // open, so «Отменить всё» has something visible to restore.
     setState(() {
-      final until = DateTime.now().add(groupUndoWindow);
+      final until = ref.read(clockProvider).now().add(groupUndoWindow);
       for (final id in ids) {
         _graceUntil[id] = until;
       }

@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/keys.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/domain/models/entities.dart';
-import 'package:rythm/features/week/domain/week_summary.dart';
-import 'package:rythm/features/week/presentation/widgets/week_summary_card.dart';
-import 'package:rythm/features/week/providers/week_providers.dart';
+import 'package:habitscape/core/keys.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/features/week/domain/week_summary.dart';
+import 'package:habitscape/features/week/presentation/widgets/week_summary_card.dart';
+import 'package:habitscape/features/week/providers/week_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake actions that record the saved intention instead of hitting the DB.

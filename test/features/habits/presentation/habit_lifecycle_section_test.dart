@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/domain/habit_lifecycle.dart';
-import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/presentation/widgets/habit_lifecycle_section.dart';
-import 'package:rythm/features/habits/providers/habit_lifecycle_providers.dart';
+import 'package:habitscape/core/domain/habit_lifecycle.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/habits/presentation/widgets/habit_lifecycle_section.dart';
+import 'package:habitscape/features/habits/providers/habit_lifecycle_providers.dart';
 
 import '../../../fixtures/test_factories.dart';
 

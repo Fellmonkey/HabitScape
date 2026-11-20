@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/settings/today.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/domain/models/entities.dart';
-import 'package:rythm/features/habits/providers/day_note_providers.dart';
-import 'package:rythm/features/habits/providers/habit_streams.dart';
+import 'package:habitscape/core/database/database_provider.dart';
+import 'package:habitscape/core/settings/today.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/features/habits/providers/day_note_providers.dart';
+import 'package:habitscape/features/habits/providers/habit_streams.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';

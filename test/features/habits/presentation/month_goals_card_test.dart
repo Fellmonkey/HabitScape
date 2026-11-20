@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/domain/models/entities.dart';
-import 'package:rythm/features/habits/presentation/widgets/month_goals_card.dart';
-import 'package:rythm/features/habits/providers/month_goal_providers.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/features/habits/presentation/widgets/month_goals_card.dart';
+import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
 
 /// Fake goal actions that record deletions instead of touching the DB.
 class _FakeMonthGoalActions extends MonthGoalActions {

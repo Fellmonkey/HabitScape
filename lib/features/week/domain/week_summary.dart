@@ -1,5 +1,6 @@
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/enums.dart';
+import '../../../core/domain/habit_ranking.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../domain/models/entities.dart';
@@ -139,25 +140,21 @@ WeekSummary computeWeekSummary({
   }
 
   final weekMeasure = Completion.pool(measures.values);
-  (int habitId, String name, int done, int expected)? weakest;
-  for (final habit in activeHabits) {
-    final measure = measures[habit.id];
-    if (measure == null) continue;
-    final current = (
-      habit.id,
-      habit.name,
-      measure.numerator,
-      measure.denominator,
-    );
-    if (weakest == null || measure.ratioOrZero < (weakest.$3 / weakest.$4)) {
-      weakest = current;
-    }
-  }
+  final weakestRank = hasAnyLogThisWeek
+      ? pickWeakestHabit(activeHabits, measures)
+      : null;
+  final weakest = weakestRank == null
+      ? null
+      : (
+        weakestRank.habitId,
+        weakestRank.name,
+        weakestRank.done,
+        weakestRank.expected,
+      );
 
   final completionPct = (!hasAnyLogThisWeek || !weekMeasure.hasExpectation)
       ? null
       : weekMeasure.percent;
-  if (!hasAnyLogThisWeek) weakest = null;
 
   // ── Best day ──────────────────────────────────────────────
   // The day with the best scheduled-completion ratio. Days where nothing was

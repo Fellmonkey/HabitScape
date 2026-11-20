@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/theme/app_theme.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
 
 /// Exercises the real rasterization pipeline (`RenderRepaintBoundary.toImage`
 /// + PNG encoding) with genuine widgets — the half of the export path the

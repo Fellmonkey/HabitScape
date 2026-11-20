@@ -34,3 +34,23 @@ Map<TimeBucket, int> bucketCountsForHours(Iterable<int?> hours) {
   }
   return counts;
 }
+
+/// The most frequent bucket plus its count and the timed total. One rule for
+/// the time-distribution, rhythm and suggestion engines; ties resolve to the
+/// earliest bucket.
+({TimeBucket bucket, int count, int total}) peakBucket(
+  Map<TimeBucket, int> counts,
+) {
+  var bucket = TimeBucket.morning;
+  var count = -1;
+  var total = 0;
+  for (final b in TimeBucket.values) {
+    final c = counts[b] ?? 0;
+    total += c;
+    if (c > count) {
+      count = c;
+      bucket = b;
+    }
+  }
+  return (bucket: bucket, count: count, total: total);
+}

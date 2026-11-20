@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/utils/calendar_grid.dart';
+import 'package:habitscape/core/utils/calendar_grid.dart';
 
 void main() {
   group('CalendarGrid.month', () {

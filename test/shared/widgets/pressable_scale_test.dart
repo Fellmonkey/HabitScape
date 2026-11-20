@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/shared/widgets/pressable_scale.dart';
+import 'package:habitscape/shared/widgets/pressable_scale.dart';
 
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Center(child: child));

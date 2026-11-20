@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/capsule/domain/capsule.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/capsule/domain/capsule.dart';
 
 import '../../../fixtures/test_factories.dart';
 

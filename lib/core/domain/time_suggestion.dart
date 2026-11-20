@@ -56,15 +56,9 @@ List<TimeSuggestion> computeTimeSuggestions({
 
     if (timedLogs.length < timeSuggestionMinSample) continue;
 
-    final counts = bucketCountsForHours(timedLogs.map((l) => l.loggedHour));
-    TimeBucket best = TimeBucket.morning;
-    var bestCount = -1;
-    for (final bucket in TimeBucket.values) {
-      if (counts[bucket]! > bestCount) {
-        bestCount = counts[bucket]!;
-        best = bucket;
-      }
-    }
+    final best = peakBucket(
+      bucketCountsForHours(timedLogs.map((l) => l.loggedHour)),
+    ).bucket;
 
     final desired = switch (configured) {
       TimeOfDay.morning => TimeBucket.morning,

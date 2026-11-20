@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/config/app_constants.dart';
-import 'package:rythm/core/database/app_database.dart' show AppDatabase;
-import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/keys.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/features/habits/presentation/screens/habit_detail_screen.dart';
+import 'package:habitscape/core/config/app_constants.dart';
+import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
+import 'package:habitscape/core/database/database_provider.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/keys.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/features/habits/presentation/screens/habit_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/domain/completion.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/stats/domain/month_trend.dart';
+import 'package:habitscape/core/domain/completion.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/stats/domain/month_trend.dart';
 
 void main() {
   group('computeMonthlyTrend', () {

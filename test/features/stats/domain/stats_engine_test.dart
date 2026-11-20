@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/domain/completion.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/core/utils/time_bucket.dart';
-import 'package:rythm/features/stats/domain/mood_correlation.dart';
-import 'package:rythm/features/stats/domain/rhythm_stats.dart';
-import 'package:rythm/features/stats/domain/stats_engine.dart';
-import 'package:rythm/features/stats/domain/week_trend.dart';
+import 'package:habitscape/core/domain/completion.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/features/stats/domain/mood_correlation.dart';
+import 'package:habitscape/features/stats/domain/rhythm_stats.dart';
+import 'package:habitscape/features/stats/domain/stats_engine.dart';
+import 'package:habitscape/features/stats/domain/week_trend.dart';
 
 import '../../../fixtures/test_factories.dart';
 

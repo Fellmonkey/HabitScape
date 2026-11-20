@@ -56,7 +56,7 @@ StatsOverview buildStatsOverview({
   // expected days of active habits. A raw all-logs count would silently
   // include archived habits and off-schedule rows, splitting one screen's
   // numbers in two.
-  final yearTotalDone = days.fold(0, (sum, day) => sum + day.done);
+  final yearTotalDone = totalDone(days);
 
   final logDates = {for (final l in yearLogs) l.date};
   final noteDates = {for (final n in yearNotes) n.date};

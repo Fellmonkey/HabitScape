@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/keys.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/theme/app_theme.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/domain/models/entities.dart';
-import 'package:rythm/features/capsule/domain/capsule.dart';
-import 'package:rythm/features/capsule/presentation/widgets/capsule_card.dart';
-import 'package:rythm/features/capsule/providers/letter_providers.dart';
+import 'package:habitscape/core/keys.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/features/capsule/domain/capsule.dart';
+import 'package:habitscape/features/capsule/presentation/widgets/capsule_card.dart';
+import 'package:habitscape/features/capsule/providers/letter_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

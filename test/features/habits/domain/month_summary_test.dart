@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/domain/models/entities.dart';
-import 'package:rythm/features/habits/domain/month_summary.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/features/habits/domain/month_summary.dart';
 
 import '../../../fixtures/test_factories.dart';
 

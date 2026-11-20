@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/domain/scheduling.dart';
-import 'package:rythm/features/habits/domain/habit_templates.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/domain/scheduling.dart';
+import 'package:habitscape/features/habits/domain/habit_templates.dart';
 
 void main() {
   group('HabitTemplate', () {

@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart' show AppDatabase;
-import 'package:rythm/core/debug/debug_data_seeder.dart';
-import 'package:rythm/core/domain/completion.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/domain/habit_lifecycle.dart';
-import 'package:rythm/core/domain/time_suggestion.dart';
-import 'package:rythm/core/settings/today.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/core/utils/time_bucket.dart';
-import 'package:rythm/data/mappers/row_mappers.dart';
+import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
+import 'package:habitscape/core/debug/debug_data_seeder.dart';
+import 'package:habitscape/core/domain/completion.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/domain/habit_lifecycle.dart';
+import 'package:habitscape/core/domain/time_suggestion.dart';
+import 'package:habitscape/core/settings/today.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/data/mappers/row_mappers.dart';
 
 import '../../fixtures/test_db.dart';
 

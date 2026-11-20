@@ -403,3 +403,21 @@ List<MonthSpreadDay> computeMonthSpreadDays({
       ),
   ];
 }
+
+/// Total completions across a day list — one definition for all summaries.
+int totalDone(Iterable<DayCompletion> days) =>
+    days.fold(0, (sum, day) => sum + day.done);
+
+/// Pools each day's measure into its calendar month (first-of-month key).
+/// Months with no expectations are omitted.
+Map<DateTime, Completion> poolCompletionByMonth(Iterable<DayCompletion> days) {
+  final byMonth = <DateTime, List<Completion>>{};
+  for (final day in days) {
+    if (!day.hasExpectation) continue;
+    final key = firstOfMonth(day.date);
+    byMonth.putIfAbsent(key, () => []).add(day.completion);
+  }
+  return {
+    for (final entry in byMonth.entries) entry.key: Completion.pool(entry.value),
+  };
+}

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
 
 void main() {
   // ── toMidnight ──────────────────────────────────────────────

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
-import 'package:rythm/features/habits/presentation/month_spread_exporter.dart';
-import 'package:rythm/features/habits/presentation/png_share_contract.dart';
+import 'package:habitscape/features/habits/presentation/month_spread_exporter.dart';
+import 'package:habitscape/features/habits/presentation/png_share_contract.dart';
 
 /// [MonthSpreadExporter] double: skips the real offscreen rasterization and
 /// the platform share sheet, recording what the screen would have shared.

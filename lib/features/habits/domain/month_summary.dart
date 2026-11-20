@@ -1,4 +1,5 @@
 import '../../../core/domain/completion.dart';
+import '../../../core/domain/habit_ranking.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../domain/models/entities.dart';
 
@@ -77,24 +78,16 @@ MonthSummary computeMonthSummary({
   // measure the week summary and the habit engine use. A habit with zero
   // completions is not a "best" anything.
   final elapsedEnd = elapsedWindowEnd(today, end);
-  ({int habitId, String name, int done, int expected})? best;
-  for (final habit in habits) {
-    final measure = habitCompletion(
-      habit: habit,
-      logs: logs,
-      start: start,
-      end: elapsedEnd,
-    );
-    if (!measure.hasExpectation || measure.numerator == 0) continue;
-    if (best == null || measure.ratioOrZero > best.done / best.expected) {
-      best = (
-        habitId: habit.id,
-        name: habit.name,
-        done: measure.numerator,
-        expected: measure.denominator,
-      );
-    }
-  }
+  final measures = {
+    for (final habit in habits)
+      habit.id: habitCompletion(
+        habit: habit,
+        logs: logs,
+        start: start,
+        end: elapsedEnd,
+      ),
+  };
+  final best = pickBestHabit(habits, measures);
 
   final doneGoals = goals.where((g) => g.isDone).length;
   final goalsStats = goals.isEmpty

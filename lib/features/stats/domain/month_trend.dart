@@ -1,5 +1,4 @@
 import '../../../core/domain/completion.dart';
-import '../../../core/utils/date_helpers.dart';
 
 /// One month of the trailing trend: pooled completion over that month's
 /// elapsed days.
@@ -25,12 +24,7 @@ List<MonthTrendPoint> computeMonthlyTrend({
   required List<DayCompletion> days,
   required DateTime now,
 }) {
-  final byMonth = <DateTime, List<Completion>>{};
-  for (final day in days) {
-    if (!day.hasExpectation) continue;
-    final key = firstOfMonth(day.date);
-    byMonth.putIfAbsent(key, () => []).add(day.completion);
-  }
+  final byMonth = poolCompletionByMonth(days);
 
   final months = byMonth.keys.toList()..sort();
   final trimmed = months.length > 12
@@ -41,7 +35,7 @@ List<MonthTrendPoint> computeMonthlyTrend({
     for (final monthStart in trimmed)
       MonthTrendPoint(
         monthStart: monthStart,
-        completion: Completion.pool(byMonth[monthStart]!),
+        completion: byMonth[monthStart]!,
       ),
   ];
 }

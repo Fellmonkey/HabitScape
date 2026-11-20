@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/settings/providers/settings_providers.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/settings/providers/settings_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _lastBackupKey = 'last_backup_date';

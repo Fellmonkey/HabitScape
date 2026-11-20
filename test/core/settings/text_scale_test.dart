@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/settings/shared_prefs.dart';
-import 'package:rythm/core/settings/text_scale.dart';
+import 'package:habitscape/core/settings/shared_prefs.dart';
+import 'package:habitscape/core/settings/text_scale.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

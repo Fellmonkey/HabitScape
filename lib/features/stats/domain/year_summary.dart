@@ -1,5 +1,6 @@
 import '../../../core/domain/completion.dart';
 import '../../../core/domain/enums.dart';
+import '../../../core/domain/habit_ranking.dart';
 import '../../../core/domain/moment.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
@@ -180,18 +181,13 @@ YearSummary computeYearSummary({
   final cutoff = elapsedWindowEnd(now, end);
   final elapsed = days.where((day) => day.date.isBefore(cutoff)).toList();
   final completion = Completion.overDays(elapsed);
-  final yearTotalDone = elapsed.fold(0, (sum, day) => sum + day.done);
+  final yearTotalDone = totalDone(elapsed);
 
   // ── Best month: pool per month over the same elapsed days ──
-  final byMonth = <DateTime, List<Completion>>{};
-  for (final day in elapsed) {
-    if (!day.hasExpectation) continue;
-    final key = firstOfMonth(day.date);
-    byMonth.putIfAbsent(key, () => []).add(day.completion);
-  }
+  final byMonth = poolCompletionByMonth(elapsed);
   ({DateTime monthStart, double pct})? bestMonth;
   for (final entry in byMonth.entries) {
-    final pct = Completion.pool(entry.value).percentOrZero;
+    final pct = entry.value.percentOrZero;
     // An all-zero month is not a "best" anything.
     if (pct <= 0) continue;
     if (bestMonth == null || pct > bestMonth.pct) {
@@ -215,39 +211,21 @@ YearSummary computeYearSummary({
   // A habit with zero completions is not a "best" anything; the weakest only
   // counts habits the user actually engaged (done or skipped), so a habit
   // that was never touched never reads as a failure.
-  ({int habitId, String name, int done, int expected})? bestHabit;
-  ({int habitId, String name, int done, int expected})? weakestHabit;
-  for (final habit in habits) {
-    final measure = habitCompletion(
-      habit: habit,
-      logs: logs,
-      start: start,
-      end: cutoff,
-    );
-    if (!measure.hasExpectation) continue;
-    if (measure.numerator > 0) {
-      if (bestHabit == null ||
-          measure.ratioOrZero > bestHabit.done / bestHabit.expected) {
-        bestHabit = (
-          habitId: habit.id,
-          name: habit.name,
-          done: measure.numerator,
-          expected: measure.denominator,
-        );
-      }
-    }
-    if (measure.numerator > 0 || measure.skipped > 0) {
-      if (weakestHabit == null ||
-          measure.ratioOrZero < weakestHabit.done / weakestHabit.expected) {
-        weakestHabit = (
-          habitId: habit.id,
-          name: habit.name,
-          done: measure.numerator,
-          expected: measure.denominator,
-        );
-      }
-    }
-  }
+  final measures = {
+    for (final habit in habits)
+      habit.id: habitCompletion(
+        habit: habit,
+        logs: logs,
+        start: start,
+        end: cutoff,
+      ),
+  };
+  final bestHabit = pickBestHabit(habits, measures);
+  final weakestHabit = pickWeakestHabit(
+    habits,
+    measures,
+    eligible: (m) => m.hasExpectation && (m.numerator > 0 || m.skipped > 0),
+  );
 
   // ── Goals set inside the window ───────────────────────────
   final startTs = start.unixSeconds;

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:rythm/core/settings/week_answer.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
+import 'package:habitscape/core/settings/week_answer.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

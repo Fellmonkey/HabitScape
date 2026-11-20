@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart' show AppDatabase;
-import 'package:rythm/core/database/backup_service.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/settings/domain/backup_flow.dart';
-import 'package:rythm/features/settings/domain/backup_status.dart';
+import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
+import 'package:habitscape/core/database/backup_service.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/settings/domain/backup_flow.dart';
+import 'package:habitscape/features/settings/domain/backup_status.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

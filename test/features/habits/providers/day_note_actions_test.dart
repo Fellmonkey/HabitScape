@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/database/app_database.dart' show AppDatabase;
-import 'package:rythm/core/database/database_provider.dart';
-import 'package:rythm/core/domain/enums.dart';
-import 'package:rythm/core/utils/date_helpers.dart';
-import 'package:rythm/features/habits/domain/day_moment_draft.dart';
-import 'package:rythm/features/habits/providers/day_note_providers.dart';
+import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
+import 'package:habitscape/core/database/database_provider.dart';
+import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/features/habits/domain/day_moment_draft.dart';
+import 'package:habitscape/features/habits/providers/day_note_providers.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

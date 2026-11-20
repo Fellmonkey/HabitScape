@@ -94,26 +94,17 @@ RhythmStats computeRhythmStats({
     }
   }
 
-  const buckets = TimeBucket.values;
-  final counts = bucketCountsForHours(
-    logs.map((log) => log.status == LogStatus.done ? log.loggedHour : null),
+  final peak = peakBucket(
+    bucketCountsForHours(
+      logs.map((log) => log.status == LogStatus.done ? log.loggedHour : null),
+    ),
   );
-  var totalTimed = 0;
-  var topBucket = TimeBucket.morning;
-  var topCount = 0;
-  for (final b in buckets) {
-    totalTimed += counts[b]!;
-    if (counts[b]! > topCount) {
-      topCount = counts[b]!;
-      topBucket = b;
-    }
-  }
 
   return RhythmStats(
     weekdays: weekdays,
     bestWeekday: best,
     worstWeekday: worst,
-    timeBucket: totalTimed == 0 ? null : topBucket,
-    timeShare: totalTimed == 0 ? 0.0 : topCount / totalTimed * 100.0,
+    timeBucket: peak.total == 0 ? null : peak.bucket,
+    timeShare: peak.total == 0 ? 0.0 : peak.count / peak.total * 100.0,
   );
 }

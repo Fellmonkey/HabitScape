@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habitscape/core/database/app_database.dart';
+import 'package:habitscape/core/keys.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:rythm/core/database/app_database.dart';
-import 'package:rythm/core/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/pump_app.dart';

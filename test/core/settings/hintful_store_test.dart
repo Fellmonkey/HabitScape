@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rythm/core/settings/hintful.dart';
+import 'package:habitscape/core/settings/hintful.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
