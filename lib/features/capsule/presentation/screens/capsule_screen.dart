@@ -80,6 +80,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
   @override
   Widget build(BuildContext context) {
     final feed = ref.watch(capsuleFeedProvider).value;
+    final stats = ref.watch(capsuleStatsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Капсулы времени')),
@@ -89,14 +90,7 @@ class _CapsuleScreenState extends ConsumerState<CapsuleScreen> {
         children: [
           _buildComposer(context),
           if (feed != null) ...[
-            _buildStatsStrip(
-              context,
-              CapsuleStats.fromLetters([
-                ...feed.upcoming,
-                ...feed.due,
-                ...feed.opened,
-              ], feed.today),
-            ),
+            if (stats != null) _buildStatsStrip(context, stats),
             ..._buildSections(feed),
           ],
         ],

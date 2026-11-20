@@ -3,30 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/app_sheets.dart';
 import '../../shared/widgets/sheet_handle.dart';
-import '../database/database_provider.dart';
-import '../database/database_reset.dart';
 import '../router/app_router.dart';
-import '../settings/exposure.dart';
-import '../settings/hintful.dart';
-import '../settings/shared_prefs.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../utils/date_helpers.dart';
+import 'debug_actions.dart';
 import 'debug_data_seeder.dart';
 import 'month_summary_preview.dart';
 import 'time_suggestions_preview.dart';
 
 /// Draggable floating button that opens the debug menu (debug builds only).
-class DebugMenuOverlay extends StatefulWidget {
+class DebugMenuOverlay extends ConsumerStatefulWidget {
   const DebugMenuOverlay({required this.child, super.key});
 
   final Widget child;
 
   @override
-  State<DebugMenuOverlay> createState() => _DebugMenuOverlayState();
+  ConsumerState<DebugMenuOverlay> createState() => _DebugMenuOverlayState();
 }
 
-class _DebugMenuOverlayState extends State<DebugMenuOverlay> {
+class _DebugMenuOverlayState extends ConsumerState<DebugMenuOverlay> {
   Offset _fabPosition = const Offset(16, 100);
 
   @override
@@ -60,7 +55,7 @@ class _DebugMenuOverlayState extends State<DebugMenuOverlay> {
   }
 
   void _openDebugMenu() {
-    final navContext = rootNavigatorKey.currentContext;
+    final navContext = ref.read(rootNavigatorKeyProvider).currentContext;
     if (navContext == null) return;
 
     AppSheets.show<void>(navContext, builder: (_) => const _DebugSheet());
@@ -153,10 +148,8 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
     });
 
     try {
-      final db = ref.read(databaseProvider);
-      final seeder = DebugDataSeeder(db);
       final sw = Stopwatch()..start();
-      final count = await seeder.seed(scenario);
+      final count = await ref.read(debugActionsProvider.notifier).seed(scenario);
       sw.stop();
 
       if (!mounted) return;
@@ -165,8 +158,6 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
         _lastResult =
             '✅ ${scenario.name}: $count привычек за ${sw.elapsedMilliseconds} мс';
       });
-
-      ref.invalidate(databaseProvider); // refresh the UI
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -182,15 +173,12 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
       _lastResult = null;
     });
     try {
-      final db = ref.read(databaseProvider);
-      await DatabaseReset(db).all();
-
+      await ref.read(debugActionsProvider.notifier).clearAll();
       if (!mounted) return;
       setState(() {
         _seeding = false;
         _lastResult = '🗑️ База очищена';
       });
-      ref.invalidate(databaseProvider);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -202,8 +190,7 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
 
   Future<void> _resetOnboarding() async {
     try {
-      final store = await ref.read(hintfulStoreProvider.future);
-      store.clear();
+      await ref.read(debugActionsProvider.notifier).resetOnboarding();
       if (!mounted) return;
       setState(() {
         _lastResult = '👋 Подсказки появятся снова при открытии экранов';
@@ -225,15 +212,12 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
       _lastResult = null;
     });
     try {
-      final db = ref.read(databaseProvider);
-      final seeder = DebugDataSeeder(db);
-      await run(seeder);
+      await ref.read(debugActionsProvider.notifier).seedWith(run);
       if (!mounted) return;
       setState(() {
         _seeding = false;
         _lastResult = '✅ $label';
       });
-      ref.invalidate(databaseProvider); // refresh the UI
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -251,24 +235,12 @@ class _ScenariosTabState extends ConsumerState<_ScenariosTab> {
       _lastResult = null;
     });
     try {
-      final db = ref.read(databaseProvider);
-      final seeder = DebugDataSeeder(db);
-      await seeder.seed(debugScenarioById('5-3m')!);
-
-      final prefs = await ref.read(sharedPrefsProvider.future);
-      final now = DateTime.now().toMidnight;
-      await prefs.setInt(
-        Exposure.lastSeenKey,
-        now.subtract(const Duration(days: 10)).unixSeconds,
-      );
-      await prefs.remove(Exposure.welcomeShownKey);
-
+      await ref.read(debugActionsProvider.notifier).seedReturningUser();
       if (!mounted) return;
       setState(() {
         _seeding = false;
         _lastResult = '✅ UX: Вернувшийся — данные + отсутствие 10 дней';
       });
-      ref.invalidate(databaseProvider);
     } catch (e) {
       if (!mounted) return;
       setState(() {

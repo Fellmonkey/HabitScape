@@ -13,6 +13,13 @@ final monthGoalsProvider = StreamProvider.autoDispose
       return ref.watch(repositoriesProvider).goals.watchGoals(monthTs);
     });
 
+/// Derived count of completed goals for a month, so cards never count in build.
+final monthGoalsDoneCountProvider = Provider.family<int, int>((ref, monthTs) {
+  final goals =
+      ref.watch(monthGoalsProvider(monthTs)).value ?? const <MonthlyGoal>[];
+  return goals.where((g) => g.isDone).length;
+});
+
 /// Commands for monthly goals — a small surface over the goals repository.
 class MonthGoalActions extends Notifier<void> {
   @override

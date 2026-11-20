@@ -20,6 +20,17 @@ final capsuleFeedProvider = StreamProvider<CapsuleFeed>((ref) {
       .map((letters) => CapsuleFeed.fromLetters(letters, today));
 });
 
+/// Cumulative capsule statistics derived from the feed, so screens receive a
+/// ready snapshot instead of aggregating in build.
+final capsuleStatsProvider = Provider<CapsuleStats?>((ref) {
+  final feed = ref.watch(capsuleFeedProvider).value;
+  if (feed == null) return null;
+  return CapsuleStats.fromLetters(
+    [...feed.upcoming, ...feed.due, ...feed.opened],
+    feed.today,
+  );
+});
+
 /// A single capsule, kept in sync with the database (for the letter screen).
 final letterProvider = StreamProvider.autoDispose.family<Letter?, int>((
   ref,

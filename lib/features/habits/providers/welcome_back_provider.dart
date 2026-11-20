@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/settings/exposure.dart';
-import '../../../domain/models/entities.dart';
 import '../../capsule/providers/letter_providers.dart';
 import '../../stats/providers/year_summary_providers.dart';
+import '../domain/welcome_back_data.dart';
 import 'day_note_providers.dart';
 import 'habit_streams.dart';
+
+export '../domain/welcome_back_data.dart';
 
 /// Live facts for the dialog. Each source is watched, so the dialog updates
 /// as soon as streams/futures produce their first value instead of freezing
@@ -15,7 +17,7 @@ final welcomeBackFactsProvider = Provider<WelcomeBackData>((ref) {
   final hasMoments = ref.watch(hasAnyDayNoteProvider).value;
   final year = ref.watch(yearSummaryProvider).value;
   final capsuleFeed = ref.watch(capsuleFeedProvider).value;
-  return WelcomeBackData(
+  return buildWelcomeBackData(
     eligible: true,
     habitCount: habits?.length ?? 0,
     hasMoments: hasMoments ?? false,
@@ -23,23 +25,6 @@ final welcomeBackFactsProvider = Provider<WelcomeBackData>((ref) {
     dueCapsule: capsuleFeed?.due.firstOrNull,
   );
 });
-
-/// Eligibility plus the "what you built" facts for the return-welcome dialog.
-class WelcomeBackData {
-  const WelcomeBackData({
-    required this.eligible,
-    required this.habitCount,
-    required this.hasMoments,
-    required this.hasYear,
-    required this.dueCapsule,
-  });
-
-  final bool eligible;
-  final int habitCount;
-  final bool hasMoments;
-  final bool hasYear;
-  final Letter? dueCapsule;
-}
 
 /// Owns the visit bookkeeping and fact gathering. The widget only renders the
 /// dialog when [eligible] is true; it no longer reads providers or writes
@@ -60,7 +45,7 @@ class WelcomeBackNotifier extends Notifier<WelcomeBackData?> {
     await ref.read(exposureActionsProvider.notifier).recordVisit();
 
     if (!eligible) {
-      return state = const WelcomeBackData(
+      return state = buildWelcomeBackData(
         eligible: false,
         habitCount: 0,
         hasMoments: false,
@@ -76,7 +61,7 @@ class WelcomeBackNotifier extends Notifier<WelcomeBackData?> {
     // The dialog watches `welcomeBackFactsProvider` for live facts, so these
     // first-frame values are only an immediate fallback, not a silent final
     // answer while the streams are still loading.
-    return state = WelcomeBackData(
+    return state = buildWelcomeBackData(
       eligible: true,
       habitCount: ref.read(activeHabitsProvider).value?.length ?? 0,
       hasMoments: ref.read(hasAnyDayNoteProvider).value ?? false,

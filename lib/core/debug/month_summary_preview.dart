@@ -10,64 +10,36 @@ import '../settings/today.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_helpers.dart';
 
-/// Debug preview of «Итог месяца»: computes the closing month's summary
-/// regardless of the calendar window, so the card's content can be inspected
-/// on any day of the month.
-class MonthSummaryPreviewSheet extends ConsumerStatefulWidget {
+/// Debug-only derivation of the closing month's summary, regardless of the
+/// calendar window. The widget just renders the provider snapshot.
+final debugMonthSummaryProvider = FutureProvider<MonthSummary>((ref) async {
+  final today = ref.watch(todayDateProvider);
+  final monthStart = firstOfMonth(today);
+  final snapshot = await ref.watch(historyStoreProvider).month(monthStart);
+  final goals = await ref
+      .watch(repositoriesProvider)
+      .goals
+      .getGoals(monthStart.unixSeconds);
+  return computeMonthSummary(
+    habits: snapshot.habits,
+    logs: snapshot.logs,
+    notes: snapshot.notes,
+    goals: goals,
+    monthStart: snapshot.start,
+    today: today,
+  );
+});
+
+/// Debug preview of «Итог месяца» so the card's content can be inspected on
+/// any day of the month.
+class MonthSummaryPreviewSheet extends ConsumerWidget {
   const MonthSummaryPreviewSheet({super.key});
 
   @override
-  ConsumerState<MonthSummaryPreviewSheet> createState() =>
-      _MonthSummaryPreviewSheetState();
-}
-
-class _MonthSummaryPreviewSheetState
-    extends ConsumerState<MonthSummaryPreviewSheet> {
-  MonthSummary? _summary;
-  bool _loading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final today = ref.read(todayDateProvider);
-      final monthStart = firstOfMonth(today);
-      final snapshot = await ref.read(historyStoreProvider).month(monthStart);
-      final goals = await ref
-          .read(repositoriesProvider)
-          .goals
-          .getGoals(monthStart.unixSeconds);
-      final summary = computeMonthSummary(
-        habits: snapshot.habits,
-        logs: snapshot.logs,
-        notes: snapshot.notes,
-        goals: goals,
-        monthStart: snapshot.start,
-        today: today,
-      );
-      if (!mounted) return;
-      setState(() {
-        _summary = summary;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = '$e';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final today = ref.watch(todayDateProvider);
+    final summaryAsync = ref.watch(debugMonthSummaryProvider);
 
     return SafeArea(
       child: Container(
@@ -104,33 +76,37 @@ class _MonthSummaryPreviewSheetState
               isMonthSummaryWindow(today)
                   ? 'Окно карточки открыто — она видна на «Теплице».'
                   : 'Сейчас карточка скрыта (окно — последние 3 дня месяца). '
-                        'Превью показывает её содержимое.',
+                      'Превью показывает её содержимое.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 16),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else if (_error != null)
-              Text(_error!, style: theme.textTheme.bodyMedium)
-            else if (_summary == null || !_summary!.hasData)
-              Text(
-                'Данных за месяц нет. Запусти сценарий '
-                '«Итог месяца: данные созданы».',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              )
-            else
-              Material(
-                color: theme.colorScheme.surface,
-                borderRadius: AppRadius.borderL,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                  child: MonthSummaryBody(summary: _summary!),
-                ),
+            summaryAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Text(
+                '$error',
+                style: theme.textTheme.bodyMedium,
               ),
+              data: (summary) => summary.hasData
+                  ? Material(
+                      color: theme.colorScheme.surface,
+                      borderRadius: AppRadius.borderL,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: MonthSummaryBody(summary: summary),
+                      ),
+                    )
+                  : Text(
+                      'Данных за месяц нет. Запусти сценарий '
+                      '«Итог месяца: данные созданы».',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+            ),
           ],
         ),
       ),

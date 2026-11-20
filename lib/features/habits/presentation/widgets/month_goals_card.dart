@@ -45,7 +45,14 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
       child: async.when(
         loading: () => const SizedBox.shrink(),
         error: (_, _) => const SizedBox.shrink(),
-        data: (goals) => _buildCard(context, theme, month, goals, ts),
+        data: (goals) => _buildCard(
+          context,
+          theme,
+          month,
+          goals,
+          ts,
+          ref.watch(monthGoalsDoneCountProvider(ts)),
+        ),
       ),
     );
   }
@@ -56,8 +63,8 @@ class _MonthGoalsCardState extends ConsumerState<MonthGoalsCard> {
     DateTime month,
     List<MonthlyGoal> goals,
     int ts,
+    int doneCount,
   ) {
-    final doneCount = goals.where((g) => g.isDone).length;
     return Container(
       key: K.monthGoalsCard,
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),

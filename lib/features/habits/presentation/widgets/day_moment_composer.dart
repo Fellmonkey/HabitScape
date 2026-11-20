@@ -5,10 +5,9 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/hintful.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/theme/enum_visuals.dart';
-import '../../../../core/theme/motion_tokens.dart';
 import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
+import '../../../../shared/widgets/mood_choice.dart';
 import '../../../onboarding/presentation/app_tours.dart';
 import '../../domain/day_moment_draft.dart';
 import '../../providers/day_note_providers.dart';
@@ -189,74 +188,6 @@ class _DayMomentComposerState extends ConsumerState<DayMomentComposer> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// One of the three mood buttons in the inline composer.
-class MoodChoice extends StatelessWidget {
-  const MoodChoice({
-    required this.mood,
-    required this.selected,
-    required this.onTap,
-    super.key,
-  });
-
-  final DayMood mood;
-  final bool selected;
-  final VoidCallback onTap;
-
-  String get _shortLabel => switch (mood) {
-    DayMood.good => 'Хорошо',
-    DayMood.ok => 'Так себе',
-    DayMood.bad => 'Плохо',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      key: K.dayMomentMood(mood.name),
-      borderRadius: AppRadius.borderS,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: AppMotion.quick,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-        decoration: BoxDecoration(
-          color: mood.color(context).withValues(alpha: selected ? 0.22 : 0.08),
-          borderRadius: AppRadius.borderS,
-          border: Border.all(
-            color: mood.color(context).withValues(alpha: selected ? 0.9 : 0.15),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: mood.color(context),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                _shortLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: selected
-                      ? mood.color(context)
-                      : theme.colorScheme.onSurface,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

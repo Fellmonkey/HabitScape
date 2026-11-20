@@ -16,6 +16,7 @@ import '../../../../features/onboarding/presentation/hint_tour.dart';
 import '../../../../features/onboarding/presentation/single_hint.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
+import '../../../../shared/widgets/id_list_diff.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/undo_feedback.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
@@ -58,6 +59,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       GlobalKey<SliverAnimatedListState>();
   List<BoardEntry> _entries = const [];
   List<BoardEntry>? _pendingNext;
+  static final IdListDiff<BoardEntry, String> _entryDiff = IdListDiff(
+    (e) => e.id,
+  );
 
   /// One-shot decisions and the group undo window live in
   /// `GreenhouseScreenController` (see providers/greenhouse_screen_controller).
@@ -395,14 +399,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     });
   }
 
-  bool _sameEntries(List<BoardEntry> next) {
-    final current = _entries;
-    if (next.length != current.length) return false;
-    for (var i = 0; i < next.length; i++) {
-      if (next[i].id != current[i].id) return false;
-    }
-    return true;
-  }
+  bool _sameEntries(List<BoardEntry> next) =>
+      _entryDiff.same(_entries, next);
 
   /// True while an apply loop is running. Because applying is now async
   /// (it waits between batches), a second [._syncEntries] during that time
@@ -448,14 +446,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         // appear or disappear at a time — instead of trying to animate
         // everything in one frame and stalling. Small diffs (≤8 rows) apply
         // in a single shot.
-        final currentIds = {for (final e in _entries) e.id};
-        final nextIds = {for (final e in next) e.id};
-        final shared = currentIds.intersection(nextIds).length;
-        final totalChanges =
-            (_entries.length - shared) + (next.length - shared);
-        final batchSize = totalChanges > 8
-            ? (totalChanges + 2) ~/ 3
-            : totalChanges;
+        final nextIds = _entryDiff.ids(next);
+        final batchSize = _entryDiff.batchSize(_entries, next);
 
         // Apply the diff in batches: remove up to [batchSize] rows (back to
         // front, so indices stay valid), insert up to the remaining batch

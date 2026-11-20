@@ -5,11 +5,10 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
-import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_sheets.dart';
+import '../../../../shared/widgets/mood_choice.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../../shared/widgets/sheet_handle.dart';
 import '../../domain/day_moment_draft.dart';
@@ -193,25 +192,10 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
             const SizedBox(height: 8),
             Text('Как прошёл день?', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
-            Row(
-              children: DayMood.values.map((mood) {
-                final selected = _draft.mood == mood;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      avatar: CircleAvatar(
-                        backgroundColor: mood.color(context),
-                        radius: 6,
-                      ),
-                      label: Text(mood.localizedName),
-                      selected: selected,
-                      onSelected: (_) =>
-                          setState(() => _draft = _draft.toggleMood(mood)),
-                    ),
-                  ),
-                );
-              }).toList(),
+            MoodChips(
+              selected: _draft.mood,
+              onChanged: (mood) =>
+                  setState(() => _draft = _draft.toggleMood(mood)),
             ),
             const SizedBox(height: 20),
             ScaleTransition(

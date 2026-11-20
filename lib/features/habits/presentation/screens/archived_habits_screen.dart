@@ -8,6 +8,7 @@ import '../../../../core/theme/motion_tokens.dart';
 import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/confirm_delete_dialog.dart';
+import '../../../../shared/widgets/id_list_diff.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_streams.dart';
 
@@ -26,10 +27,29 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
   List<Habit> _items = const [];
   List<Habit>? _pendingNext;
   int _pendingOps = 0;
+  bool _syncScheduled = false;
+  static final IdListDiff<Habit, int> _diff = IdListDiff((h) => h.id);
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleSync();
+  }
+
+  void _scheduleSync() {
+    if (_syncScheduled) return;
+    _syncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncScheduled = false;
+      final habits = ref.read(archivedHabitsProvider).value;
+      if (habits != null && mounted) _syncItems(habits);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(archivedHabitsProvider);
+    ref.listen(archivedHabitsProvider, (_, _) => _scheduleSync());
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -58,9 +78,6 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
           ),
         ),
         data: (habits) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _syncItems(habits);
-          });
           if (_items.isEmpty && _pendingOps == 0) {
             return const _EmptyArchiveState();
           }
@@ -76,13 +93,7 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
     );
   }
 
-  bool _sameItems(List<Habit> next) {
-    if (next.length != _items.length) return false;
-    for (var i = 0; i < next.length; i++) {
-      if (next[i].id != _items[i].id) return false;
-    }
-    return true;
-  }
+  bool _sameItems(List<Habit> next) => _diff.same(_items, next);
 
   void _syncItems(List<Habit> next) {
     if (_sameItems(next)) return;
@@ -101,14 +112,14 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
       return;
     }
 
-    final nextIds = {for (final h in next) h.id};
-    var work = List<Habit>.of(_items);
+    final plan = _diff.plan(_items, next);
+    final work = List<Habit>.from(_items);
 
-    for (var i = work.length - 1; i >= 0; i--) {
-      if (nextIds.contains(work[i].id)) continue;
-      final removed = work[i];
+    for (final index in plan.removeIndices) {
+      // Indices are descending in the plan; the list mutates as we go.
       _pendingOps++;
-      list.removeItem(i, (context, animation) {
+      final removed = work[index];
+      list.removeItem(index, (context, animation) {
         final row = _tileRow(removed, animation, removing: true);
         animation.addStatusListener((status) {
           if (status == AnimationStatus.dismissed) {
@@ -118,18 +129,11 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
         });
         return row;
       }, duration: AppMotion.base);
-      work.removeAt(i);
+      work.removeAt(index);
     }
 
-    var wi = 0;
-    for (var ni = 0; ni < next.length; ni++) {
-      if (wi < work.length && work[wi].id == next[ni].id) {
-        wi++;
-        continue;
-      }
-      list.insertItem(wi, duration: AppMotion.base);
-      work.insert(wi, next[ni]);
-      wi++;
+    for (final index in plan.insertAt) {
+      list.insertItem(index, duration: AppMotion.base);
     }
 
     _items = next;
