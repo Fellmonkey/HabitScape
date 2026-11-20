@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/stats/domain/year_summary.dart';
 

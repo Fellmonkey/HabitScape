@@ -1,10 +1,10 @@
-import '../../../core/domain/completion.dart';
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/habit_ranking.dart';
-import '../../../core/domain/moment.dart';
-import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/completion.dart';
+import '../../../domain/enums.dart';
+import '../../../domain/habit_ranking.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/moment.dart';
+import '../../../domain/scheduling.dart';
 
 /// One frequency type's pooled completion over the window — the "which
 /// schedules work" insight.
@@ -279,7 +279,7 @@ YearSummary computeYearSummary({
     bestHabit: bestHabit,
     weakestHabit: weakestHabit,
     goals: goalsStats,
-    frequencyInsights: frequencyInsights,
-    intentions: records,
+    frequencyInsights: List.unmodifiable(frequencyInsights),
+    intentions: List.unmodifiable(records),
   );
 }

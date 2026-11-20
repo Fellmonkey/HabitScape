@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/completion.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/completion.dart';
 import 'package:habitscape/features/stats/domain/month_trend.dart';
 
 void main() {

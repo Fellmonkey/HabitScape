@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/completion.dart';
+import 'package:habitscape/domain/completion.dart';
 import 'package:habitscape/features/stats/presentation/widgets/github_heatmap.dart';
 
 void main() {

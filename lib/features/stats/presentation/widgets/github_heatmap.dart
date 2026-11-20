@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 
-import '../../../../core/domain/completion.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../core/utils/calendar_grid.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../domain/completion.dart';
 import 'heatmap_layout.dart';
 
 /// GitHub-style heatmap: 7 weekday rows × N week columns, each cell colored

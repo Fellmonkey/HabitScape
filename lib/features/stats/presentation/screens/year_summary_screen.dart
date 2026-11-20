@@ -2,12 +2,12 @@ import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/utils/localized_dates.dart';
+import '../../../../domain/enums.dart';
 import '../../../../shared/widgets/app_card_header.dart';
 import '../../domain/year_summary.dart';
 import '../../providers/year_summary_providers.dart';

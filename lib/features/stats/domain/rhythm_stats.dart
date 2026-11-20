@@ -1,6 +1,6 @@
-import '../../../core/domain/completion.dart';
-import '../../../core/domain/enums.dart';
 import '../../../core/utils/time_bucket.dart';
+import '../../../domain/completion.dart';
+import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
 
 /// Per-weekday aggregation over a window (Mon = 1 … Sun = 7).
@@ -101,7 +101,7 @@ RhythmStats computeRhythmStats({
   );
 
   return RhythmStats(
-    weekdays: weekdays,
+    weekdays: List.unmodifiable(weekdays),
     bestWeekday: best,
     worstWeekday: worst,
     timeBucket: peak.total == 0 ? null : peak.bucket,

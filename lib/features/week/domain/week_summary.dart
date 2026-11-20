@@ -1,11 +1,11 @@
-import '../../../core/domain/completion.dart';
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/habit_ranking.dart';
-import '../../../core/domain/scheduling.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/completion.dart';
+import '../../../domain/enums.dart';
+import '../../../domain/habit_ranking.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/scheduling.dart';
 
-export '../../../core/domain/week_policy.dart';
+export '../../../domain/week_policy.dart';
 
 /// The auto-summary of a finished/ending week, computed on the fly.
 class WeekSummary {
@@ -189,6 +189,6 @@ WeekSummary computeWeekSummary({
     bestDay: bestDay,
     completionPct: completionPct,
     weakest: weakest,
-    nextWeekPlannedDays: nextWeekPlannedDays,
+    nextWeekPlannedDays: Map.unmodifiable(nextWeekPlannedDays),
   );
 }

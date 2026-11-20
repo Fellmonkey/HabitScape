@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/features/stats/providers/year_summary_providers.dart';
 
 import '../../../fixtures/test_db.dart';

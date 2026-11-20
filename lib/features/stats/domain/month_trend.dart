@@ -1,4 +1,4 @@
-import '../../../core/domain/completion.dart';
+import '../../../domain/completion.dart';
 
 /// One month of the trailing trend: pooled completion over that month's
 /// elapsed days.

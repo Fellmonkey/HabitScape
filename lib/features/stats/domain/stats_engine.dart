@@ -1,4 +1,4 @@
-import '../../../core/domain/completion.dart';
+import '../../../domain/completion.dart';
 import '../../../domain/models/entities.dart';
 import 'mood_correlation.dart';
 import 'rhythm_stats.dart';

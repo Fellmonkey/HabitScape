@@ -1,5 +1,5 @@
-import '../../../core/domain/completion.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../domain/completion.dart';
 import '../../../domain/models/entities.dart';
 
 /// This week vs last week (Monday-start weeks).

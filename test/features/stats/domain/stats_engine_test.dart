@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/completion.dart';
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/domain/completion.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/features/stats/domain/mood_correlation.dart';
 import 'package:habitscape/features/stats/domain/rhythm_stats.dart';
 import 'package:habitscape/features/stats/domain/stats_engine.dart';

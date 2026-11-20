@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/habit_lifecycle.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/habit_lifecycle.dart';
 import 'package:habitscape/features/stats/presentation/widgets/archive_card.dart';
 import 'package:habitscape/features/stats/providers/habit_lifecycle_overview_providers.dart';
 
