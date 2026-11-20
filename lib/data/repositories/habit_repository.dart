@@ -4,6 +4,7 @@ import '../../core/database/app_database.dart' as rows;
 import '../../core/database/daos/habit_logs_dao.dart';
 import '../../core/database/daos/habits_dao.dart';
 import '../../core/database/enums.dart';
+import '../../core/domain/focus_policy.dart';
 import '../../domain/models/entities.dart';
 
 /// Single source of truth for habits and their logs.
@@ -11,10 +12,11 @@ import '../../domain/models/entities.dart';
 /// With `@UseRowClass`, Drift returns the domain entities directly — there is
 /// no row→domain conversion layer. Only writes build Drift companions.
 class HabitRepository {
-  HabitRepository(rows.AppDatabase db)
-    : _habitsDao = db.habitsDao,
-      _logsDao = db.habitLogsDao;
+  HabitRepository(this._db)
+    : _habitsDao = _db.habitsDao,
+      _logsDao = _db.habitLogsDao;
 
+  final rows.AppDatabase _db;
   final HabitsDao _habitsDao;
   final HabitLogsDao _logsDao;
 
@@ -95,6 +97,23 @@ class HabitRepository {
       _habitsDao.toggleFocus(id, isFocus: isFocus);
 
   Future<int> countFocus() => _habitsDao.countFocusHabits();
+
+  /// Atomically applies the focus cap: the count and the write share one
+  /// transaction so two simultaneous toggles cannot both pass the check.
+  /// Returns false (without writing) when the cap would be exceeded.
+  Future<bool> setFocusWithCap(int id, {required bool isFocus}) {
+    return _db.transaction(() async {
+      final current = isFocus ? await countFocus() : 0;
+      if (!FocusPolicy.canSetFocus(
+        currentFocusCount: current,
+        isFocus: isFocus,
+      )) {
+        return false;
+      }
+      await setFocus(id, isFocus: isFocus);
+      return true;
+    });
+  }
 
   Future<void> logToday(
     List<int> habitIds,

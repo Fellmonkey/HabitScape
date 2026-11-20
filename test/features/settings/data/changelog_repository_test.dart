@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/config/app_constants.dart';
-import 'package:habitscape/features/settings/data/changelog_repository.dart';
+import 'package:habitscape/data/services/changelog_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

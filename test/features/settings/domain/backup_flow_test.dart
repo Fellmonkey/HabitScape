@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
-import 'package:habitscape/core/database/backup_service.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/data/repositories/backup_repository.dart';
 import 'package:habitscape/domain/models/backup_status.dart';
 import 'package:habitscape/domain/use_cases/backup_flow.dart';
 
@@ -47,8 +47,8 @@ class _FakeStatusStore implements BackupStatusStore {
   }
 }
 
-class _FailingBackupService extends BackupService {
-  _FailingBackupService(super.db);
+class _FailingBackupRepository extends BackupRepository {
+  _FailingBackupRepository(super.db);
 
   @override
   Future<Uint8List> exportBackup() async {
@@ -63,14 +63,14 @@ class _FailingBackupService extends BackupService {
 
 void main() {
   late AppDatabase db;
-  late BackupService service;
+  late BackupRepository service;
   late _FakeSharer sharer;
   late _FakeStatusStore statusStore;
   final today = DateTime.utc(2026, 10, 9);
 
   setUp(() {
     db = createTestDatabase();
-    service = BackupService(db);
+    service = BackupRepository(db);
     sharer = _FakeSharer();
     statusStore = _FakeStatusStore();
   });
@@ -80,7 +80,7 @@ void main() {
   });
 
   BackupFlow flow({
-    BackupService? backupService,
+    BackupRepository? backupService,
     BackupPick pick = const BackupPickCancelled(),
   }) {
     return BackupFlow(
@@ -106,7 +106,7 @@ void main() {
 
   test('export failure is reported without marking the date', () async {
     final outcome = await flow(
-      backupService: _FailingBackupService(db),
+      backupService: _FailingBackupRepository(db),
     ).exportBackup();
 
     expect(outcome, isA<BackupExportFailed>());
@@ -121,7 +121,7 @@ void main() {
     final target = createTestDatabase();
     addTearDown(target.close);
     final outcome = await flow(
-      backupService: BackupService(target),
+      backupService: BackupRepository(target),
       pick: BackupPickReady(bytes),
     ).importBackup();
 
@@ -146,7 +146,7 @@ void main() {
 
   test('import failure is reported', () async {
     final outcome = await flow(
-      backupService: _FailingBackupService(db),
+      backupService: _FailingBackupRepository(db),
       pick: BackupPickReady(Uint8List.fromList([1, 2, 3])),
     ).importBackup();
 

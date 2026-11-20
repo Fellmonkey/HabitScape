@@ -2,31 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/enums.dart';
-import '../../../core/domain/moment.dart';
 import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../core/notifications/reminder_settings.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/settings/exposure.dart';
 import '../../../core/settings/hintful.dart';
-import '../../../core/settings/shared_prefs.dart';
 import '../../../core/settings/today.dart';
-import '../../../domain/models/entities.dart';
-import '../../habits/providers/day_note_providers.dart';
-import '../../habits/providers/habit_streams.dart';
-import '../../habits/providers/month_summary_providers.dart';
 import '../../onboarding/app_tours.dart';
-import '../../week/providers/week_providers.dart';
 import '../domain/reminder_spec.dart';
-import '../domain/reminder_templates.dart';
+import '../providers/reminder_specs_provider.dart';
 import '../providers/reminder_sync_provider.dart';
 
-/// Owns the live reminder schedule. It watches the app state (habits, today's
-/// logs, week/month windows, today's note, the toggle, the chosen scope) and
-/// on any change reconciles the OS schedule to the expected template set —
-/// scheduling new reminders, cancelling obsolete ones (a done habit, an
-/// answered summary, a written moment) and dropping everything when reminders
-/// are disabled.
+/// Side-effect host for the live reminder schedule. The expected spec set is
+/// derived by `reminderSpecsProvider`; this widget only reconciles it with the
+/// OS scheduler (scheduling new reminders, cancelling obsolete ones, dropping
+/// everything when reminders are disabled).
 ///
 /// Also owns the first-launch explainer: once per install it asks whether to
 /// allow notifications and which kinds, so the user understands what will
@@ -63,11 +52,9 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
   /// when a decision is already recorded.
   Future<void> _maybeAskFirstLaunch() async {
     if (kIsWeb || !mounted) return;
-    final prefs = await ref.read(sharedPrefsProvider.future);
-    if (prefs.getBool(notificationPromptedKey) ?? false) return;
-    if (prefs.getBool(notificationEnabledKey) ?? false) {
-      // Enabled before the prompt existed — treat as answered.
-      await prefs.setBool(notificationPromptedKey, true);
+    if (await ref
+        .read(notificationActionsProvider.notifier)
+        .promptAlreadyAnswered()) {
       return;
     }
 
@@ -77,7 +64,7 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
       await _waitForGreenhouseTour();
     }
 
-    final context = rootNavigatorKey.currentContext;
+    final context = ref.read(rootNavigatorKeyProvider).currentContext;
     if (context == null || !context.mounted) return;
 
     final choice = await showDialog<String>(
@@ -113,8 +100,11 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
   /// wait so the prompt is never lost.
   Future<void> _waitForGreenhouseTour() async {
     final store = await ref.read(hintfulStoreProvider.future);
-    final deadline = DateTime.now().add(const Duration(seconds: 12));
-    while (DateTime.now().isBefore(deadline)) {
+    final clock = ref.read(clockProvider);
+    final deadline = clock.now().add(const Duration(seconds: 12));
+    // The iteration cap keeps a pinned test clock from turning this into an
+    // endless poll; production exits as soon as the tour marks itself done.
+    for (var i = 0; i < 48 && clock.now().isBefore(deadline); i++) {
       if (!store.shouldShow(AppTourIds.greenhouse)) return;
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
@@ -122,35 +112,12 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = ref.watch(notificationEnabledProvider).value ?? false;
-    final kinds = ref.watch(notificationKindsProvider).value;
-    final habits = ref.watch(activeHabitsProvider).value ?? const <Habit>[];
-    final logs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
-    final week = ref.watch(weekSummaryProvider).value;
-    final month = ref.watch(monthSummaryProvider).value;
-    final note = ref.watch(todayDayNoteProvider).value;
-    final exposure = ref.watch(exposureProvider).value;
-    final today = ref.watch(todayDateProvider);
-
-    final specs = enabled && kinds != null
-        ? buildReminderSpecs(
-            habits: habits,
-            doneTodayHabitIds: {
-              for (final log in logs)
-                if (log.status == LogStatus.done) log.habitId,
-            },
-            weekSummaryAvailable: week?.shouldShow ?? false,
-            monthSummaryAvailable: month?.shouldShow ?? false,
-            hasNoteToday: note != null && hasMoment(note.moment),
-            today: today,
-            lastSeenDate: exposure?.lastSeenDate,
-            enabledKinds: kinds,
-          )
-        : const <ReminderSpec>[];
-
+    final expected = ref.watch(reminderSpecsProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(reminderSyncProvider.notifier).sync(specs, enabled);
+      ref
+          .read(reminderSyncProvider.notifier)
+          .sync(expected.specs, expected.enabled);
     });
     return widget.child;
   }

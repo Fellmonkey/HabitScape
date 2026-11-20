@@ -85,8 +85,8 @@ class HabitsDao extends DatabaseAccessor<AppDatabase> with _$HabitsDaoMixin {
     return (delete(habits)..where((h) => h.id.equals(id))).go();
   }
 
-  /// Sets the focus flag on a habit — a thin write. The cap check runs in
-  /// the caller (`HabitActions.setFocus`) inside a transaction.
+  /// Sets the focus flag on a habit — a thin write. The cap check and the
+  /// transaction live in `HabitRepository.setFocusWithCap`.
   Future<void> toggleFocus(int id, {required bool isFocus}) {
     return (update(habits)..where((h) => h.id.equals(id))).write(
       HabitsCompanion(isFocus: Value(isFocus)),

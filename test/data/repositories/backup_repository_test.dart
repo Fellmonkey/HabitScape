@@ -4,9 +4,9 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart'
     show AppDatabase, HabitLogsCompanion;
-import 'package:habitscape/core/database/backup_service.dart';
 import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/data/repositories/backup_repository.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';
@@ -18,18 +18,18 @@ Map<String, dynamic> _decode(Uint8List bytes) =>
 
 void main() {
   late AppDatabase db;
-  late BackupService service;
+  late BackupRepository service;
 
   setUp(() {
     db = createTestDatabase();
-    service = BackupService(db);
+    service = BackupRepository(db);
   });
 
   tearDown(() async {
     await db.close();
   });
 
-  group('BackupService', () {
+  group('BackupRepository', () {
     test(
       'empty DB export produces valid JSON with version and empty arrays',
       () async {
@@ -102,7 +102,7 @@ void main() {
 
       // Import into a fresh database
       final db2 = createTestDatabase();
-      final service2 = BackupService(db2);
+      final service2 = BackupRepository(db2);
 
       final count = await service2.importBackup(exportedBytes);
       expect(count, 1);
@@ -188,7 +188,7 @@ void main() {
       expect(utf8.decode(bytes), contains('Бег'));
 
       final db2 = createTestDatabase();
-      final service2 = BackupService(db2);
+      final service2 = BackupRepository(db2);
       await service2.importBackup(bytes);
 
       final habit = (await db2.habitsDao.getAllHabits()).single;
@@ -235,7 +235,7 @@ void main() {
         'Должно исчезнуть',
       );
 
-      await BackupService(db2).importBackup(bytes);
+      await BackupRepository(db2).importBackup(bytes);
 
       final habits = await db2.habitsDao.getAllHabits();
       expect(habits, hasLength(1));
@@ -401,7 +401,7 @@ void main() {
       final bytes = await service.exportBackup();
 
       final db2 = createTestDatabase();
-      await BackupService(db2).importBackup(bytes);
+      await BackupRepository(db2).importBackup(bytes);
 
       final logs = await db2.habitLogsDao.getAllLogs();
       expect(logs.first.loggedHour, isNull);

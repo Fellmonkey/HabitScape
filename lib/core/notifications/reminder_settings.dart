@@ -53,6 +53,19 @@ class NotificationActions extends Notifier<void> {
     ref.invalidate(notificationKindsProvider);
   }
 
+  /// Whether the first-launch prompt has already been answered. A legacy
+  /// install that enabled reminders before this flag existed is migrated by
+  /// recording the answer here, so the prompt is shown at most once.
+  Future<bool> promptAlreadyAnswered() async {
+    final prefs = await ref.read(sharedPrefsProvider.future);
+    if (prefs.getBool(notificationPromptedKey) ?? false) return true;
+    if (prefs.getBool(notificationEnabledKey) ?? false) {
+      await prefs.setBool(notificationPromptedKey, true);
+      return true;
+    }
+    return false;
+  }
+
   /// Records the first-launch answer. [allowed] is whether the OS granted
   /// permission for the chosen scope; when false reminders stay off.
   Future<void> finishFirstLaunchPrompt({

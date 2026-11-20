@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_provider.dart';
 import '../../../core/domain/enums.dart';
 import '../../../core/domain/scheduling.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../data/repository_providers.dart';
-import '../domain/focus_policy.dart';
 
 /// Notifier for creating/updating/deleting habits and logging completions.
 final habitActionsProvider = NotifierProvider<HabitActions, void>(
@@ -88,19 +86,10 @@ class HabitActions extends Notifier<void> {
   /// Sets the focus flag, enforcing the 5-habit focus cap. Returns false
   /// (without writing) when enabling focus would exceed the cap.
   Future<bool> setFocus(int habitId, {required bool isFocus}) {
-    final db = ref.read(databaseProvider);
-    final repo = ref.read(repositoriesProvider).habits;
-    return db.transaction(() async {
-      final current = isFocus ? await repo.countFocus() : 0;
-      if (!FocusPolicy.canSetFocus(
-        currentFocusCount: current,
-        isFocus: isFocus,
-      )) {
-        return false;
-      }
-      await repo.setFocus(habitId, isFocus: isFocus);
-      return true;
-    });
+    return ref
+        .read(repositoriesProvider)
+        .habits
+        .setFocusWithCap(habitId, isFocus: isFocus);
   }
 
   /// Update a habit's mutable fields.

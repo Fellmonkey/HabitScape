@@ -1,22 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/backup_service.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/settings/shared_prefs.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
+import '../../../data/repository_providers.dart';
+import '../../../data/services/backup_io.dart';
 import '../../../domain/models/backup_status.dart';
 import '../../../domain/use_cases/backup_flow.dart';
-import '../data/backup_io.dart';
-
-// ── Backup service ─────────────────────────────────────────────
-
-final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(
-    ref.watch(databaseProvider),
-    clock: ref.watch(clockProvider),
-  );
-});
 
 // ── Backup flow ────────────────────────────────────────────────
 
@@ -37,7 +27,7 @@ final backupStatusProvider = FutureProvider<BackupStatus>((ref) async {
 final backupFlowProvider = FutureProvider<BackupFlow>((ref) async {
   final store = await ref.watch(backupStatusStoreProvider.future);
   return BackupFlow(
-    service: ref.watch(backupServiceProvider),
+    service: ref.watch(repositoriesProvider).backup,
     picker: const PlatformBackupFilePicker(),
     sharer: const PlatformBackupSharer(),
     statusStore: store,

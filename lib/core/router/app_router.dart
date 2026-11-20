@@ -112,6 +112,12 @@ final appRouter = buildAppRouter();
 /// for a global `NavigatorState`. Tests override this with their own router.
 final appRouterProvider = Provider<GoRouter>((ref) => appRouter);
 
+/// The root navigator key, injected the same way. The first-launch gate sits
+/// above `MaterialApp.router` and needs the router's context to show a dialog.
+final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>((ref) {
+  return rootNavigatorKey;
+});
+
 /// Custom-transition page for pushed screens: fade + slight rise + scale,
 /// strong ease-out, transform/opacity only. Both forward and back use the
 /// same motion so the direction is always legible. Reduced-motion users get
