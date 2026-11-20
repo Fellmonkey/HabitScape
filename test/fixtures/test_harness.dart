@@ -1,5 +1,5 @@
 import 'package:habitscape/core/settings/today.dart';
-import 'package:habitscape/features/onboarding/app_tours.dart';
+import 'package:habitscape/features/onboarding/presentation/app_tours.dart';
 
 /// A today notifier pinned to a fixed day — no midnight timer.
 class FixedToday extends TodayNotifier {

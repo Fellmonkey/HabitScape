@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/history_store_providers.dart';
 import '../../data/repository_providers.dart';
 import '../../features/habits/domain/month_summary.dart';
 import '../../features/habits/presentation/widgets/month_summary_card.dart';
-import '../database/history_store_provider.dart';
 import '../keys.dart';
 import '../settings/today.dart';
 import '../theme/app_theme.dart';

@@ -1,15 +1,15 @@
 /// Visual vocabulary for the persisted enums — the single place where
 /// storage-free UI mappings live (icons, colours, Russian labels).
 ///
-/// Domain modules import `core/domain/enums.dart` only; presentation code
+/// Domain modules import `domain/enums.dart` only; presentation code
 /// imports this file for anything that renders.
 library;
 
 import 'package:flutter/material.dart' hide TimeOfDay;
 
+import '../../domain/enums.dart';
 import '../../domain/models/entities.dart';
-import '../domain/enums.dart';
-import '../domain/scheduling.dart';
+import '../../domain/scheduling.dart';
 import '../formatting/russian_plural.dart';
 import '../utils/localized_dates.dart';
 import 'app_palette.dart';

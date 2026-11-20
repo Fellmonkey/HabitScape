@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/config/app_constants.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
-import 'package:habitscape/features/settings/domain/changelog.dart';
+import 'package:habitscape/domain/models/changelog.dart';
 import 'package:habitscape/features/settings/presentation/screens/changelog_screen.dart';
 import 'package:habitscape/features/settings/providers/changelog_providers.dart';
 

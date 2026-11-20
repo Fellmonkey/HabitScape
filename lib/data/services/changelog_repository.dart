@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-import '../../features/settings/domain/changelog.dart';
+import '../../domain/models/changelog.dart';
 import '../resilience.dart';
 
 /// Loads the bundled `CHANGELOG.md` — the same file Git users read.

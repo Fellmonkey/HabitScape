@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/debug/month_summary_preview.dart';
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';

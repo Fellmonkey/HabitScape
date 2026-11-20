@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../fixtures/test_db.dart';

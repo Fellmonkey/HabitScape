@@ -2,15 +2,22 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 
+import '../../domain/enums.dart';
+import '../../domain/scheduling.dart';
 import '../database/app_database.dart';
 import '../database/database_reset.dart';
-import '../domain/enums.dart';
-import '../domain/scheduling.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 import '../utils/time_bucket.dart';
 import 'mood_rule.dart';
 
+/// Debug-only bulk data generator.
+///
+/// Deliberately writes through DAOs with Drift companions: scenarios insert
+/// thousands of rows and need one batched transaction per (habit, month).
+/// Production writes always go through repositories; this file is reachable
+/// only from the debug menu (`kDebugMode`) and never ships in the release path.
+///
 /// A scenario that can be loaded via the debug menu.
 class DebugScenario {
   const DebugScenario({

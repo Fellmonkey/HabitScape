@@ -4,9 +4,9 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart'
     show AppDatabase, HabitLogsCompanion;
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/data/repositories/backup_repository.dart';
+import 'package:habitscape/domain/enums.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';

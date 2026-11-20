@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/debug/time_suggestions_preview.dart';
-import 'package:habitscape/core/domain/time_suggestion.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/providers/time_suggestions_provider.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/domain/time_suggestion.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';

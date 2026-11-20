@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/debug/mood_rule.dart';
-import 'package:habitscape/core/domain/enums.dart';
+import 'package:habitscape/domain/enums.dart';
 
 void main() {
   group('moodForCompletionRatio', () {

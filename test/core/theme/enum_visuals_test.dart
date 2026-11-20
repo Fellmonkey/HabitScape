@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/scheduling.dart';
 import 'package:habitscape/core/theme/enum_visuals.dart';
 import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/domain/scheduling.dart';
 
 /// Presentation label mapping for the scheduling kernel — the one place a
 /// frequency's Russian label is defined. The kernel itself never carries

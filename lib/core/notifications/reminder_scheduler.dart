@@ -1,20 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../features/reminders/domain/reminder_channel_labels.dart';
 import '../../features/reminders/domain/reminder_spec.dart';
-
-/// User-facing names of the platform notification channels. The copy lives in
-/// the reminders feature; this service only knows the seam.
-abstract interface class ReminderChannelLabels {
-  String get habits;
-  String get summaries;
-  String get reflection;
-}
 
 /// Seam over the OS notification scheduling. Feature code schedules through
 /// this interface, so tests and web builds can substitute a fake/no-op.
@@ -230,12 +219,3 @@ class NoopReminderScheduler implements ReminderScheduler {
   @override
   void setNotificationTapHandler(void Function(String? payload) handler) {}
 }
-
-/// The scheduler for the current platform.
-final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) {
-  return kIsWeb
-      ? const NoopReminderScheduler()
-      : LocalNotificationsReminderScheduler(
-          labels: const RussianReminderChannelLabels(),
-        );
-});

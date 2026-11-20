@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/features/settings/domain/changelog.dart';
+import 'package:habitscape/domain/models/changelog.dart';
 
 void main() {
   test('parses releases, dates, sections and bullets', () {

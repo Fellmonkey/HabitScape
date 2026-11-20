@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pins the one disambiguation idiom for the `TimeOfDay` collision: the app
-/// enum in `core/domain/enums.dart` (re-exported by `core/domain/enums.dart`)
+/// enum in `domain/enums.dart` (re-exported by `domain/enums.dart`)
 /// and Flutter material's `TimeOfDay` share a name. Every file that imports
 /// both must hide material's type on the import line
 /// (`import 'package:flutter/material.dart' hide TimeOfDay;`), so a future

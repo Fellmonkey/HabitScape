@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:habitscape/core/database/app_database.dart'
     show HabitsCompanion, HabitLogsCompanion;
-import 'package:habitscape/core/domain/enums.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
 
 /// Default creation timestamp: 2026-01-01 midnight UTC.

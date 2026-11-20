@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
-import 'package:habitscape/core/domain/result.dart';
+import 'package:habitscape/domain/result.dart';
 import 'package:habitscape/features/habits/presentation/month_spread_exporter.dart';
 import 'package:habitscape/features/habits/presentation/png_share_contract.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../database/history_store_provider.dart';
-import '../domain/time_suggestion.dart';
+import '../../data/history_store_providers.dart';
+import '../../domain/time_suggestion.dart';
 import '../settings/today.dart';
 import '../utils/date_helpers.dart';
 

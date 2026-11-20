@@ -1,9 +1,9 @@
+import '../../core/config/app_constants.dart';
+import '../../core/database/daos/day_notes_dao.dart';
+import '../../core/database/daos/habit_logs_dao.dart';
+import '../../core/database/daos/habits_dao.dart';
+import '../../core/utils/date_helpers.dart';
 import '../../domain/models/entities.dart';
-import '../config/app_constants.dart';
-import '../utils/date_helpers.dart';
-import 'daos/day_notes_dao.dart';
-import 'daos/habit_logs_dao.dart';
-import 'daos/habits_dao.dart';
 
 /// Everything the analytic modules need from one time window: its normalized
 /// boundaries, the active habits, and their logs and day notes in [start, end).

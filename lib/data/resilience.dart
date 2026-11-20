@@ -22,22 +22,25 @@ Future<T> retry<T>(
 
 /// Small TTL cache for parsed data that rarely changes (e.g. a bundled asset).
 class TtlCache<V> {
-  TtlCache(this._ttl);
+  TtlCache(this._ttl, {DateTime Function()? now}) : _now = now ?? DateTime.now;
 
   final Duration _ttl;
+
+  /// Injected so expiry can be pinned in tests instead of sleeping.
+  final DateTime Function() _now;
   DateTime? _at;
   V? _value;
 
   V? get() {
     final at = _at;
     if (at == null) return null;
-    if (DateTime.now().difference(at) > _ttl) return null;
+    if (_now().difference(at) > _ttl) return null;
     return _value;
   }
 
   void put(V value) {
     _value = value;
-    _at = DateTime.now();
+    _at = _now();
   }
 
   void clear() {

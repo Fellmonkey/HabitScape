@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repository_providers.dart';
-import '../../domain/models/entities.dart';
-import 'history_store.dart';
+import '../domain/models/entities.dart';
+import 'repositories/history_store.dart';
+import 'repository_providers.dart';
 
 /// The single seam for loading windows of history; shared by the month
 /// spread, the week summary and the stats screen.
@@ -20,8 +20,3 @@ final dayNotesStreamProvider = Provider<Stream<List<DayNote>>>((ref) {
   return ref.watch(repositoriesProvider).dayNotes.watchAll();
 });
 
-/// One-shot "has the user ever written a day note" seam.
-final hasAnyDayNoteProvider = FutureProvider<bool>((ref) async {
-  final notes = await ref.watch(repositoriesProvider).dayNotes.getAll();
-  return notes.isNotEmpty;
-});

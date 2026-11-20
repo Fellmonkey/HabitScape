@@ -1,9 +1,9 @@
 import '../../core/database/app_database.dart';
-import '../../core/database/history_store.dart';
 import 'backup_repository.dart';
 import 'day_note_repository.dart';
 import 'goal_repository.dart';
 import 'habit_repository.dart';
+import 'history_store.dart';
 import 'letter_repository.dart';
 
 /// Bundles every repository behind one injected object.

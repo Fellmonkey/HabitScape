@@ -1,5 +1,5 @@
-import '../../domain/models/entities.dart';
 import 'completion.dart';
+import 'models/entities.dart';
 
 typedef HabitRank = ({int habitId, String name, int done, int expected});
 

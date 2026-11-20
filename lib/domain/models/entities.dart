@@ -1,4 +1,4 @@
-import '../../core/domain/enums.dart';
+import '../../domain/enums.dart';
 
 /// Immutable domain entities. These are the types the rest of the app works
 /// with — and, via `@UseRowClass` on the Drift tables, they ARE the row classes.

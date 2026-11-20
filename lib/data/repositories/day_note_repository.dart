@@ -1,5 +1,5 @@
 import '../../core/database/daos/day_notes_dao.dart';
-import '../../core/domain/enums.dart';
+import '../../domain/enums.dart';
 import '../../domain/models/entities.dart';
 
 /// Single source of truth for day notes (moment, mood, time quality).

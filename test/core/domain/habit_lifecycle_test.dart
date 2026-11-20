@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/enums.dart';
-import 'package:habitscape/core/domain/habit_lifecycle.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/enums.dart';
+import 'package:habitscape/domain/habit_lifecycle.dart';
 
 import '../../fixtures/test_factories.dart';
 

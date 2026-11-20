@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/scheduling.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
+import 'package:habitscape/domain/scheduling.dart';
 
 import '../../fixtures/test_factories.dart';
 

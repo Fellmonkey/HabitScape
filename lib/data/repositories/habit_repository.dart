@@ -4,7 +4,7 @@ import '../../core/database/app_database.dart' as rows;
 import '../../core/database/daos/habit_logs_dao.dart';
 import '../../core/database/daos/habits_dao.dart';
 import '../../core/database/enums.dart';
-import '../../core/domain/focus_policy.dart';
+import '../../domain/focus_policy.dart';
 import '../../domain/models/entities.dart';
 
 /// Single source of truth for habits and their logs.

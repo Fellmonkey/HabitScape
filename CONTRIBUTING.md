@@ -54,6 +54,27 @@ integration_test/ # end-to-end scenarios
 Feature code follows Clean Architecture: `data` (DAOs) → `domain` (pure logic) →
 `providers` (Riverpod) → `presentation` (screens & widgets).
 
+#### Persistence mapping decision
+
+Domain entities in `lib/domain/models/entities.dart` are also the Drift row
+classes: every table in `lib/core/database/tables.dart` is annotated with
+`@UseRowClass`. This is deliberate — the app is local-only with no wire API, so
+a raw-row → domain mapper layer would only duplicate the same six classes.
+
+Consequences to keep in mind:
+
+* A schema change (new column, type change) changes a domain entity. Review
+  table and entity changes together.
+* Most repositories are thin DAO delegates; `BackupRepository` and
+  `HistoryStore` are the ones that own real logic (format/version handling and
+  window policy). Do not add business rules to a delegate repository — put
+  them in `domain` as pure functions.
+* Drift stays inside `lib/data` and `lib/core/database`. No widget, provider or
+  domain file imports it. The one exception is
+  `lib/core/debug/debug_data_seeder.dart`: it writes through DAOs in bulk for
+  debug scenarios and is gated behind `kDebugMode`. Never copy that pattern
+  into production code.
+
 ## 📐 Conventions
 
 * **Language:** UI strings are in **Russian** and hardcoded in widgets; code and

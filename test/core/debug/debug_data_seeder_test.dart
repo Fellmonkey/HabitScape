@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/debug/debug_data_seeder.dart';
-import 'package:habitscape/core/domain/completion.dart';
-import 'package:habitscape/core/domain/enums.dart';
-import 'package:habitscape/core/domain/habit_lifecycle.dart';
-import 'package:habitscape/core/domain/time_suggestion.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/domain/completion.dart';
+import 'package:habitscape/domain/enums.dart';
+import 'package:habitscape/domain/habit_lifecycle.dart';
+import 'package:habitscape/domain/time_suggestion.dart';
 
 import '../../fixtures/test_db.dart';
 

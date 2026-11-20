@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/core/domain/enums.dart';
-import 'package:habitscape/core/domain/time_suggestion.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
+import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
+import 'package:habitscape/domain/time_suggestion.dart';
 
 import '../../fixtures/test_factories.dart';
 
