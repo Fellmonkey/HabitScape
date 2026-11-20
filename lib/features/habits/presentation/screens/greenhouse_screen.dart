@@ -37,38 +37,13 @@ import '../widgets/progress_ring.dart';
 import '../widgets/swipe_hint_strip.dart';
 import '../widgets/today_group_visuals.dart';
 import '../widgets/welcome_back_gate.dart';
+import 'greenhouse_board_rows.dart';
 
 /// How long the group-level undo snack bar stays open after «Выполнить все».
 const groupUndoWindow = Duration(seconds: 10);
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
-/// One animated row of the Greenhouse board: either a group header or one
-/// habit card. The id is the diff key between the current and the next set
-/// of rows (section kinds are unique on the board).
-sealed class _BoardEntry {
-  String get id;
-}
-
-final class _GroupHeaderEntry extends _BoardEntry {
-  _GroupHeaderEntry(this.group);
-
-  final TodayGroup group;
-
-  @override
-  String get id => 'g:${group.kind.name}';
-}
-
-final class _HabitEntry extends _BoardEntry {
-  _HabitEntry(this.habit, this.log);
-
-  final Habit habit;
-  final HabitLog? log;
-
-  @override
-  String get id => 'h:${habit.id}';
-}
-
 class GreenhouseScreen extends ConsumerStatefulWidget {
   const GreenhouseScreen({super.key});
 
@@ -92,8 +67,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// two differ, the difference is applied as insert/remove animations.
   final GlobalKey<SliverAnimatedListState> _groupListKey =
       GlobalKey<SliverAnimatedListState>();
-  List<_BoardEntry> _entries = const [];
-  List<_BoardEntry>? _pendingNext;
+  List<BoardEntry> _entries = const [];
+  List<BoardEntry>? _pendingNext;
 
   /// Whether the hide-completed toggle's one-time hint was attempted.
   bool _toggleHintTriggered = false;
@@ -207,7 +182,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _maybeCelebrateDayClosed(habits, dayProgress, today);
-      _syncEntries(_buildEntries(groups, logByHabit));
+      _syncEntries(buildBoardEntries(groups, logByHabit));
       _maybeShowToggleHint(canSeeToggle);
     });
 
@@ -346,7 +321,13 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             key: _groupListKey,
             initialItemCount: _entries.length,
             itemBuilder: (context, index, animation) =>
-                _entryRow(_entries[index], animation),
+                boardEntryRow(
+                  context,
+                  _entries[index],
+                  animation,
+                  headerBuilder: _buildGroupHeader,
+                  cardBuilder: _buildHabitRow,
+                ),
           ),
 
         // ── Reflection block (bottom): goals first ──
@@ -433,24 +414,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     });
   }
 
-  /// Flattens the board into animated-list rows: one header entry per group,
-  /// then one card entry per habit. The ids are the diff keys.
-  List<_BoardEntry> _buildEntries(
-    List<TodayGroup> groups,
-    Map<int, HabitLog> logByHabit,
-  ) {
-    final out = <_BoardEntry>[];
-    for (final group in groups) {
-      if (group.habits.isEmpty) continue;
-      out.add(_GroupHeaderEntry(group));
-      for (final habit in group.habits) {
-        out.add(_HabitEntry(habit, logByHabit[habit.id]));
-      }
-    }
-    return out;
-  }
-
-  bool _sameEntries(List<_BoardEntry> next) {
+  bool _sameEntries(List<BoardEntry> next) {
     final current = _entries;
     if (next.length != current.length) return false;
     for (var i = 0; i < next.length; i++) {
@@ -470,7 +434,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   /// Schedules one post-frame apply of [next]. Build may run many times per
   /// frame; only the latest pending list is applied, and only when it
   /// actually differs from what the animated list shows.
-  void _syncEntries(List<_BoardEntry> next) {
+  void _syncEntries(List<BoardEntry> next) {
     if (_sameEntries(next)) return;
     _pendingNext = next;
     if (_applyingEntries) return; // the running loop will see the new target
@@ -518,7 +482,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         // animations to finish before the next batch — the list stays in
         // sync with [_entries] at every step because every mutation goes
         // through the animated list's own API.
-        var work = List<_BoardEntry>.of(_entries);
+        var work = List<BoardEntry>.of(_entries);
         while (mounted && !_sameEntries(next)) {
           var applied = 0;
 
@@ -528,7 +492,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             list.removeItem(
               i,
               (context, animation) =>
-                  _entryRow(removed, animation, removing: true),
+                  boardEntryRow(
+                    context,
+                    removed,
+                    animation,
+                    headerBuilder: _buildGroupHeader,
+                    cardBuilder: _buildHabitRow,
+                    removing: true,
+                  ),
               duration: AppMotion.travel,
             );
             work.removeAt(i);
@@ -555,46 +526,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     } finally {
       _applyingEntries = false;
     }
-  }
-
-  /// One animated-list row: header or card. Inserts grow from zero height
-  /// with a fade, rise and slight scale — a living entrance instead of a
-  /// flat expand. Removals collapse with a fade only (no travel). Reduced
-  /// motion renders the row plainly.
-  Widget _entryRow(
-    _BoardEntry entry,
-    Animation<double> animation, {
-    bool removing = false,
-  }) {
-    final child = switch (entry) {
-      _GroupHeaderEntry(:final group) => _buildGroupHeader(group),
-      _HabitEntry(:final habit, :final log) => _buildHabitRow(habit, log),
-    };
-    if (AppMotion.mayDisable(context)) return child;
-
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: AppMotion.easeOutStrong,
-    );
-    return SizeTransition(
-      sizeFactor: animation,
-      alignment: Alignment.topCenter,
-      child: FadeTransition(
-        opacity: curved,
-        child: removing
-            ? child
-            : SlideTransition(
-                position: Tween(
-                  begin: const Offset(0, 0.09),
-                  end: Offset.zero,
-                ).animate(curved),
-                child: ScaleTransition(
-                  scale: Tween(begin: 0.95, end: 1.0).animate(curved),
-                  child: child,
-                ),
-              ),
-      ),
-    );
   }
 
   Widget _buildGroupHeader(TodayGroup group) {
