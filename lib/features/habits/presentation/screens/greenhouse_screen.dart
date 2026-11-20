@@ -9,7 +9,6 @@ import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
-import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../features/onboarding/presentation/app_tours.dart';
 import '../../../../features/onboarding/presentation/feature_intro_trigger.dart';
@@ -18,11 +17,12 @@ import '../../../../features/onboarding/presentation/single_hint.dart';
 import '../../../../shared/widgets/app_section_header.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
+import '../../../../shared/widgets/undo_feedback.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../capsule/providers/letter_providers.dart';
-import '../../domain/day_celebration.dart';
 import '../../domain/today_board.dart';
-import '../../providers/habit_group_actions.dart';
+import '../../providers/greenhouse_screen_controller.dart';
+import '../../providers/habit_card_controller.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
 import '../../providers/today_board_gating_provider.dart';
@@ -39,9 +39,6 @@ import '../widgets/swipe_hint_strip.dart';
 import '../widgets/today_group_visuals.dart';
 import '../widgets/welcome_back_gate.dart';
 import 'greenhouse_board_rows.dart';
-
-/// How long the group-level undo snack bar stays open after «Выполнить все».
-const groupUndoWindow = Duration(seconds: 10);
 
 /// Main daily screen — the "Greenhouse": today's habits grouped by time
 /// of day with a progress ring.
@@ -62,27 +59,63 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   List<BoardEntry> _entries = const [];
   List<BoardEntry>? _pendingNext;
 
-  /// Whether the hide-completed toggle's one-time hint was attempted.
-  bool _toggleHintTriggered = false;
+  /// One-shot decisions and the group undo window live in
+  /// `GreenhouseScreenController` (see providers/greenhouse_screen_controller).
 
-  /// Last seen completion progress — used to detect the moment the day
-  /// crosses to 100%.
-  double _lastProgress = -1;
-
-  /// Day key (yyyymmdd) for which the «День закрыт» celebration was shown.
-  int? _celebratedDay;
-
-  /// Timer that releases the group-undo grace window («Выполнить все»).
-  Timer? _groupUndoTimer;
-
-  @override
-  void dispose() {
-    _groupUndoTimer?.cancel();
-    super.dispose();
-  }
+  bool _effectsScheduled = false;
 
   @override
   String get tourScope => AppTourIds.greenhouse;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleEffects();
+  }
+
+  /// One-shot effects and animated-list sync run after the frame from this
+  /// scheduler; listeners register in build, which itself stays declarative.
+  void _scheduleEffects() {
+    if (_effectsScheduled) return;
+    _effectsScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _effectsScheduled = false;
+      if (!mounted) return;
+      final habits = ref.read(activeHabitsProvider).value ?? const <Habit>[];
+      final controller = ref.read(greenhouseScreenControllerProvider.notifier);
+
+      if (controller.checkDayClosed(
+        hasHabits: habits.isNotEmpty,
+        progress: ref.read(dayProgressProvider),
+        today: ref.read(todayDateProvider),
+      )) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            key: K.dayClosed,
+            duration: Duration(seconds: 4),
+            content: Text('День закрыт! 🎉 Все привычки выполнены.'),
+          ),
+        );
+      }
+
+      final board = ref.read(todayBoardProvider);
+      _syncEntries(buildBoardEntries(board.groups, board.logByHabit));
+
+      if (controller.claimToggleHint(
+        canSeeToggle: ref.read(todayBoardGatingProvider).canSeeToggle,
+      )) {
+        showSingleHint(
+          context,
+          ref,
+          targetId: 'greenhouse-hide-toggle',
+          title: 'Скрыть выполненные',
+          description:
+              'Когда привычек много — скрывай выполненные, чтобы видеть только то, что осталось.',
+          id: 'greenhouse-hide-toggle',
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +124,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final dayProgress = ref.watch(dayProgressProvider);
     final today = ref.watch(todayDateProvider);
     final gating = ref.watch(todayBoardGatingProvider);
+    ref.listen(todayBoardProvider, (_, _) => _scheduleEffects());
+    ref.listen(todayBoardGatingProvider, (_, _) => _scheduleEffects());
     final theme = Theme.of(context);
 
     final openedAnyCapsule =
@@ -149,15 +184,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final canSeeHistory = gating.canSeeHistory;
     final canSeeToggle = gating.canSeeToggle;
 
-    // All state mutations and one-shot effects happen after the frame: `build`
-    // only derives and renders, never writes to the screen's own fields.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _maybeCelebrateDayClosed(habits, dayProgress, today);
-      _syncEntries(buildBoardEntries(board.groups, board.logByHabit));
-      _maybeShowToggleHint(canSeeToggle);
-    });
-
+    // State and one-shot effects are driven by `_scheduleEffects` (listeners
+    // registered in build); this method only derives and renders.
     return CustomScrollView(
       slivers: [
         // ── Header with progress ring ──
@@ -354,25 +382,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     );
   }
 
-  /// Attempts the one-time hintful hint the first time the hide-completed
-  /// toggle becomes visible. Show-once is owned by the hintful store.
-  void _maybeShowToggleHint(bool canSeeToggle) {
-    if (!canSeeToggle || _toggleHintTriggered) return;
-    _toggleHintTriggered = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showSingleHint(
-        context,
-        ref,
-        targetId: 'greenhouse-hide-toggle',
-        title: 'Скрыть выполненные',
-        description:
-            'Когда привычек много — скрывай выполненные, чтобы видеть только то, что осталось.',
-        id: 'greenhouse-hide-toggle',
-      );
-    });
-  }
-
   /// Keeps a just-completed habit visible through its undo window when the
   /// hide-completed filter is on, so the card can show «Отменить» before it
   /// slides away.
@@ -567,77 +576,17 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final ids = [for (final h in habits) h.id];
 
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    final previous = await ref
-        .read(habitGroupActionsProvider.notifier)
-        .markAllDone(ids);
+    final vm = ref.read(greenhouseScreenControllerProvider.notifier);
+    final previous = await vm.markAllInGroup(ids);
     if (!mounted) return;
 
-    // Keep the just-completed cards visible while the group undo window is
-    // open, so «Отменить всё» has something visible to restore.
-    final controller = ref.read(todayBoardViewControllerProvider.notifier);
-    controller.keepVisible(
-      ids,
-      ref.read(clockProvider).now().add(groupUndoWindow),
+    showUndoSnackBar(
+      context,
+      message: 'Выполнено: ${ids.length}',
+      label: 'Отменить всё',
+      duration: groupUndoWindow,
+      onUndo: () => vm.undoGroup(ids, previous),
     );
-    _groupUndoTimer?.cancel();
-    _groupUndoTimer = Timer(groupUndoWindow, () {
-      if (!mounted) return;
-      controller.release(ids);
-    });
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        duration: groupUndoWindow,
-        content: Text('Выполнено: ${ids.length}'),
-        action: SnackBarAction(
-          label: 'Отменить всё',
-          onPressed: () => _undoGroup(ids, previous),
-        ),
-      ),
-    );
-  }
-
-  /// Restores every habit of a group to the status it had before
-  /// «Выполнить все» — the group-level twin of the card-level undo.
-  Future<void> _undoGroup(List<int> ids, Map<int, LogStatus> previous) {
-    return ref.read(habitGroupActionsProvider.notifier).undoAll(ids, previous);
-  }
-
-  /// One quiet celebration per day when completion crosses to 100% — the
-  /// moment a day feels "closed". Never nags: fires on the transition only,
-  /// once per calendar day.
-  void _maybeCelebrateDayClosed(
-    List<Habit> habits,
-    double progress,
-    DateTime today,
-  ) {
-    if (habits.isEmpty) {
-      _lastProgress = progress;
-      return;
-    }
-    final dayKey = dayKeyOf(today);
-    final celebrate = shouldCelebrateDayClose(
-      previousProgress: _lastProgress,
-      progress: progress,
-      celebratedDay: _celebratedDay,
-      dayKey: dayKey,
-    );
-    _lastProgress = progress;
-    if (!celebrate) return;
-    _celebratedDay = dayKey;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          key: K.dayClosed,
-          duration: Duration(seconds: 4),
-          content: Text('День закрыт! 🎉 Все привычки выполнены.'),
-        ),
-      );
-    });
   }
 
   String _formatToday(DateTime today) => formatFullDate(today);

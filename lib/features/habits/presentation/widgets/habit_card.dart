@@ -16,11 +16,9 @@ import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/error_feedback.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../providers/habit_actions.dart';
+import '../../providers/habit_card_controller.dart';
 import '../../providers/habit_streams.dart';
 import 'habit_card_bits.dart';
-
-/// How long a completion/skip stays undoable on the card.
-const habitUndoWindow = Duration(seconds: 5);
 
 /// A single habit row in the Greenhouse list: tap the check circle to mark
 /// done, tap the card to open details.
@@ -61,26 +59,14 @@ class _HabitCardState extends ConsumerState<HabitCard>
         widget.log?.status;
   }
 
-  /// Optimistic done: set the moment the user taps, so the check fills in
-  /// immediately. Cleared if the database write fails.
-  bool _optimisticDone = false;
-
-  /// Undo window state: [._undoOpen] marks the open window; [_undoPrevious]
-  /// is the status that existed before the last change (null = no log).
-  bool _undoOpen = false;
-  LogStatus? _undoPrevious;
-  Timer? _undoTimer;
+  /// Optimistic status and undo window live in `HabitCardController`; this
+  /// state class keeps only animation controllers and paint concerns.
 
   /// Soft pulsing glow while the undo window is open — previews that the
   /// card is about to leave the board (hide-completed view). Paint-only
   /// (box shadow / border), disabled under reduced motion.
   late final AnimationController _glowController;
   late final Animation<double> _glow;
-
-  bool _isDone(LogStatus? status) =>
-      status == LogStatus.done || _optimisticDone;
-
-  bool get _showUndo => _undoOpen;
 
   @override
   void initState() {
@@ -115,7 +101,6 @@ class _HabitCardState extends ConsumerState<HabitCard>
 
   @override
   void dispose() {
-    _undoTimer?.cancel();
     _bounceController.dispose();
     _glowController.dispose();
     super.dispose();
@@ -136,10 +121,11 @@ class _HabitCardState extends ConsumerState<HabitCard>
       Haptics.tap(ref.read(hapticsEnabledProvider));
     }
 
-    // Show the completed state immediately; confirm (or roll back) once the
-    // write round-trips through the database stream.
-    setState(() => _optimisticDone = status == LogStatus.done);
-    _openUndoWindow(previous);
+    // The ViewModel owns the optimistic status and the undo window; the card
+    // only triggers it and rolls it back if the write fails.
+    ref
+        .read(habitCardControllerProvider(widget.habit.id).notifier)
+        .beginApply(status, previous);
 
     try {
       await ref.read(habitActionsProvider.notifier).logToday([
@@ -153,8 +139,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
       }
     } catch (error) {
       if (mounted) {
-        _cancelUndoWindow();
-        setState(() => _optimisticDone = false);
+        ref
+            .read(habitCardControllerProvider(widget.habit.id).notifier)
+            .failApply();
         showErrorSnackBar(context, error);
       }
     }
@@ -175,42 +162,11 @@ class _HabitCardState extends ConsumerState<HabitCard>
     );
   }
 
-  void _openUndoWindow(LogStatus? previous) {
-    _undoTimer?.cancel();
-    setState(() {
-      _undoOpen = true;
-      _undoPrevious = previous;
-    });
-    if (!AppMotion.mayDisable(context) && !_glowController.isAnimating) {
-      _glowController.repeat(reverse: true);
-    }
-    _undoTimer = Timer(habitUndoWindow, () {
-      if (!mounted) return;
-      _cancelUndoWindow();
-    });
-  }
-
-  void _cancelUndoWindow() {
-    _undoTimer?.cancel();
-    _undoTimer = null;
-    _glowController.stop();
-    _glowController.value = 0;
-    if (mounted) {
-      setState(() {
-        _undoOpen = false;
-        _undoPrevious = null;
-      });
-    }
-  }
-
   Future<void> _undo() async {
-    final previous = _undoPrevious;
-    _cancelUndoWindow();
-    setState(() => _optimisticDone = false);
     try {
       await ref
-          .read(habitActionsProvider.notifier)
-          .undoTodayLog(widget.habit.id, previous: previous);
+          .read(habitCardControllerProvider(widget.habit.id).notifier)
+          .undo(widget.habit.id);
     } catch (error) {
       // The stream will settle on whatever state survived the failed write;
       // the user still learns that the undo did not go through.
@@ -231,6 +187,21 @@ class _HabitCardState extends ConsumerState<HabitCard>
     ref.watch(todayLogForHabitProvider(widget.habit.id));
     final status = _statusNow();
     final today = ref.watch(todayDateProvider);
+    final cardState = ref.watch(habitCardControllerProvider(widget.habit.id));
+
+    // Animation control is a UI concern; the listener reacts to ViewModel
+    // changes instead of mutating widget state from build.
+    ref.listen(habitCardControllerProvider(widget.habit.id), (_, next) {
+      if (next.undoOpen && !AppMotion.mayDisable(context)) {
+        if (!_glowController.isAnimating) _glowController.repeat(reverse: true);
+      } else {
+        _glowController.stop();
+        _glowController.value = 0;
+      }
+    });
+
+    final isDone = status == LogStatus.done || cardState.optimisticDone;
+    final showUndo = cardState.undoOpen;
 
     final card = ScaleTransition(
       scale: _scaleAnim,
@@ -248,7 +219,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                 PressableScale(
                   child: CheckCircle(
                     key: K.habitCheck(widget.habit.id),
-                    isDone: _isDone(status),
+                    isDone: isDone,
                     isSkip: status == LogStatus.skip,
                     onTap: () => _applyStatus(LogStatus.done),
                   ),
@@ -262,10 +233,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
                       Text(
                         habitCardTitle(widget.habit, today),
                         style: theme.textTheme.titleMedium?.copyWith(
-                          decoration: _isDone(status)
+                          decoration: isDone
                               ? TextDecoration.lineThrough
                               : null,
-                          color: _isDone(status)
+                          color: isDone
                               ? theme.colorScheme.onSurface.withValues(
                                   alpha: 0.45,
                                 )
@@ -324,13 +295,13 @@ class _HabitCardState extends ConsumerState<HabitCard>
       alignment: Alignment.center,
       children: [
         card,
-        if (_showUndo)
+        if (showUndo)
           Positioned(
             right: 8,
             bottom: 8,
             child: _UndoPill(
               onUndo: _undo,
-              visible: _showUndo && !AppMotion.mayDisable(context),
+              visible: showUndo && !AppMotion.mayDisable(context),
               glow: _glow,
             ),
           ),
@@ -364,7 +335,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
       },
       child: _GlowShell(
         glow: _glow,
-        showGlow: _showUndo && !AppMotion.mayDisable(context),
+        showGlow: showUndo && !AppMotion.mayDisable(context),
         child: body,
       ),
     );

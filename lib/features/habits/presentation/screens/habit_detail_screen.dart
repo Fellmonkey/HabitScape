@@ -9,6 +9,7 @@ import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
 import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/confirm_delete_dialog.dart';
+import '../../../../shared/widgets/undo_feedback.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
@@ -44,6 +45,15 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
     final habitAsync = ref.watch(habitProvider(habitId));
     final theme = Theme.of(context);
     final now = ref.watch(todayDateProvider);
+    // Watch unconditionally: hooks inside `when(data:)` are skipped while the
+    // habit is loading/erroring, which breaks provider subscription rules.
+    final metricsAsync = ref.watch(
+      habitMetricsProvider((
+        habitId: habitId,
+        year: now.year,
+        month: now.month,
+      )),
+    );
 
     return habitAsync.when(
       loading: () =>
@@ -53,14 +63,6 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         body: Center(child: Text('Ошибка: $e')),
       ),
       data: (habit) {
-        final metricsAsync = ref.watch(
-          habitMetricsProvider((
-            habitId: habitId,
-            year: now.year,
-            month: now.month,
-          )),
-        );
-
         return Scaffold(
           body: CustomScrollView(
             slivers: [
@@ -233,15 +235,10 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
         final previous = ref.read(todayLogForHabitProvider(habitId))?.status;
         await actions.logToday([habitId], status: LogStatus.skip);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Пропуск засчитан. Ничего не сброшено.'),
-              action: SnackBarAction(
-                label: 'Отменить',
-                onPressed: () =>
-                    actions.undoTodayLog(habitId, previous: previous),
-              ),
-            ),
+          showUndoSnackBar(
+            context,
+            message: 'Пропуск засчитан. Ничего не сброшено.',
+            onUndo: () => actions.undoTodayLog(habitId, previous: previous),
           );
         }
         return;

@@ -3,37 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/habit_form_draft.dart';
 import 'number_stepper.dart';
-
-/// Mutable descriptor of a cycle frequency: length, active days, optional
-/// per-day labels, and the optional start date.
-class CycleConfig {
-  const CycleConfig({
-    required this.length,
-    required this.days,
-    required this.labels,
-    this.startDate,
-  });
-
-  final int length;
-  final Set<int> days;
-  final Map<int, String> labels;
-  final DateTime? startDate;
-
-  CycleConfig copyWith({
-    int? length,
-    Set<int>? days,
-    Map<int, String>? labels,
-    DateTime? startDate,
-  }) {
-    return CycleConfig(
-      length: length ?? this.length,
-      days: days ?? this.days,
-      labels: labels ?? this.labels,
-      startDate: startDate ?? this.startDate,
-    );
-  }
-}
 
 /// Editors for a cycle frequency: length stepper, active-day chips, optional
 /// per-day labels, and the start-date picker. Controlled — every change is
