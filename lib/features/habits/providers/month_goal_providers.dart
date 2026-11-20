@@ -21,25 +21,26 @@ class MonthGoalActions extends Notifier<void> {
   /// Adds a goal to a month ([monthTs] = first-of-month unix timestamp,
   /// defaults to the current month). The month summary reflects the new goal
   /// immediately.
-  Future<int> addMonthGoal(String title, {int? monthTs}) {
+  Future<int> addMonthGoal(String title, {int? monthTs}) async {
     final ts = monthTs ?? ref.read(currentMonthStartProvider).unixSeconds;
+    final id = await ref.read(repositoriesProvider).goals.addGoal(ts, title);
     ref.invalidate(monthSummaryProvider);
-    return ref.read(repositoriesProvider).goals.addGoal(ts, title);
+    return id;
   }
 
   /// Sets the done state of a monthly goal — refresh the month summary.
-  Future<void> setMonthGoalDone(int goalId, {required bool isDone}) {
-    ref.invalidate(monthSummaryProvider);
-    return ref
+  Future<void> setMonthGoalDone(int goalId, {required bool isDone}) async {
+    await ref
         .read(repositoriesProvider)
         .goals
         .setGoalDone(goalId, isDone: isDone);
+    ref.invalidate(monthSummaryProvider);
   }
 
   /// Deletes a monthly goal — refresh the month summary.
-  Future<void> deleteMonthGoal(int goalId) {
+  Future<void> deleteMonthGoal(int goalId) async {
+    await ref.read(repositoriesProvider).goals.deleteGoal(goalId);
     ref.invalidate(monthSummaryProvider);
-    return ref.read(repositoriesProvider).goals.deleteGoal(goalId);
   }
 }
 

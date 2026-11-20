@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,12 +72,14 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
 
   @override
   Widget build(BuildContext context) {
-    final expected = ref.watch(reminderSpecsProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref
-          .read(reminderSyncProvider.notifier)
-          .sync(expected.specs, expected.enabled);
+    // Listening (instead of a post-frame callback in build) also performs the
+    // initial reconcile on mount; the provider's signature suppresses no-ops.
+    ref.listen(reminderSpecsProvider, (_, next) {
+      unawaited(
+        ref
+            .read(reminderSyncProvider.notifier)
+            .sync(next.specs, next.enabled),
+      );
     });
     return widget.child;
   }
