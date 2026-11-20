@@ -67,8 +67,21 @@ Consequences to keep in mind:
   table and entity changes together.
 * Most repositories are thin DAO delegates; `BackupRepository` and
   `HistoryStore` are the ones that own real logic (format/version handling and
-  window policy). Do not add business rules to a delegate repository — put
-  them in `domain` as pure functions.
+  fetching). Do not add business rules to a delegate repository — put them in
+  `domain` as pure functions (e.g. `domain/history_windows.dart` owns the
+  `[start, end)` boundary policy; `HistoryStore` only fetches those rows).
+* Entities expose calendar getters (`createdDate`, `deliveryDate`,
+  `openedDate`) so consumers stop converting raw unix fields by hand. The raw
+  `int` fields remain for persistence and sorting.
+
+#### Use-case convention
+
+Complex or reused business rules are pure top-level functions in `domain/`
+(`completion.dart`, `scheduling.dart`, `stats_engine.dart`, …). A class under
+`domain/use_cases/` is reserved for multi-port orchestration that needs
+injected dependencies and a result type — currently only `BackupFlow`. Do not
+add trivial one-line use-case wrappers; call the domain function from the
+provider instead.
 * Drift stays inside `lib/data` and `lib/core/database`. No widget, provider or
   domain file imports it. The one exception is
   `lib/core/debug/debug_data_seeder.dart`: it writes through DAOs in bulk for

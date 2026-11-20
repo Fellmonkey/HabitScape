@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/config/app_constants.dart';
-import 'package:habitscape/domain/models/changelog.dart';
+import 'package:habitscape/data/services/changelog_parser.dart';
 
 void main() {
   test('pubspec, AppConstants and CHANGELOG agree on the app version', () {

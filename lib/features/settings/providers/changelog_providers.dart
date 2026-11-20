@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/services/changelog_repository.dart';
+import '../../../data/repositories/changelog_repository.dart';
 import '../../../domain/models/changelog.dart';
+import '../presentation/changelog_labels.dart';
 
-/// Swappable seam for tests; production reads the bundled asset.
+/// Swappable seam for tests; production reads the bundled asset and lets the
+/// presentation layer localize section headings.
 final changelogRepositoryProvider = Provider<ChangelogRepository>(
-  (ref) => ChangelogRepository(),
+  (ref) => ChangelogRepository(sectionTitle: localizedChangelogSection),
 );
 
 /// The parsed release notes shown by the «Что нового» screen.

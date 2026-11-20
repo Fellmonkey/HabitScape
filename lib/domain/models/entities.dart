@@ -1,4 +1,5 @@
 import '../../domain/enums.dart';
+import '../utils/date_helpers.dart';
 
 /// Immutable domain entities. These are the types the rest of the app works
 /// with — and, via `@UseRowClass` on the Drift tables, they ARE the row classes.
@@ -31,6 +32,10 @@ class Habit {
   final bool isFocus;
   final bool isArchived;
   final int createdAt;
+
+  /// Storage seconds are an implementation detail; consumers that need a
+  /// calendar value read this instead of converting the raw field themselves.
+  DateTime get createdDate => dateFromUnix(createdAt);
 
   @override
   bool operator ==(Object other) =>
@@ -233,6 +238,12 @@ class Letter {
   final int? openedAt;
   final String? reaction;
   final String? reply;
+
+  /// Calendar views of the storage timestamps.
+  DateTime get createdDate => dateFromUnix(createdAt);
+  DateTime get deliveryDate => dateFromUnix(deliverAt);
+  DateTime? get openedDate =>
+      openedAt == null ? null : dateFromUnix(openedAt!);
 
   @override
   bool operator ==(Object other) =>

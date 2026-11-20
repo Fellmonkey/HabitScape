@@ -1,5 +1,5 @@
-import '../../../core/utils/date_helpers.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/utils/date_helpers.dart';
 
 /// Preset delays for a new capsule. The first is the default — one month,
 /// matching the promise "a sentence to yourself in a month".
@@ -26,7 +26,7 @@ enum CapsuleStatus { upcoming, due, opened }
 /// Where a capsule sits today.
 CapsuleStatus capsuleStatus(Letter letter, DateTime today) {
   if (letter.isOpened) return CapsuleStatus.opened;
-  final deliverAt = dateFromUnix(letter.deliverAt);
+  final deliverAt = letter.deliveryDate;
   if (!deliverAt.isAfter(today.toMidnight)) return CapsuleStatus.due;
   return CapsuleStatus.upcoming;
 }
@@ -95,7 +95,7 @@ enum CapsuleCardKind { due, upcoming, invite, none }
 
 /// Whole days until delivery (0 or negative once it is due).
 int daysUntil(Letter letter, DateTime today) {
-  return dateFromUnix(letter.deliverAt).difference(today.toMidnight).inDays;
+  return letter.deliveryDate.difference(today.toMidnight).inDays;
 }
 
 /// The delivery date for a capsule written on [from] with [preset].
@@ -112,7 +112,7 @@ DateTime deliveryDate(DateTime from, CapsulePreset preset) {
 String wroteAgoLabel(Letter letter) {
   final days = dateFromUnix(
     letter.deliverAt,
-  ).difference(dateFromUnix(letter.createdAt)).inDays;
+  ).difference(letter.createdDate).inDays;
   if (days >= 320) return 'год назад';
   if (days >= 150) return 'полгода назад';
   return 'месяц назад';
@@ -152,7 +152,7 @@ class CapsuleStats {
             .where(
               (letter) =>
                   !letter.isOpened &&
-                  dateFromUnix(letter.deliverAt).isAfter(today.toMidnight),
+                  letter.deliveryDate.isAfter(today.toMidnight),
             )
             .toList()
           ..sort((a, b) => a.deliverAt.compareTo(b.deliverAt));

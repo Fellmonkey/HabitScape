@@ -1,12 +1,9 @@
-import '../../../core/config/app_constants.dart';
-import '../../../core/utils/date_helpers.dart';
+import '../utils/date_helpers.dart';
 
-/// SharedPreferences key for the last successful export.
-const lastBackupKey = 'last_backup_date';
-
-/// A backup older than this is surfaced as a warning — the same "a month"
-/// window the capsule invitation uses ([AppConstants.staleNoteAfterDays]).
-const backupStaleAfterDays = AppConstants.staleNoteAfterDays;
+/// A backup older than this is surfaced as a warning — the shared "a month"
+/// window. Kept in domain as a pure policy constant; `AppConstants` aliases it
+/// so there is still one tuning knob for the app.
+const backupStaleAfterDays = 30;
 
 /// The last-export marker and the freshness rule that reads it.
 class BackupStatus {

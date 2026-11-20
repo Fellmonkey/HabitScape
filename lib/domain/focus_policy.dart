@@ -1,6 +1,8 @@
-import '../core/config/app_constants.dart';
+/// The Today board's focus cap. Owned by domain; `AppConstants` aliases it so
+/// the app has one tuning knob without domain depending on core config.
+const maxFocusHabits = 5;
 
-/// The Today board's focus rule: at most [AppConstants.maxFocusHabits]
+/// The Today board's focus rule: at most [maxFocusHabits]
 /// habits may carry the focus flag. Enabling focus beyond the cap is
 /// rejected; disabling is always allowed.
 class FocusPolicy {
@@ -12,6 +14,6 @@ class FocusPolicy {
     required int currentFocusCount,
     required bool isFocus,
   }) {
-    return !isFocus || currentFocusCount < AppConstants.maxFocusHabits;
+    return !isFocus || currentFocusCount < maxFocusHabits;
   }
 }

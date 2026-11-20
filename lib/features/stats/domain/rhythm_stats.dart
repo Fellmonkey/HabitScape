@@ -1,7 +1,7 @@
-import '../../../core/utils/time_bucket.dart';
 import '../../../domain/completion.dart';
 import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/utils/time_bucket.dart';
 
 /// Per-weekday aggregation over a window (Mon = 1 … Sun = 7).
 class WeekdayStat {

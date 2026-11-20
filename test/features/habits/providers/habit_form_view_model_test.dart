@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/scheduling.dart';
-import 'package:habitscape/features/habits/domain/habit_form_draft.dart';
 import 'package:habitscape/features/habits/domain/habit_templates.dart';
 import 'package:habitscape/features/habits/providers/habit_form_view_model.dart';
 

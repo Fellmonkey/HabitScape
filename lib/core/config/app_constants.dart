@@ -1,3 +1,6 @@
+import '../../domain/focus_policy.dart' as domain_focus;
+import '../../domain/models/backup_status.dart' show backupStaleAfterDays;
+
 /// Tuning knobs for the app, kept in one place so a change never requires
 /// hunting across modules.
 abstract final class AppConstants {
@@ -7,7 +10,7 @@ abstract final class AppConstants {
   static const appVersion = '1.0.0';
 
   /// Maximum number of habits a user can mark as focus.
-  static const maxFocusHabits = 5;
+  static const maxFocusHabits = domain_focus.maxFocusHabits;
 
   /// How many past echo dates are remembered to avoid immediate repeats.
   static const echoSeenDatesLimit = 30;
@@ -17,7 +20,7 @@ abstract final class AppConstants {
 
   /// The shared "a month" window: how old a day note must be to trigger the
   /// capsule invitation, and how stale a backup gets before it is flagged.
-  static const staleNoteAfterDays = 30;
+  static const staleNoteAfterDays = backupStaleAfterDays;
 
   /// Stats screen: days of activity before the dashboard replaces the single
   /// invitation card.

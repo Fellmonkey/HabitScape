@@ -1,6 +1,6 @@
-import '../../../core/utils/date_helpers.dart';
 import '../../../domain/completion.dart';
 import '../../../domain/models/entities.dart';
+import '../../../domain/utils/date_helpers.dart';
 
 /// This week vs last week (Monday-start weeks).
 class WeekTrend {

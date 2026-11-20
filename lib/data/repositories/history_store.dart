@@ -2,8 +2,9 @@ import '../../core/config/app_constants.dart';
 import '../../core/database/daos/day_notes_dao.dart';
 import '../../core/database/daos/habit_logs_dao.dart';
 import '../../core/database/daos/habits_dao.dart';
-import '../../core/utils/date_helpers.dart';
+import '../../domain/history_windows.dart';
 import '../../domain/models/entities.dart';
+import '../../domain/utils/date_helpers.dart';
 
 /// Everything the analytic modules need from one time window: its normalized
 /// boundaries, the active habits, and their logs and day notes in [start, end).
@@ -43,11 +44,8 @@ class HistoryStore {
 
   /// The trailing heatmap window: [now - 364 days, tomorrow).
   Future<WindowSnapshot> stats(DateTime now) {
-    final end = now.toMidnight.add(const Duration(days: 1));
-    final start = end.subtract(
-      const Duration(days: AppConstants.statsHeatmapDays),
-    );
-    return _load(start, end);
+    final window = statsWindow(now, AppConstants.statsHeatmapDays);
+    return _load(window.start, window.end);
   }
 
   /// Everything, regardless of windows: all habits (active + archived), all
@@ -58,19 +56,10 @@ class HistoryStore {
     final logs = await habitLogsDao.getAllLogs();
     final notes = await dayNotesDao.getAllNotes();
 
-    final end = now.toMidnight.add(const Duration(days: 1));
-    var start = end;
-    for (final habit in habits) {
-      final created = dateFromUnix(habit.createdAt).toMidnight;
-      if (created.isBefore(start)) start = created;
-    }
-    for (final log in logs) {
-      final day = dateFromUnix(log.date).toMidnight;
-      if (day.isBefore(start)) start = day;
-    }
+    final window = everyWindow(now, habits, logs);
     return WindowSnapshot(
-      start: start,
-      end: end,
+      start: window.start,
+      end: window.end,
       habits: habits,
       logs: logs,
       notes: notes,
@@ -79,14 +68,14 @@ class HistoryStore {
 
   /// The week containing [now]: Monday to the following Monday (exclusive).
   Future<WindowSnapshot> week(DateTime now) {
-    final start = weekStartOf(now);
-    return _load(start, start.add(const Duration(days: 7)));
+    final window = weekWindow(now);
+    return _load(window.start, window.end);
   }
 
   /// The calendar month containing [month]: first to next month (exclusive).
   Future<WindowSnapshot> month(DateTime month) {
-    final start = firstOfMonth(month);
-    return _load(start, nextMonthStart(start));
+    final window = monthWindow(month);
+    return _load(window.start, window.end);
   }
 
   /// One habit's calendar month. The snapshot carries that habit as its
@@ -95,11 +84,11 @@ class HistoryStore {
     required int habitId,
     required DateTime month,
   }) {
-    final start = firstOfMonth(month);
+    final window = monthWindow(month);
     return habitRange(
       habitId: habitId,
-      start: start,
-      end: nextMonthStart(start),
+      start: window.start,
+      end: window.end,
     );
   }
 
@@ -109,17 +98,16 @@ class HistoryStore {
     required DateTime start,
     required DateTime end,
   }) async {
-    final s = start.toMidnight;
-    final e = end.toMidnight;
+    final window = normalizedWindow(start, end);
     final habit = await habitsDao.getHabit(habitId);
     final logs = await habitLogsDao.getLogsForHabitInRange(
       habitId,
-      s.unixSeconds,
-      e.unixSeconds,
+      window.start.unixSeconds,
+      window.end.unixSeconds,
     );
     return WindowSnapshot(
-      start: s,
-      end: e,
+      start: window.start,
+      end: window.end,
       habits: [habit],
       logs: logs,
       notes: const [],
@@ -135,20 +123,19 @@ class HistoryStore {
   /// Loads [start, end) — both normalized to midnight UTC — for the active
   /// habit population.
   Future<WindowSnapshot> _load(DateTime start, DateTime end) async {
-    final s = start.toMidnight;
-    final e = end.toMidnight;
+    final window = normalizedWindow(start, end);
     final habits = await habitsDao.getActiveHabits();
     final logs = await habitLogsDao.getLogsInRange(
-      s.unixSeconds,
-      e.unixSeconds,
+      window.start.unixSeconds,
+      window.end.unixSeconds,
     );
     final notes = await dayNotesDao.getNotesInRange(
-      s.unixSeconds,
-      e.unixSeconds,
+      window.start.unixSeconds,
+      window.end.unixSeconds,
     );
     return WindowSnapshot(
-      start: s,
-      end: e,
+      start: window.start,
+      end: window.end,
       habits: habits,
       logs: logs,
       notes: notes,

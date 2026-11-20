@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:habitscape/domain/models/changelog.dart';
+import 'package:habitscape/data/services/changelog_parser.dart';
 
 void main() {
   test('parses releases, dates, sections and bullets', () {
@@ -38,15 +38,15 @@ Intro.
     expect(changelog.latest!.version, '1.2.0');
     expect(changelog.latest!.date, DateTime.utc(2026, 10, 29));
     expect(changelog.latest!.sections, hasLength(2));
-    expect(changelog.latest!.sections.first.title, 'Добавлено');
+    expect(changelog.latest!.sections.first.title, 'Added');
     expect(changelog.latest!.sections.first.items, [
       'Новая функция.',
       'Ещё одна.',
     ]);
-    expect(changelog.latest!.sections.last.title, 'Исправлено');
+    expect(changelog.latest!.sections.last.title, 'Fixed');
     expect(changelog.latest!.sections.last.items, ['Исправлен баг.']);
     expect(changelog.releases.last.version, '1.0.0');
-    expect(changelog.releases.last.sections.single.title, 'Изменено');
+    expect(changelog.releases.last.sections.single.title, 'Changed');
     expect(changelog.forVersion('1.0.0')?.version, '1.0.0');
   });
 
@@ -108,7 +108,7 @@ Intro.
     final release = parseChangelog(markdown).latest!;
 
     expect(release.date, isNull);
-    expect(release.sections.single.title, 'Исправлено');
+    expect(release.sections.single.title, 'Fixed');
   });
 
   test('returns an empty changelog for a document without releases', () {

@@ -50,6 +50,10 @@ class PlatformBackupSharer implements BackupSharer {
   }
 }
 
+/// SharedPreferences key for the last successful export. A persistence detail,
+/// so it lives with the store rather than in the domain model.
+const lastBackupKey = 'last_backup_date';
+
 /// Reads and writes the last-export marker in SharedPreferences.
 class PrefsBackupStatusStore implements BackupStatusStore {
   PrefsBackupStatusStore(this._prefs);

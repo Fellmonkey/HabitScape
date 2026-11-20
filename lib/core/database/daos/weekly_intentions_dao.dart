@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../domain/intention_text.dart';
 import '../../../domain/models/entities.dart';
 
 import '../app_database.dart';
@@ -27,16 +28,15 @@ class WeeklyIntentionsDao extends DatabaseAccessor<AppDatabase>
 
   /// Upserts a week's intention. `null` clears it.
   Future<void> setIntention(int weekStartTs, String? intention) {
-    final trimmed = intention?.trim();
+    // The rule itself lives in domain; this DAO only persists its result.
+    final normalized = normalizeIntention(intention);
     return into(weeklyIntentions).insert(
       WeeklyIntentionsCompanion.insert(
         weekStart: weekStartTs,
-        intention: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
+        intention: Value(normalized),
       ),
       onConflict: DoUpdate(
-        (_) => WeeklyIntentionsCompanion(
-          intention: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
-        ),
+        (_) => WeeklyIntentionsCompanion(intention: Value(normalized)),
         target: [weeklyIntentions.weekStart],
       ),
     );

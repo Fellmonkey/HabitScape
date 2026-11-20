@@ -1,6 +1,6 @@
-import '../../../../core/utils/date_helpers.dart';
 import '../../../../domain/enums.dart';
 import '../../../../domain/models/entities.dart';
+import '../../../domain/utils/date_helpers.dart';
 
 /// One month of a habit's history, newest months first in the list.
 class HabitHistoryMonth {
