@@ -19,6 +19,7 @@ jobs:
         id: flutter-action
         with:
           channel: 'stable'
+          flutter-version: 3.47.x
           cache: true
 
       - name: Install dependencies
