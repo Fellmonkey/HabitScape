@@ -196,12 +196,6 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       },
     );
 
-    _maybeCelebrateDayClosed(habits, dayProgress, today);
-
-    // Feed the animated list: rows are derived here and diffed against the
-    // current rows post-frame (build itself must not mutate the list).
-    _syncEntries(_buildEntries(groups, logByHabit));
-
     // ── Header gating for newcomers ──
     // «История» only helps once there is something to look back on; the
     // hide-completed toggle appears once the board is big enough (5+ habits
@@ -209,11 +203,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final canSeeHistory = habits.length >= greenHouseHistoryMinHabits;
     final canSeeToggle = habits.length >= greenhouseToggleMinGroupHabits;
 
-    // Banners are handled by the stacked [BannerStack] (visible pile with
-    // rotation), including deferred leftovers from previous visits.
-
-    // First-appearance tooltip for the hide-completed toggle.
-    _maybeShowToggleHint(canSeeToggle);
+    // All state mutations and one-shot effects happen after the frame: `build`
+    // only derives and renders, never writes to the screen's own fields.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _maybeCelebrateDayClosed(habits, dayProgress, today);
+      _syncEntries(_buildEntries(groups, logByHabit));
+      _maybeShowToggleHint(canSeeToggle);
+    });
 
     return CustomScrollView(
       slivers: [

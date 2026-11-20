@@ -58,7 +58,9 @@ class _ArchivedHabitsScreenState extends ConsumerState<ArchivedHabitsScreen> {
           ),
         ),
         data: (habits) {
-          _syncItems(habits);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _syncItems(habits);
+          });
           if (_items.isEmpty && _pendingOps == 0) {
             return const _EmptyArchiveState();
           }

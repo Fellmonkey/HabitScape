@@ -53,12 +53,16 @@ class _HabitCardState extends ConsumerState<HabitCard>
   late final AnimationController _bounceController;
   late final Animation<double> _scaleAnim;
 
-  /// The habit's log status for today, refreshed live from the logs stream
-  /// (not just from the pinned [HabitCard.log] prop). The animated list keeps
-  /// row widgets alive even when their data changes, so the card has to
-  /// observe the stream itself — otherwise a completed habit only *looks*
-  /// done after the list fully rebuilds (e.g. after switching tabs).
-  LogStatus? _liveStatus;
+  /// The habit's log status for today, read live from the logs stream (not
+  /// from the pinned [HabitCard.log] prop): the animated list may keep this
+  /// row alive with stale data. Computed on demand so `build` stays declarative.
+  LogStatus? _statusNow() {
+    final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
+    return logs
+        .where((l) => l.habitId == widget.habit.id)
+        .firstOrNull
+        ?.status ?? widget.log?.status;
+  }
 
   /// Optimistic done: set the moment the user taps, so the check fills in
   /// immediately. Cleared if the database write fails.
@@ -76,7 +80,8 @@ class _HabitCardState extends ConsumerState<HabitCard>
   late final AnimationController _glowController;
   late final Animation<double> _glow;
 
-  bool get _isDone => _liveStatus == LogStatus.done || _optimisticDone;
+  bool _isDone(LogStatus? status) =>
+      status == LogStatus.done || _optimisticDone;
 
   bool get _showUndo => _undoOpen;
 
@@ -142,7 +147,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
   /// Applies [status] (done / skip) and opens the undo window with the
   /// pre-change status. Shared by the check-circle tap and the swipe.
   Future<void> _applyStatus(LogStatus status) async {
-    final previous = _liveStatus;
+    final previous = _statusNow();
     if (previous == status) return;
 
     if (status == LogStatus.done) {
@@ -243,14 +248,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
     // Keep the visible status in sync with the live logs stream. The board
     // list may keep this row alive with a stale log prop, so the source of
     // truth for "is it done" is the stream, not the prop.
-    final todayLogs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
-    _liveStatus =
-        todayLogs
-            .where((l) => l.habitId == widget.habit.id)
-            .firstOrNull
-            ?.status ??
-        widget.log?.status;
-    final status = _liveStatus;
+    // Watch the stream so a write rebuilds the row; read the value without
+    // mutating widget state during build.
+    ref.watch(todayLogsProvider);
+    final status = _statusNow();
     final today = ref.watch(todayDateProvider);
 
     final card = ScaleTransition(
@@ -269,7 +270,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
                 PressableScale(
                   child: _CheckCircle(
                     key: K.habitCheck(widget.habit.id),
-                    isDone: _isDone,
+                    isDone: _isDone(status),
                     isSkip: status == LogStatus.skip,
                     onTap: () => _applyStatus(LogStatus.done),
                   ),
@@ -283,10 +284,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
                       Text(
                         _buildTitle(today),
                         style: theme.textTheme.titleMedium?.copyWith(
-                          decoration: _isDone
+                          decoration: _isDone(status)
                               ? TextDecoration.lineThrough
                               : null,
-                          color: _isDone
+                          color: _isDone(status)
                               ? theme.colorScheme.onSurface.withValues(
                                   alpha: 0.45,
                                 )

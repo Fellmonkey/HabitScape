@@ -83,8 +83,10 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
     if (_noteApplied) return;
     _noteApplied = true;
     final draft = DayMomentDraft.fromNote(note);
-    _draft = draft;
-    _momentController.text = draft.moment;
+    setState(() {
+      _draft = draft;
+      _momentController.text = draft.moment;
+    });
   }
 
   Future<void> _save() async {
@@ -114,12 +116,13 @@ class _DayMomentSheetState extends ConsumerState<DayMomentSheet>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Load the existing note through the provider seam (never a direct DAO
-    // read). Today's sheet defaults to today and loads the same way.
-    if (widget.dateTimestamp != null) {
-      ref
-          .watch(dayNoteProvider(widget.dateTimestamp!))
-          .whenData(_applyLoadedNote);
+    // Declarative listener: the loaded note is applied in the callback, never
+    // during build. The provider is the sheet's only read path.
+    final dateTs = widget.dateTimestamp;
+    if (dateTs != null) {
+      ref.listen(dayNoteProvider(dateTs), (_, next) {
+        if (next.hasValue) _applyLoadedNote(next.value);
+      });
     }
 
     return Padding(

@@ -241,16 +241,20 @@ class _BannerStackState extends ConsumerState<BannerStack> {
       if (available) add(id);
     }
 
-    // Keep the rotation order across rebuilds: drop disappeared ids, append
-    // newly available ones at the end.
-    _deck = [
-      ..._deck.where((id) => deck.contains(id)),
-      ...deck.where((id) => !_deck.contains(id)),
-    ];
-
-    // Persist overflow (beyond the visible stack) for later visits — only
-    // limited-window summaries are worth keeping.
-    _scheduleOverflowBookkeeping();
+    // Sync the rotation order and persist overflow after the frame: `build`
+    // only derives the candidate deck, it never mutates widget state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final next = [
+        ..._deck.where((id) => deck.contains(id)),
+        ...deck.where((id) => !_deck.contains(id)),
+      ];
+      if (next.length != _deck.length ||
+          !_deck.asMap().entries.every((e) => e.value == next[e.key])) {
+        setState(() => _deck = next);
+      }
+      _scheduleOverflowBookkeeping();
+    });
 
     final visible = _visibleDeck;
     if (visible.isEmpty) return const SizedBox.shrink();
