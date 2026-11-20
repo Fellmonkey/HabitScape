@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/backup_service.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
-import 'package:habitscape/features/settings/domain/backup_flow.dart';
-import 'package:habitscape/features/settings/domain/backup_status.dart';
+import 'package:habitscape/domain/models/backup_status.dart';
+import 'package:habitscape/domain/use_cases/backup_flow.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

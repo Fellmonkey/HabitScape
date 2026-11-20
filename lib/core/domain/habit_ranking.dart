@@ -37,7 +37,8 @@ HabitRank? pickWeakestHabit(
   for (final habit in habits) {
     final measure = measures[habit.id];
     if (measure == null || !accepts(measure)) continue;
-    if (weakest == null || measure.ratioOrZero < weakest.done / weakest.expected) {
+    if (weakest == null ||
+        measure.ratioOrZero < weakest.done / weakest.expected) {
       weakest = (
         habitId: habit.id,
         name: habit.name,

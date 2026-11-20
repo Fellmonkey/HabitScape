@@ -13,7 +13,7 @@ import '../../core/database/database_reset.dart';
 import '../../core/database/enums.dart';
 import '../../core/settings/today.dart';
 import '../../core/utils/date_helpers.dart';
-import '../../features/settings/domain/backup_flow.dart';
+import '../../domain/use_cases/backup_flow.dart';
 
 // Backup format version for forward compatibility.
 // v2 adds the `letters` collection (time capsules).

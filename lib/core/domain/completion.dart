@@ -429,6 +429,7 @@ Map<DateTime, Completion> poolCompletionByMonth(Iterable<DayCompletion> days) {
     byMonth.putIfAbsent(key, () => []).add(day.completion);
   }
   return {
-    for (final entry in byMonth.entries) entry.key: Completion.pool(entry.value),
+    for (final entry in byMonth.entries)
+      entry.key: Completion.pool(entry.value),
   };
 }

@@ -28,7 +28,9 @@ class WelcomeBackData {
 /// dialog when [eligible] is true; it no longer reads providers or writes
 /// exposure state itself.
 final welcomeBackProvider =
-    NotifierProvider<WelcomeBackNotifier, WelcomeBackData?>(WelcomeBackNotifier.new);
+    NotifierProvider<WelcomeBackNotifier, WelcomeBackData?>(
+      WelcomeBackNotifier.new,
+    );
 
 class WelcomeBackNotifier extends Notifier<WelcomeBackData?> {
   @override

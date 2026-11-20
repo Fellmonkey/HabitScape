@@ -5,8 +5,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/utils/date_helpers.dart';
-import '../domain/backup_flow.dart';
-import '../domain/backup_status.dart';
+import '../../../domain/models/backup_status.dart';
+import '../../../domain/use_cases/backup_flow.dart';
 
 /// Picks a `.json` backup through the system file picker.
 class PlatformBackupFilePicker implements BackupFilePicker {

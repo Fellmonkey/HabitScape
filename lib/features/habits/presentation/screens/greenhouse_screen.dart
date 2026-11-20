@@ -21,7 +21,7 @@ import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../capsule/providers/letter_providers.dart';
 import '../../domain/today_board.dart';
-import '../../providers/habit_actions.dart';
+import '../../providers/habit_group_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
 import '../widgets/banner_stack.dart';
@@ -426,8 +426,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   void _onHabitStatusChanged(int habitId) {
     if (!_hideCompleted) return;
     setState(() {
-      _graceUntil[habitId] =
-          ref.read(clockProvider).now().add(habitUndoWindow);
+      _graceUntil[habitId] = ref.read(clockProvider).now().add(habitUndoWindow);
     });
     Timer(habitUndoWindow, () {
       if (!mounted) return;
@@ -661,13 +660,11 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   Future<void> _markAllInGroup(List<Habit> habits) async {
     final ids = [for (final h in habits) h.id];
-    final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
-    final previous = {for (final l in logs) l.habitId: l.status};
 
     Haptics.heavy(ref.read(hapticsEnabledProvider));
-    await ref
-        .read(habitActionsProvider.notifier)
-        .logToday(ids, status: LogStatus.done);
+    final previous = await ref
+        .read(habitGroupActionsProvider.notifier)
+        .markAllDone(ids);
     if (!mounted) return;
 
     // Keep the just-completed cards visible while the group undo window is
@@ -704,11 +701,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
 
   /// Restores every habit of a group to the status it had before
   /// «Выполнить все» — the group-level twin of the card-level undo.
-  Future<void> _undoGroup(List<int> ids, Map<int, LogStatus> previous) async {
-    final actions = ref.read(habitActionsProvider.notifier);
-    for (final id in ids) {
-      await actions.undoTodayLog(id, previous: previous[id]);
-    }
+  Future<void> _undoGroup(List<int> ids, Map<int, LogStatus> previous) {
+    return ref.read(habitGroupActionsProvider.notifier).undoAll(ids, previous);
   }
 
   /// One quiet celebration per day when completion crosses to 100% — the

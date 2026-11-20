@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import '../../data/repositories/backup_repository.dart';
-import '../../features/settings/domain/backup_flow.dart';
+import '../../domain/use_cases/backup_flow.dart';
 import '../settings/today.dart';
 import 'app_database.dart';
 
@@ -17,6 +17,5 @@ class BackupService implements BackupPort {
   Future<Uint8List> exportBackup() => _repository.exportBackup();
 
   @override
-  Future<int> importBackup(Uint8List bytes) =>
-      _repository.importBackup(bytes);
+  Future<int> importBackup(Uint8List bytes) => _repository.importBackup(bytes);
 }

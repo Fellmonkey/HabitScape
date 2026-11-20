@@ -59,9 +59,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
   LogStatus? _statusNow() {
     final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
     return logs
-        .where((l) => l.habitId == widget.habit.id)
-        .firstOrNull
-        ?.status ?? widget.log?.status;
+            .where((l) => l.habitId == widget.habit.id)
+            .firstOrNull
+            ?.status ??
+        widget.log?.status;
   }
 
   /// Optimistic done: set the moment the user taps, so the check fills in

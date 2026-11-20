@@ -33,9 +33,6 @@ List<MonthTrendPoint> computeMonthlyTrend({
 
   return [
     for (final monthStart in trimmed)
-      MonthTrendPoint(
-        monthStart: monthStart,
-        completion: byMonth[monthStart]!,
-      ),
+      MonthTrendPoint(monthStart: monthStart, completion: byMonth[monthStart]!),
   ];
 }

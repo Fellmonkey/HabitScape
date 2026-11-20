@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'backup_status.dart';
+import '../models/backup_status.dart';
 
 /// What the platform file picker returned.
 sealed class BackupPick {

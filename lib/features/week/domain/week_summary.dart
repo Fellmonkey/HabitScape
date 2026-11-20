@@ -146,11 +146,11 @@ WeekSummary computeWeekSummary({
   final weakest = weakestRank == null
       ? null
       : (
-        weakestRank.habitId,
-        weakestRank.name,
-        weakestRank.done,
-        weakestRank.expected,
-      );
+          weakestRank.habitId,
+          weakestRank.name,
+          weakestRank.done,
+          weakestRank.expected,
+        );
 
   final completionPct = (!hasAnyLogThisWeek || !weekMeasure.hasExpectation)
       ? null

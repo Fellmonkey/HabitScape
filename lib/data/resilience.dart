@@ -17,10 +17,7 @@ Future<T> retry<T>(
       if (i < attempts - 1) await Future<void>.delayed(delay);
     }
   }
-  Error.throwWithStackTrace(
-    lastError,
-    StackTrace.current,
-  );
+  Error.throwWithStackTrace(lastError, StackTrace.current);
 }
 
 /// Small TTL cache for parsed data that rarely changes (e.g. a bundled asset).
