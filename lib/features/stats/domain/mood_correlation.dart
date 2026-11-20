@@ -40,7 +40,21 @@ class MoodCorrelation {
   /// % of empty days that were 🔴 (null when [emptyDays] == 0).
   double? get badShareOnEmpty =>
       emptyDays == 0 ? null : emptyDaysBad / emptyDays * 100.0;
+
+  /// The interpretation rule behind the card's plain-language summary.
+  /// Localization stays in the widget; only the threshold lives here.
+  MoodRelation get relation {
+    final good = goodShareOnFull;
+    final bad = badShareOnEmpty;
+    if (good == null || bad == null) return MoodRelation.unclear;
+    final diff = good - bad;
+    if (diff >= 15) return MoodRelation.betterOnFullDays;
+    if (diff <= -15) return MoodRelation.worseOnEmptyDays;
+    return MoodRelation.unclear;
+  }
 }
+
+enum MoodRelation { betterOnFullDays, worseOnEmptyDays, unclear }
 
 /// Computes the mood ↔ completion correlation. Pure — no DB access.
 /// Days without a mood note are ignored.

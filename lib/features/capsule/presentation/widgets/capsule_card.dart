@@ -25,16 +25,18 @@ class CapsuleCard extends ConsumerWidget {
 
     final hasOldNote = ref.watch(hasOldNoteProvider).value ?? false;
 
-    final Widget child;
-    if (feed.due.isNotEmpty) {
-      child = _DueCard(capsule: feed.due.first);
-    } else if (feed.upcoming.isNotEmpty) {
-      child = _UpcomingCard(capsules: feed.upcoming, today: feed.today);
-    } else if (hasOldNote) {
-      child = _InviteCard();
-    } else {
-      return const SizedBox.shrink();
-    }
+    final child = switch (
+      feed.primaryCardKind(hasOldNote: hasOldNote)
+    ) {
+      CapsuleCardKind.due => _DueCard(capsule: feed.due.first),
+      CapsuleCardKind.upcoming => _UpcomingCard(
+        capsules: feed.upcoming,
+        today: feed.today,
+      ),
+      CapsuleCardKind.invite => const _InviteCard(),
+      CapsuleCardKind.none => const SizedBox.shrink(),
+    };
+    if (child is SizedBox) return child;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),

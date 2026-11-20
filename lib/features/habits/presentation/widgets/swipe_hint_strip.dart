@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/domain/enums.dart';
 import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/models/entities.dart';
 import '../../providers/habit_streams.dart';
 
 /// The gesture-hint key — one-time, dismissible, independent of the feature
@@ -23,14 +21,11 @@ class SwipeHintStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final exposureAsync = ref.watch(exposureProvider);
-    final logsAsync = ref.watch(allLogsProvider);
+    final hasEverSkipped = ref.watch(hasEverSkippedProvider);
     return exposureAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
       data: (exposure) {
-        final hasEverSkipped = (logsAsync.value ?? const <HabitLog>[]).any(
-          (l) => l.status == LogStatus.skip,
-        );
         if (!exposure.shouldShowSwipeHint(hasEverSkipped: hasEverSkipped)) {
           return const SizedBox.shrink();
         }

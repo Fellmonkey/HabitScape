@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/providers/time_suggestions_provider.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/date_helpers.dart';
 import '../../../onboarding/feature_intro_trigger.dart';
 import '../../../onboarding/hint_tour.dart';
 import '../../../week/presentation/widgets/week_summary_card.dart';
-import '../../../week/providers/week_providers.dart';
-import '../../providers/month_summary_providers.dart';
+import '../../providers/banner_deck_providers.dart';
 import 'month_summary_card.dart';
 import 'time_suggestion_banner.dart';
 
@@ -144,37 +140,7 @@ class _BannerStackState extends ConsumerState<BannerStack> {
     if (deck.isEmpty) return;
     final id = deck.last;
 
-    switch (id) {
-      case 'week-summary':
-        final view = ref.read(weekSummaryProvider).value;
-        if (view != null) {
-          await ref
-              .read(exposureActionsProvider.notifier)
-              .dismissBanner('week-summary:${view.weekStart.unixSeconds}');
-          await ref
-              .read(weekIntentionActionsProvider.notifier)
-              .answerWeek(view.weekStart);
-        }
-        await ref
-            .read(exposureActionsProvider.notifier)
-            .removePendingBanner(id);
-      case 'month-summary':
-        final view = ref.read(monthSummaryProvider).value;
-        if (view != null) {
-          await ref
-              .read(exposureActionsProvider.notifier)
-              .dismissBanner('month-summary:${view.monthStart.unixSeconds}');
-        }
-        await ref
-            .read(exposureActionsProvider.notifier)
-            .removePendingBanner(id);
-      default:
-        final suggestions = ref.read(timeSuggestionsProvider).value ?? const [];
-        if (suggestions.isNotEmpty) {
-          final key = 'time-suggestion:${suggestions.first.habit.id}';
-          await ref.read(exposureActionsProvider.notifier).dismissBanner(key);
-        }
-    }
+    await ref.read(bannerActionsProvider.notifier).dismiss(id);
 
     if (!mounted) return;
     Haptics.tap(ref.read(hapticsEnabledProvider));
@@ -190,56 +156,9 @@ class _BannerStackState extends ConsumerState<BannerStack> {
 
   @override
   Widget build(BuildContext context) {
-    final exposureAsync = ref.watch(exposureProvider);
-    final suggestionsAsync = ref.watch(timeSuggestionsProvider);
-    final weekAsync = ref.watch(weekSummaryProvider);
-    final monthAsync = ref.watch(monthSummaryProvider);
-
-    final exposure = exposureAsync.value;
-    if (exposure == null) return const SizedBox.shrink();
-
-    // ── Assemble the deck: current candidates first, then deferred leftovers.
-    final deck = <String>[];
-    void add(String id) {
-      if (!deck.contains(id)) deck.add(id);
-    }
-
-    final weekView = weekAsync.value;
-    final weekDismissKey = weekView == null
-        ? null
-        : 'week-summary:${weekView.weekStart.unixSeconds}';
-    if (weekView?.shouldShow == true &&
-        (weekDismissKey == null || !exposure.bannerDismissed(weekDismissKey))) {
-      add('week-summary');
-    }
-    final monthView = monthAsync.value;
-    final monthDismissKey = monthView == null
-        ? null
-        : 'month-summary:${monthView.monthStart.unixSeconds}';
-    if (monthView?.shouldShow == true &&
-        (monthDismissKey == null ||
-            !exposure.bannerDismissed(monthDismissKey))) {
-      add('month-summary');
-    }
-    final suggestions = suggestionsAsync.value ?? const [];
-    final liveSuggestions = suggestions
-        .where(
-          (s) => !exposure.bannerDismissed('time-suggestion:${s.habit.id}'),
-        )
-        .toList();
-    if (liveSuggestions.isNotEmpty) add('time-suggestion');
-    for (final id in exposure.pendingBanners) {
-      final available =
-          (id == 'week-summary' &&
-              weekView?.shouldShow == true &&
-              (weekDismissKey == null ||
-                  !exposure.bannerDismissed(weekDismissKey))) ||
-          (id == 'month-summary' &&
-              monthView?.shouldShow == true &&
-              (monthDismissKey == null ||
-                  !exposure.bannerDismissed(monthDismissKey)));
-      if (available) add(id);
-    }
+    // Eligibility lives in bannerDeckProvider; this widget only keeps the
+    // rotation order of the visible pile.
+    final deck = ref.watch(bannerDeckProvider);
 
     // Sync the rotation order and persist overflow after the frame: `build`
     // only derives the candidate deck, it never mutates widget state.
@@ -331,17 +250,13 @@ class _BannerStackState extends ConsumerState<BannerStack> {
   void _scheduleOverflowBookkeeping() {
     if (_bookkeepingScheduled) return;
     _bookkeepingScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _bookkeepingScheduled = false;
       if (!mounted) return;
       final visible = _visibleDeck;
-      for (var i = 0; i < _deck.length; i++) {
-        final id = _deck[i];
-        if (i >= visible.length &&
-            (id == 'week-summary' || id == 'month-summary')) {
-          ref.read(exposureActionsProvider.notifier).pushPendingBanner(id);
-        }
-      }
+      await ref
+          .read(bannerActionsProvider.notifier)
+          .deferHidden(_deck.skip(visible.length));
     });
   }
 }

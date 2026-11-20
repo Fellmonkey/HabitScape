@@ -5,15 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/keys.dart';
-import '../../../../core/settings/exposure.dart';
 import '../../../../core/settings/haptics.dart';
-import '../../../../core/settings/hintful.dart';
 import '../../../../domain/use_cases/backup_flow.dart';
 import '../../../../features/capsule/providers/letter_providers.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/feature_intro_trigger.dart';
 import '../../../../features/onboarding/hint_tour.dart';
+import '../../../../features/onboarding/providers/onboarding_actions.dart';
 import '../../../../shared/widgets/app_section_header.dart';
+import '../../../../shared/widgets/error_feedback.dart';
 import '../../providers/settings_providers.dart';
 import '../widgets/about_card.dart';
 import '../widgets/haptics_tile.dart';
@@ -198,14 +198,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   // ── Export backup ─────────────────────────────────────────────
 
   Future<void> _exportBackup(BuildContext context, WidgetRef ref) async {
-    final flow = await ref.read(backupFlowProvider.future);
-    final outcome = await flow.exportBackup();
+    final outcome = await ref.read(backupActionsProvider.notifier).export();
     if (!context.mounted) return;
 
     switch (outcome) {
       case BackupExported():
         Haptics.medium(ref.read(hapticsEnabledProvider));
-        ref.invalidate(backupStatusProvider);
       case BackupExportFailed(:final error):
         _showSnackBar(context, 'Ошибка экспорта: $error');
     }
@@ -217,8 +215,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final confirmed = await showImportConfirmDialog(context);
     if (confirmed != true || !context.mounted) return;
 
-    final flow = await ref.read(backupFlowProvider.future);
-    final outcome = await flow.importBackup();
+    final outcome = await ref
+        .read(backupActionsProvider.notifier)
+        .importBackup();
     if (!context.mounted) return;
 
     switch (outcome) {
@@ -235,14 +234,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _resetOnboarding(WidgetRef ref) async {
-    final store = await ref.read(hintfulStoreProvider.future);
-    store.clear();
-    // Feature-hint banners are exposure-owned, not tour-owned — clear both so
-    // the setting really shows every hint again. Deferred banners are part of
-    // the learning surface too, so reset them as well (echo history and the
-    // welcome marker stay — they are not teaching hints).
-    await ref.read(exposureActionsProvider.notifier).resetDismissedHints();
-    await ref.read(exposureActionsProvider.notifier).clearPendingBanners();
+    await ref.read(onboardingActionsProvider.notifier).resetAllHints();
     if (mounted) {
       _showSnackBar(context, 'Подсказки появятся снова при открытии экранов');
     }
@@ -258,9 +250,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       if (!opened && context.mounted) {
         _showSnackBar(context, 'Не удалось открыть ссылку');
       }
-    } catch (_) {
+    } catch (error) {
       if (context.mounted) {
-        _showSnackBar(context, 'Не удалось открыть ссылку');
+        showErrorSnackBar(context, error, prefix: 'Не удалось открыть ссылку');
       }
     }
   }

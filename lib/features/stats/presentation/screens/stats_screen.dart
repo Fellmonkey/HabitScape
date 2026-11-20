@@ -37,8 +37,8 @@ class StatsScreen extends ConsumerWidget {
         context,
         builder: (_) => DayMomentSheet(dateTimestamp: day.date.unixSeconds),
       );
-      // The sheet may have edited the day (moment, mood) — refresh stats.
-      if (context.mounted) ref.invalidate(statsOverviewProvider);
+      // DayNoteActions invalidates the derived stats on save; nothing to do
+      // here beyond showing the sheet.
     }
 
     final theme = Theme.of(context);

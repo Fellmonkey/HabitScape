@@ -4,7 +4,10 @@ import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
 import '../../../data/repository_providers.dart';
 import '../../../domain/models/entities.dart';
+import '../../stats/providers/stats_providers.dart';
+import '../../stats/providers/year_summary_providers.dart';
 import '../domain/day_moment_draft.dart';
+import 'month_spread_providers.dart';
 
 // ── Day note ─────────────────────────────────────────────────
 
@@ -35,13 +38,26 @@ class DayNoteActions extends Notifier<void> {
   Future<void> saveDayMoment(DayMomentDraft draft, {int? dateTimestamp}) async {
     final ts = dateTimestamp ?? ref.read(todayDateProvider).unixSeconds;
     final repo = ref.read(repositoriesProvider).dayNotes;
-    if (draft.isEmpty) return repo.clear(ts);
-    return repo.upsert(
-      ts,
-      moment: draft.momentOrNull,
-      mood: draft.mood,
-      timeQuality: draft.timeQuality,
-    );
+    if (draft.isEmpty) {
+      await repo.clear(ts);
+    } else {
+      await repo.upsert(
+        ts,
+        moment: draft.momentOrNull,
+        mood: draft.mood,
+        timeQuality: draft.timeQuality,
+      );
+    }
+    _refreshDerivedFacts(ts);
+  }
+
+  /// A note write invalidates the read-side facts that depend on it. Widgets
+  /// never have to call `ref.invalidate` after saving a day.
+  void _refreshDerivedFacts(int ts) {
+    ref.invalidate(dayNoteProvider(ts));
+    ref.invalidate(monthSpreadProvider);
+    ref.invalidate(statsOverviewProvider);
+    ref.invalidate(yearSummaryProvider);
   }
 }
 

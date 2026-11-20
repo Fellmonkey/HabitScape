@@ -357,6 +357,9 @@ class MonthSpreadSummary {
   /// Count per mood across the window.
   final Map<DayMood, int> moodCounts;
 
+  /// Total days with any mood note — derived once for the header.
+  int get moodDaysCount => moodCounts.values.fold(0, (a, b) => a + b);
+
   /// Days with a written moment line.
   final int momentsCount;
 }

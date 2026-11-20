@@ -230,11 +230,7 @@ class _HabitDetailScreenState extends ConsumerState<HabitDetailScreen> {
 
     switch (action) {
       case HabitDetailAction.skip:
-        final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
-        final previous = logs
-            .where((l) => l.habitId == habitId)
-            .firstOrNull
-            ?.status;
+        final previous = ref.read(todayLogForHabitProvider(habitId))?.status;
         await actions.logToday([habitId], status: LogStatus.skip);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

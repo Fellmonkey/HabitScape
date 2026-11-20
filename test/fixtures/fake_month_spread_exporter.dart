@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
+import 'package:habitscape/core/domain/result.dart';
 import 'package:habitscape/features/habits/presentation/month_spread_exporter.dart';
 import 'package:habitscape/features/habits/presentation/png_share_contract.dart';
 
@@ -17,19 +18,19 @@ class FakeMonthSpreadExporter implements MonthSpreadExporter {
   int captureCalls = 0;
 
   /// If set, `capturePng` returns this instead of the default payload.
-  Uint8List? captureResult;
+  Result<Uint8List>? captureResult;
 
   /// What `sharePng` reports; tests flip it to exercise the failure paths.
   ShareOutcome shareOutcome = ShareOutcome.shared;
 
   @override
-  Future<Uint8List?> capturePng(
+  Future<Result<Uint8List>> capturePng(
     BuildContext context,
     Widget widget, {
     required double width,
   }) async {
     captureCalls++;
-    return captureResult ?? Uint8List.fromList([1, 2, 3]);
+    return captureResult ?? Ok(Uint8List.fromList([1, 2, 3]));
   }
 
   @override

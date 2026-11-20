@@ -1,8 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/result.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/motion_tokens.dart';
@@ -11,6 +10,7 @@ import '../../../../core/utils/localized_dates.dart';
 import '../../../../features/onboarding/app_tours.dart';
 import '../../../../features/onboarding/hint_tour.dart';
 import '../../../../shared/widgets/app_sheets.dart';
+import '../../../../shared/widgets/error_feedback.dart';
 import '../../providers/month_spread_providers.dart';
 import '../month_spread_exporter.dart';
 import '../png_share_contract.dart';
@@ -167,8 +167,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
       context,
       builder: (_) => DayMomentSheet(dateTimestamp: date.unixSeconds),
     );
-    // The sheet may have edited the day — refresh the spread data.
-    if (mounted) ref.invalidate(monthSpreadProvider(_monthTs));
+    // DayNoteActions invalidates the spread data when the sheet saves.
   }
 
   // ── Month spread export (PNG) ───────────────────────────────
@@ -183,26 +182,26 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     final exporter = ref.read(monthSpreadExporterProvider);
     final summary = ref.read(monthSpreadSummaryProvider(_monthTs));
     final width = MediaQuery.sizeOf(context).width;
-    Uint8List? bytes;
-    try {
-      bytes = await exporter.capturePng(
-        context,
-        MonthSpreadView(
-          days: days,
-          monthTs: _monthTs,
-          summary: summary,
-          onDayTap: (_) {},
-          capture: true,
-        ),
-        width: width,
-      );
-    } catch (_) {
-      bytes = null;
-    }
-    if (bytes == null) {
-      if (mounted) _showSnackBar(context, 'Не удалось создать изображение.');
-      return;
-    }
+    final capture = await exporter.capturePng(
+      context,
+      MonthSpreadView(
+        days: days,
+        monthTs: _monthTs,
+        summary: summary,
+        onDayTap: (_) {},
+        capture: true,
+      ),
+      width: width,
+    );
+    if (!mounted) return;
+    final bytes = switch (capture) {
+      Ok(:final value) => value,
+      Err(:final error) => () {
+        showErrorSnackBar(context, error, prefix: 'Не удалось создать изображение');
+        return null;
+      }(),
+    };
+    if (bytes == null) return;
     final outcome = await exporter.sharePng(bytes, fileName: _exportFileName());
     if (outcome == ShareOutcome.failed && mounted) {
       _showSnackBar(context, 'Не удалось поделиться');

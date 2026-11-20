@@ -22,8 +22,9 @@ class ChangelogScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Что нового')),
       body: changelogAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) =>
-            _ErrorState(onRetry: () => ref.invalidate(changelogProvider)),
+        error: (_, _) => _ErrorState(
+          onRetry: () => ref.read(changelogActionsProvider.notifier).retry(),
+        ),
         data: (changelog) {
           if (changelog.isEmpty) {
             return Center(

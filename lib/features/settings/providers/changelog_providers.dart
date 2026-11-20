@@ -12,3 +12,16 @@ final changelogRepositoryProvider = Provider<ChangelogRepository>(
 final changelogProvider = FutureProvider<Changelog>(
   (ref) => ref.watch(changelogRepositoryProvider).load(),
 );
+
+/// Command surface for the screen's retry button: invalidation stays out of
+/// widgets, so read-side cache ownership lives with the provider layer.
+final changelogActionsProvider = NotifierProvider<ChangelogActions, void>(
+  ChangelogActions.new,
+);
+
+class ChangelogActions extends Notifier<void> {
+  @override
+  void build() {}
+
+  void retry() => ref.invalidate(changelogProvider);
+}

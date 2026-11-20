@@ -21,7 +21,11 @@ class HabitHistory {
   final HistoryStore store;
   final int pageMonths;
 
-  final List<HabitHistoryMonth> months = [];
+  final List<HabitHistoryMonth> _months = [];
+
+  /// Read-only view. Mutation stays inside [loadNextPage]; the pager exposes
+  /// an immutable `HistoryPagerState` to the UI.
+  List<HabitHistoryMonth> get months => List.unmodifiable(_months);
 
   DateTime _cursor;
   DateTime? _firstMonth;
@@ -58,7 +62,7 @@ class HabitHistory {
         if (!_cursor.isAfter(_firstMonth!)) _exhausted = true;
 
         if (groups.isNotEmpty) {
-          months.addAll(groups);
+          _months.addAll(groups);
           return true;
         }
       }

@@ -15,6 +15,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/enum_visuals.dart';
 import '../../../../core/theme/motion_tokens.dart';
 import '../../../../domain/models/entities.dart';
+import '../../../../shared/widgets/error_feedback.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../providers/habit_actions.dart';
 import '../../providers/habit_streams.dart';
@@ -57,11 +58,7 @@ class _HabitCardState extends ConsumerState<HabitCard>
   /// from the pinned [HabitCard.log] prop): the animated list may keep this
   /// row alive with stale data. Computed on demand so `build` stays declarative.
   LogStatus? _statusNow() {
-    final logs = ref.read(todayLogsProvider).value ?? const <HabitLog>[];
-    return logs
-            .where((l) => l.habitId == widget.habit.id)
-            .firstOrNull
-            ?.status ??
+    return ref.read(todayLogForHabitProvider(widget.habit.id))?.status ??
         widget.log?.status;
   }
 
@@ -175,10 +172,11 @@ class _HabitCardState extends ConsumerState<HabitCard>
       if (status == LogStatus.skip) {
         await _maybeTeachFirstSkip();
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         _cancelUndoWindow();
         setState(() => _optimisticDone = false);
+        showErrorSnackBar(context, error);
       }
     }
   }
@@ -236,8 +234,10 @@ class _HabitCardState extends ConsumerState<HabitCard>
       await ref
           .read(habitActionsProvider.notifier)
           .undoTodayLog(widget.habit.id, previous: previous);
-    } catch (_) {
-      // The stream will settle on whatever state survived the failed write.
+    } catch (error) {
+      // The stream will settle on whatever state survived the failed write;
+      // the user still learns that the undo did not go through.
+      if (mounted) showErrorSnackBar(context, error);
     }
   }
 

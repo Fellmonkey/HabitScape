@@ -34,3 +34,25 @@ final backupFlowProvider = FutureProvider<BackupFlow>((ref) async {
     clock: () => dateFromUnix(ref.read(todayProvider)),
   );
 });
+
+/// Command surface around the flow. It owns cache invalidation after a
+/// successful export, so screens only map the outcome to a message.
+final backupActionsProvider = NotifierProvider<BackupActions, void>(
+  BackupActions.new,
+);
+
+class BackupActions extends Notifier<void> {
+  @override
+  void build() {}
+
+  Future<BackupExportOutcome> export() async {
+    final flow = await ref.read(backupFlowProvider.future);
+    final outcome = await flow.exportBackup();
+    if (outcome is BackupExported) ref.invalidate(backupStatusProvider);
+    return outcome;
+  }
+
+  Future<BackupImportOutcome> importBackup() {
+    return ref.read(backupFlowProvider.future).then((f) => f.importBackup());
+  }
+}

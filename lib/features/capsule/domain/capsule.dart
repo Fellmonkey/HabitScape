@@ -80,7 +80,18 @@ class CapsuleFeed {
   final List<Letter> opened;
 
   bool get isEmpty => upcoming.isEmpty && due.isEmpty && opened.isEmpty;
+
+  /// Which card the greenhouse shows for this feed. Priority lives in the
+  /// domain so the widget only maps the choice to a widget.
+  CapsuleCardKind primaryCardKind({required bool hasOldNote}) {
+    if (due.isNotEmpty) return CapsuleCardKind.due;
+    if (upcoming.isNotEmpty) return CapsuleCardKind.upcoming;
+    if (hasOldNote) return CapsuleCardKind.invite;
+    return CapsuleCardKind.none;
+  }
 }
+
+enum CapsuleCardKind { due, upcoming, invite, none }
 
 /// Whole days until delivery (0 or negative once it is due).
 int daysUntil(Letter letter, DateTime today) {

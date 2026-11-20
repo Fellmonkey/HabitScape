@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/domain/enums.dart';
 import '../../../core/settings/today.dart';
 import '../../../data/repository_providers.dart';
 import '../../../domain/models/entities.dart';
@@ -29,8 +30,24 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
   return ref.watch(repositoriesProvider).habits.watchLogsForDate(ts);
 });
 
+/// Today's log for one habit. Cards and detail screens read this instead of
+/// filtering the live logs stream themselves.
+final todayLogForHabitProvider = Provider.family<HabitLog?, int>((ref, habitId) {
+  final logs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
+  for (final log in logs) {
+    if (log.habitId == habitId) return log;
+  }
+  return null;
+});
+
 /// All logs ever recorded — used by the swipe-hint retry logic to detect
 /// whether the user already used the skip gesture.
 final allLogsProvider = FutureProvider<List<HabitLog>>((ref) {
   return ref.watch(repositoriesProvider).habits.getAllLogs();
+});
+
+/// Derived yes/no for the swipe hint. The widget asks exposure only.
+final hasEverSkippedProvider = Provider<bool>((ref) {
+  final logs = ref.watch(allLogsProvider).value ?? const <HabitLog>[];
+  return logs.any((l) => l.status == LogStatus.skip);
 });

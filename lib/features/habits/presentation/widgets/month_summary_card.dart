@@ -132,7 +132,7 @@ class MonthSummaryBody extends StatelessWidget {
     if (pct != null) {
       parts.add('${pct.round()}% выполнения');
     }
-    final moodDays = summary.spread.moodCounts.values.fold(0, (a, b) => a + b);
+    final moodDays = summary.spread.moodDaysCount;
     if (moodDays > 0) {
       final green = summary.spread.moodCounts[DayMood.good] ?? 0;
       parts.add('$green из $moodDays дней с хорошим настроением');

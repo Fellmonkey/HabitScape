@@ -108,15 +108,14 @@ class MoodCorrelationCard extends StatelessWidget {
   /// perform the comparison themselves. Throws no judgment — the
   /// "correlation ≠ causation" disclaimer below stays.
   static String _summary(MoodCorrelation corr) {
-    final good = corr.goodShareOnFull!;
-    final bad = corr.badShareOnEmpty!;
-    if (good - bad >= 15) {
-      return 'В выполненные дни хорошее настроение встречается заметно чаще.';
-    }
-    if (bad - good >= 15) {
-      return 'В пустые дни плохое настроение встречается чаще.';
-    }
-    return 'Явной связи между выполнением и настроением пока не видно.';
+    return switch (corr.relation) {
+      MoodRelation.betterOnFullDays =>
+        'В выполненные дни хорошее настроение встречается заметно чаще.',
+      MoodRelation.worseOnEmptyDays =>
+        'В пустые дни плохое настроение встречается чаще.',
+      MoodRelation.unclear =>
+        'Явной связи между выполнением и настроением пока не видно.',
+    };
   }
 }
 

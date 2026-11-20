@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/domain/result.dart';
 import 'png_share_contract.dart';
 import 'png_share_stub.dart' if (dart.library.js_interop) 'png_share_web.dart';
 
@@ -14,15 +15,15 @@ import 'png_share_stub.dart' if (dart.library.js_interop) 'png_share_web.dart';
 class MonthSpreadExporter {
   const MonthSpreadExporter();
 
-  /// Renders the widget at [width] off-screen and returns PNG bytes,
-  /// or null when the capture failed.
+  /// Renders the widget at [width] off-screen. A failed capture is an [Err],
+  /// never a silent null.
   Future<ui.Image?> _capture(GlobalKey key) async {
     final boundary = key.currentContext?.findRenderObject();
     if (boundary is! RenderRepaintBoundary) return null;
     return boundary.toImage(pixelRatio: 2.0);
   }
 
-  Future<Uint8List?> capturePng(
+  Future<Result<Uint8List>> capturePng(
     BuildContext context,
     Widget widget, {
     required double width,
@@ -50,11 +51,16 @@ class MonthSpreadExporter {
     try {
       await WidgetsBinding.instance.endOfFrame;
       final image = await _capture(key);
-      if (image == null) return null;
+      if (image == null) {
+        return Err(StateError('No repaint boundary to capture'));
+      }
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      return data?.buffer.asUint8List();
-    } catch (_) {
-      return null;
+      if (data == null) {
+        return Err(StateError('PNG conversion produced no bytes'));
+      }
+      return Ok(data.buffer.asUint8List());
+    } catch (error) {
+      return Err(error);
     } finally {
       entry.remove();
     }

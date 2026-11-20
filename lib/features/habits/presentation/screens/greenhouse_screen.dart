@@ -20,10 +20,12 @@ import '../../../../shared/widgets/app_sheets.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../capsule/presentation/widgets/capsule_card.dart';
 import '../../../capsule/providers/letter_providers.dart';
+import '../../domain/day_celebration.dart';
 import '../../domain/today_board.dart';
 import '../../providers/habit_group_actions.dart';
 import '../../providers/habit_metrics_providers.dart';
 import '../../providers/habit_streams.dart';
+import '../../providers/today_board_gating_provider.dart';
 import '../widgets/banner_stack.dart';
 import '../widgets/day_moment_card.dart';
 import '../widgets/echo_card.dart';
@@ -35,12 +37,6 @@ import '../widgets/progress_ring.dart';
 import '../widgets/swipe_hint_strip.dart';
 import '../widgets/today_group_visuals.dart';
 import '../widgets/welcome_back_gate.dart';
-
-/// Minimum active habits before the «История» shortcut appears in the header.
-const greenHouseHistoryMinHabits = 3;
-
-/// Minimum habits in a single group before the hide-completed toggle appears.
-const greenhouseToggleMinGroupHabits = 5;
 
 /// How long the group-level undo snack bar stays open after «Выполнить все».
 const groupUndoWindow = Duration(seconds: 10);
@@ -127,6 +123,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     final logsAsync = ref.watch(todayLogsProvider);
     final dayProgress = ref.watch(dayProgressProvider);
     final today = ref.watch(todayDateProvider);
+    final gating = ref.watch(todayBoardGatingProvider);
     final theme = Theme.of(context);
 
     final openedAnyCapsule =
@@ -149,6 +146,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
                   dayProgress,
                   today,
                   openedAnyCapsule,
+                  gating,
                 );
               },
             ),
@@ -175,6 +173,7 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     double dayProgress,
     DateTime today,
     bool openedAnyCapsule,
+    TodayBoardGating gating,
   ) {
     // Section ordering comes from the TodayBoard module — the screen only
     // renders. The hide-completed filter is a board rule too, so the toggle
@@ -200,8 +199,8 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
     // «История» only helps once there is something to look back on; the
     // hide-completed toggle appears once the board is big enough (5+ habits
     // total — spreading across groups shouldn't hide a useful control).
-    final canSeeHistory = habits.length >= greenHouseHistoryMinHabits;
-    final canSeeToggle = habits.length >= greenhouseToggleMinGroupHabits;
+    final canSeeHistory = gating.canSeeHistory;
+    final canSeeToggle = gating.canSeeToggle;
 
     // All state mutations and one-shot effects happen after the frame: `build`
     // only derives and renders, never writes to the screen's own fields.
@@ -718,9 +717,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
       return;
     }
     final dayKey = today.year * 10000 + today.month * 100 + today.day;
-    final crossed = _lastProgress < 1.0 && progress >= 1.0;
+    final celebrate = shouldCelebrateDayClose(
+      previousProgress: _lastProgress,
+      progress: progress,
+      celebratedDay: _celebratedDay,
+      dayKey: dayKey,
+    );
     _lastProgress = progress;
-    if (!crossed || _celebratedDay == dayKey) return;
+    if (!celebrate) return;
     _celebratedDay = dayKey;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
