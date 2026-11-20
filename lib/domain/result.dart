@@ -12,7 +12,10 @@ sealed class Result<T> {
     Err() => null,
   };
 
-  R fold<R>({required R Function(T value) onOk, required R Function(Object error) onErr}) {
+  R fold<R>({
+    required R Function(T value) onOk,
+    required R Function(Object error) onErr,
+  }) {
     return switch (this) {
       Ok(:final value) => onOk(value),
       Err(:final error) => onErr(error),

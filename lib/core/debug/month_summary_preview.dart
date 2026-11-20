@@ -76,7 +76,7 @@ class MonthSummaryPreviewSheet extends ConsumerWidget {
               isMonthSummaryWindow(today)
                   ? 'Окно карточки открыто — она видна на «Теплице».'
                   : 'Сейчас карточка скрыта (окно — последние 3 дня месяца). '
-                      'Превью показывает её содержимое.',
+                        'Превью показывает её содержимое.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -84,10 +84,8 @@ class MonthSummaryPreviewSheet extends ConsumerWidget {
             const SizedBox(height: 16),
             summaryAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Text(
-                '$error',
-                style: theme.textTheme.bodyMedium,
-              ),
+              error: (error, _) =>
+                  Text('$error', style: theme.textTheme.bodyMedium),
               data: (summary) => summary.hasData
                   ? Material(
                       color: theme.colorScheme.surface,

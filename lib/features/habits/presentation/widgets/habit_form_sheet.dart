@@ -46,10 +46,9 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
     super.dispose();
   }
 
-  void _onNameChanged() =>
-      ref.read(habitFormViewModelProvider(widget.habit).notifier).setName(
-        _nameController.text,
-      );
+  void _onNameChanged() => ref
+      .read(habitFormViewModelProvider(widget.habit).notifier)
+      .setName(_nameController.text);
 
   Future<void> _save() async {
     final draft = ref.read(habitFormViewModelProvider(widget.habit));
@@ -212,10 +211,7 @@ class _HabitFormSheetState extends ConsumerState<HabitFormSheet> {
                   child: Text('Иконка', style: theme.textTheme.labelLarge),
                 ),
                 const SizedBox(height: 8),
-                IconPicker(
-                  selected: draft.icon,
-                  onSelected: vm.setIcon,
-                ),
+                IconPicker(selected: draft.icon, onSelected: vm.setIcon),
               ],
             ),
             const SizedBox(height: 16),

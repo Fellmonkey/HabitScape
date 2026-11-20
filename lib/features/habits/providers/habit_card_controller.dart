@@ -36,11 +36,10 @@ class HabitCardState {
 
 /// ViewModel for one habit card. Owns the undo window and its timer; the card
 /// only renders the snapshot and dispatches commands.
-final habitCardControllerProvider = NotifierProvider.family<
-  HabitCardController,
-  HabitCardState,
-  int
->(HabitCardController.new);
+final habitCardControllerProvider =
+    NotifierProvider.family<HabitCardController, HabitCardState, int>(
+      HabitCardController.new,
+    );
 
 class HabitCardController extends Notifier<HabitCardState> {
   HabitCardController(this.habitId);

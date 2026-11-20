@@ -267,7 +267,10 @@ Completion habitCompletion({
         skipped: entry.value.skipped,
       ),
   };
-  return (days: days, byHabit: byHabit);
+  return (
+    days: List.unmodifiable(days),
+    byHabit: Map<int, Completion>.unmodifiable(byHabit),
+  );
 }
 
 /// Raw per-habit counters accumulated while walking the days.
@@ -403,7 +406,7 @@ List<MonthSpreadDay> computeMonthSpreadDays({
     noteByDay[note.date] = note;
   }
 
-  return [
+  return List.unmodifiable([
     for (final d in days)
       MonthSpreadDay(
         date: d.date,
@@ -414,7 +417,7 @@ List<MonthSpreadDay> computeMonthSpreadDays({
         timeQuality: noteByDay[d.date.unixSeconds]?.timeQuality,
         moment: noteByDay[d.date.unixSeconds]?.moment,
       ),
-  ];
+  ]);
 }
 
 /// Total completions across a day list — one definition for all summaries.
@@ -430,8 +433,8 @@ Map<DateTime, Completion> poolCompletionByMonth(Iterable<DayCompletion> days) {
     final key = firstOfMonth(day.date);
     byMonth.putIfAbsent(key, () => []).add(day.completion);
   }
-  return {
+  return Map<DateTime, Completion>.unmodifiable({
     for (final entry in byMonth.entries)
       entry.key: Completion.pool(entry.value),
-  };
+  });
 }

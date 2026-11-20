@@ -280,10 +280,7 @@ class Exposure {
 /// recorded once by the explicit startup step, not by reading this provider.
 final exposureProvider = FutureProvider<Exposure>((ref) async {
   final prefs = await ref.watch(sharedPrefsProvider.future);
-  return Exposure(
-    prefs,
-    today: dateFromUnix(ref.watch(todayProvider)),
-  );
+  return Exposure(prefs, today: dateFromUnix(ref.watch(todayProvider)));
 });
 
 /// The one command surface over [Exposure] state. Widgets and mixins must
@@ -298,8 +295,7 @@ class ExposureActions extends Notifier<void> {
 
   /// Records the first-use day once. Called by startup so read providers never
   /// write to storage; safe to call again on every launch.
-  Future<void> recordFirstUseIfNeeded() =>
-      _mutate((e) => e.recordFirstUse());
+  Future<void> recordFirstUseIfNeeded() => _mutate((e) => e.recordFirstUse());
 
   Future<void> _mutate(Future<void> Function(Exposure) op) async {
     final exposure = await _exposure;

@@ -12,26 +12,7 @@ import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';
-
-/// A today notifier pinned to a fixed day — no midnight timer.
-class _FixedToday extends TodayNotifier {
-  _FixedToday(this.ts);
-
-  final int ts;
-
-  @override
-  int build() => ts;
-}
-
-/// A clock pinned to a fixed instant, for proving writes ignore it.
-class _FauxClock implements Clock {
-  _FauxClock(this._now);
-
-  final DateTime _now;
-
-  @override
-  DateTime now() => _now;
-}
+import '../../../fixtures/test_harness.dart';
 
 void main() {
   late AppDatabase db;
@@ -135,10 +116,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
-          todayProvider.overrideWith(() => _FixedToday(pinned)),
+          todayProvider.overrideWith(() => FixedToday(pinned)),
           // The clock says June 1 — a write must still land on March 10.
           clockProvider.overrideWithValue(
-            _FauxClock(DateTime.utc(2025, 6, 1, 13, 30)),
+            FauxClock(DateTime.utc(2025, 6, 1, 13, 30)),
           ),
         ],
       );
@@ -156,7 +137,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
-          todayProvider.overrideWith(() => _FixedToday(pinned)),
+          todayProvider.overrideWith(() => FixedToday(pinned)),
         ],
       );
       actions = container.read(habitActionsProvider.notifier);

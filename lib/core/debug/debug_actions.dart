@@ -19,7 +19,9 @@ class DebugActions extends Notifier<void> {
   void build() {}
 
   Future<int> seed(DebugScenario scenario) async {
-    final count = await DebugDataSeeder(ref.read(databaseProvider)).seed(scenario);
+    final count = await DebugDataSeeder(
+      ref.read(databaseProvider),
+    ).seed(scenario);
     ref.invalidate(databaseProvider);
     return count;
   }

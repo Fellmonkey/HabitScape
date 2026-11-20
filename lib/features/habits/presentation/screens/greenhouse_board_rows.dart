@@ -64,7 +64,10 @@ Widget boardEntryRow(
   };
   if (AppMotion.mayDisable(context)) return child;
 
-  final curved = CurvedAnimation(parent: animation, curve: AppMotion.easeOutStrong);
+  final curved = CurvedAnimation(
+    parent: animation,
+    curve: AppMotion.easeOutStrong,
+  );
   return SizeTransition(
     sizeFactor: animation,
     alignment: Alignment.topCenter,

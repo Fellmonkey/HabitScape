@@ -10,6 +10,7 @@ const _lastBackupKey = 'last_backup_date';
 void main() {
   late SharedPreferences prefs;
   late ProviderContainer container;
+  final today = DateTime.utc(2026, 11, 20);
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -28,18 +29,16 @@ void main() {
     () async {
       final status = await container.read(backupStatusProvider.future);
       expect(status.hasBackup, isFalse);
-      expect(status.isStale(DateTime.now()), isFalse);
+      expect(status.isStale(today), isFalse);
     },
   );
 
   test('backupStatusProvider surfaces a stale backup after 30 days', () async {
-    final old = DateTime.now().toMidnight
-        .subtract(const Duration(days: 40))
-        .unixSeconds;
+    final old = today.subtract(const Duration(days: 40)).unixSeconds;
     await prefs.setInt(_lastBackupKey, old);
 
     final status = await container.read(backupStatusProvider.future);
     expect(status.hasBackup, isTrue);
-    expect(status.isStale(DateTime.now()), isTrue);
+    expect(status.isStale(today), isTrue);
   });
 }

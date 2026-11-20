@@ -107,9 +107,12 @@ class GraceNowNotifier extends Notifier<DateTime> {
     final next = graceUntil.values.where((t) => t.isAfter(now)).toList();
     if (next.isNotEmpty) {
       final expiry = next.reduce((a, b) => a.isBefore(b) ? a : b);
-      _timer = Timer(expiry.difference(now) + const Duration(milliseconds: 10), () {
-        if (ref.mounted) state = ref.read(clockProvider).now();
-      });
+      _timer = Timer(
+        expiry.difference(now) + const Duration(milliseconds: 10),
+        () {
+          if (ref.mounted) state = ref.read(clockProvider).now();
+        },
+      );
     }
     ref.onDispose(() => _timer?.cancel());
     return now;

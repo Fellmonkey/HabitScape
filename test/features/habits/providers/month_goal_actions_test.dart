@@ -56,34 +56,37 @@ void main() {
       },
     );
 
-    test('invalidates the month summary only after the write completes', () async {
-      var builds = 0;
-      container.dispose();
-      container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          monthSummaryProvider.overrideWith((ref) {
-            builds++;
-            return Future.value(
-              MonthSummaryView(monthStart: firstOfMonth(DateTime.now())),
-            );
-          }),
-        ],
-      );
-      final subscription = container.listen(monthSummaryProvider, (_, _) {});
-      container.read(monthSummaryProvider);
-      expect(builds, 1);
+    test(
+      'invalidates the month summary only after the write completes',
+      () async {
+        var builds = 0;
+        container.dispose();
+        container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            monthSummaryProvider.overrideWith((ref) {
+              builds++;
+              return Future.value(
+                MonthSummaryView(monthStart: firstOfMonth(DateTime.now())),
+              );
+            }),
+          ],
+        );
+        final subscription = container.listen(monthSummaryProvider, (_, _) {});
+        container.read(monthSummaryProvider);
+        expect(builds, 1);
 
-      final pending = container
-          .read(monthGoalActionsProvider.notifier)
-          .addMonthGoal('отложенная цель');
-      expect(builds, 1, reason: 'write has not completed yet');
+        final pending = container
+            .read(monthGoalActionsProvider.notifier)
+            .addMonthGoal('отложенная цель');
+        expect(builds, 1, reason: 'write has not completed yet');
 
-      await pending;
-      container.read(monthSummaryProvider);
-      expect(builds, 2, reason: 'summary is refreshed after the write');
-      subscription.close();
-    });
+        await pending;
+        container.read(monthSummaryProvider);
+        expect(builds, 2, reason: 'summary is refreshed after the write');
+        subscription.close();
+      },
+    );
 
     test('addMonthGoal defaults to the current month', () async {
       final actions = container.read(monthGoalActionsProvider.notifier);

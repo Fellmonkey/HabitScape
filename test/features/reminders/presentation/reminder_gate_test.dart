@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
-import 'package:habitscape/core/notifications/reminder_scheduler.dart' show ReminderScheduler;
+import 'package:habitscape/core/notifications/reminder_scheduler.dart'
+    show ReminderScheduler;
 import 'package:habitscape/core/notifications/reminder_settings.dart';
 import 'package:habitscape/core/router/app_router.dart';
 import 'package:habitscape/core/settings/exposure.dart';

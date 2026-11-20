@@ -325,14 +325,13 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           SliverAnimatedList(
             key: _groupListKey,
             initialItemCount: _entries.length,
-            itemBuilder: (context, index, animation) =>
-                boardEntryRow(
-                  context,
-                  _entries[index],
-                  animation,
-                  headerBuilder: _buildGroupHeader,
-                  cardBuilder: _buildHabitRow,
-                ),
+            itemBuilder: (context, index, animation) => boardEntryRow(
+              context,
+              _entries[index],
+              animation,
+              headerBuilder: _buildGroupHeader,
+              cardBuilder: _buildHabitRow,
+            ),
           ),
 
         // ── Reflection block (bottom): goals first ──
@@ -392,15 +391,16 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
   void _onHabitStatusChanged(int habitId) {
     if (!ref.read(todayBoardViewControllerProvider).hideCompleted) return;
     final controller = ref.read(todayBoardViewControllerProvider.notifier);
-    controller.keepVisible([habitId], ref.read(clockProvider).now().add(habitUndoWindow));
+    controller.keepVisible([
+      habitId,
+    ], ref.read(clockProvider).now().add(habitUndoWindow));
     Timer(habitUndoWindow, () {
       if (!mounted) return;
       controller.release([habitId]);
     });
   }
 
-  bool _sameEntries(List<BoardEntry> next) =>
-      _entryDiff.same(_entries, next);
+  bool _sameEntries(List<BoardEntry> next) => _entryDiff.same(_entries, next);
 
   /// True while an apply loop is running. Because applying is now async
   /// (it waits between batches), a second [._syncEntries] during that time
@@ -464,15 +464,14 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
             final removed = work[i];
             list.removeItem(
               i,
-              (context, animation) =>
-                  boardEntryRow(
-                    context,
-                    removed,
-                    animation,
-                    headerBuilder: _buildGroupHeader,
-                    cardBuilder: _buildHabitRow,
-                    removing: true,
-                  ),
+              (context, animation) => boardEntryRow(
+                context,
+                removed,
+                animation,
+                headerBuilder: _buildGroupHeader,
+                cardBuilder: _buildHabitRow,
+                removing: true,
+              ),
               duration: AppMotion.travel,
             );
             work.removeAt(i);

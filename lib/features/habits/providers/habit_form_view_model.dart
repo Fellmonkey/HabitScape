@@ -7,11 +7,10 @@ import '../domain/habit_templates.dart';
 
 /// ViewModel for the create/edit sheet: owns the whole editable draft and
 /// exposes commands. The sheet renders the snapshot and dispatches events.
-final habitFormViewModelProvider = NotifierProvider.family<
-  HabitFormViewModel,
-  HabitFormDraft,
-  Habit?
->(HabitFormViewModel.new);
+final habitFormViewModelProvider =
+    NotifierProvider.family<HabitFormViewModel, HabitFormDraft, Habit?>(
+      HabitFormViewModel.new,
+    );
 
 class HabitFormViewModel extends Notifier<HabitFormDraft> {
   HabitFormViewModel(this.habit);
@@ -21,8 +20,7 @@ class HabitFormViewModel extends Notifier<HabitFormDraft> {
   @override
   HabitFormDraft build() => initialHabitFormDraft(habit);
 
-  void setName(String name) =>
-      state = state.copyWith(name: name);
+  void setName(String name) => state = state.copyWith(name: name);
 
   void setFrequency(FrequencyType frequency) =>
       state = state.copyWith(frequency: frequency);

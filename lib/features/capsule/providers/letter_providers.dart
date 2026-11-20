@@ -25,10 +25,11 @@ final capsuleFeedProvider = StreamProvider<CapsuleFeed>((ref) {
 final capsuleStatsProvider = Provider<CapsuleStats?>((ref) {
   final feed = ref.watch(capsuleFeedProvider).value;
   if (feed == null) return null;
-  return CapsuleStats.fromLetters(
-    [...feed.upcoming, ...feed.due, ...feed.opened],
-    feed.today,
-  );
+  return CapsuleStats.fromLetters([
+    ...feed.upcoming,
+    ...feed.due,
+    ...feed.opened,
+  ], feed.today);
 });
 
 /// A single capsule, kept in sync with the database (for the letter screen).

@@ -184,5 +184,5 @@ List<ReminderSpec> buildReminderSpecs({
     }
   }
 
-  return specs;
+  return List.unmodifiable(specs);
 }

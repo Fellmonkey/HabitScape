@@ -20,8 +20,7 @@ class IdListDiff<T, K> {
   /// split into roughly three waves, small ones apply at once.
   int batchSize(List<T> current, List<T> next, {int threshold = 8}) {
     final shared = ids(current).intersection(ids(next)).length;
-    final totalChanges =
-        (current.length - shared) + (next.length - shared);
+    final totalChanges = (current.length - shared) + (next.length - shared);
     return totalChanges > threshold ? (totalChanges + 2) ~/ 3 : totalChanges;
   }
 

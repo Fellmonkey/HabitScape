@@ -77,5 +77,5 @@ List<TimeSuggestion> computeTimeSuggestions({
     );
   }
 
-  return suggestions;
+  return List.unmodifiable(suggestions);
 }

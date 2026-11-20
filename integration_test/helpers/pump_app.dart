@@ -5,8 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart';
 import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/router/app_router.dart';
+import 'package:habitscape/core/settings/app_startup.dart';
 import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
+import 'package:habitscape/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Creates an in-memory [AppDatabase] for integration tests (FK enabled).
@@ -39,6 +41,10 @@ AppDatabase createIntegrationTestDatabase() {
 Future<AppDatabase> pumpApp(
   WidgetTester tester, {
   Map<String, Object>? sharedPrefsValues,
+
+  /// Mount the production root ([RythmApp]) instead of a bare router, so
+  /// `ReminderGate` / `WelcomeBackGate` / debug overlay are exercised too.
+  bool fullRoot = false,
 }) async {
   // By default all onboarding tours are already seen, so existing tests are
   // never interrupted by a spotlight. Pass explicit values (e.g. `{}`) to
@@ -53,23 +59,34 @@ Future<AppDatabase> pumpApp(
   SharedPreferences.setMockInitialValues(prefsValues);
   final prefs = await SharedPreferences.getInstance();
   final db = createIntegrationTestDatabase();
+  final overrides = [
+    databaseProvider.overrideWithValue(db),
+    sharedPrefsProvider.overrideWith((_) async => prefs),
+  ];
+
+  if (fullRoot) {
+    final startup = ProviderContainer(overrides: overrides);
+    await startup.read(appStartupProvider.future);
+    startup.dispose();
+  }
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-        sharedPrefsProvider.overrideWith((_) async => prefs),
-      ],
-      child: MaterialApp.router(
-        title: 'HabitScape — integration test',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.light,
-        // A fresh navigator key per test avoids GlobalKey collisions between
-        // routers; the route table itself is the production one.
-        routerConfig: buildAppRouter(navigatorKey: GlobalKey<NavigatorState>()),
-      ),
+      overrides: overrides,
+      child: fullRoot
+          ? const RythmApp()
+          : MaterialApp.router(
+              title: 'HabitScape — integration test',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: ThemeMode.light,
+              // A fresh navigator key per test avoids GlobalKey collisions between
+              // routers; the route table itself is the production one.
+              routerConfig: buildAppRouter(
+                navigatorKey: GlobalKey<NavigatorState>(),
+              ),
+            ),
     ),
   );
 

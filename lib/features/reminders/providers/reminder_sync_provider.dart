@@ -81,7 +81,8 @@ class ReminderSync extends Notifier<ReminderSyncState> {
     final scheduler = ref.read(reminderSchedulerProvider);
     try {
       final granted = await scheduler.permissionGranted();
-      final sig = 'enabled=$enabled;granted=$granted\n'
+      final sig =
+          'enabled=$enabled;granted=$granted\n'
           '${specs.map((s) => s.signature).join('\n')}';
       if (sig == state.signature) return;
 

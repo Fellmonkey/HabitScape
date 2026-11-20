@@ -36,12 +36,12 @@ List<HabitHistoryMonth> groupLogsByMonth(List<HabitLog> logs) {
   }
 
   // Logs arrive oldest-first; history reads newest-month-first.
-  return [
+  return List.unmodifiable([
     for (final key in keys.reversed)
       HabitHistoryMonth(
         year: int.parse(key.split('-')[0]),
         month: int.parse(key.split('-')[1]),
         logs: List.unmodifiable(byMonth[key]!),
       ),
-  ];
+  ]);
 }

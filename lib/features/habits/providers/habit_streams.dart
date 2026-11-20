@@ -32,7 +32,10 @@ final todayLogsProvider = StreamProvider<List<HabitLog>>((ref) {
 
 /// Today's log for one habit. Cards and detail screens read this instead of
 /// filtering the live logs stream themselves.
-final todayLogForHabitProvider = Provider.family<HabitLog?, int>((ref, habitId) {
+final todayLogForHabitProvider = Provider.family<HabitLog?, int>((
+  ref,
+  habitId,
+) {
   final logs = ref.watch(todayLogsProvider).value ?? const <HabitLog>[];
   for (final log in logs) {
     if (log.habitId == habitId) return log;

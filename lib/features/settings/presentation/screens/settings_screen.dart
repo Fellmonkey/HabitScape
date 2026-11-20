@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/config/app_constants.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../domain/use_cases/backup_flow.dart';
@@ -240,11 +241,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   Future<void> _openSource(BuildContext context) async {
-    const url = 'https://github.com/Fellmonkey/HabitScape';
     try {
       final opened = await ref
           .read(externalLinkLauncherProvider)
-          .open(url);
+          .open(AppConstants.projectUrl);
       if (!opened && context.mounted) {
         _showSnackBar(context, 'Не удалось открыть ссылку');
       }

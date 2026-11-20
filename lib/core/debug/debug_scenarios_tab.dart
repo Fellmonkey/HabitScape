@@ -1,0 +1,527 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../shared/widgets/app_sheets.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
+import 'debug_actions.dart';
+import 'debug_data_seeder.dart';
+import 'month_summary_preview.dart';
+import 'time_suggestions_preview.dart';
+
+// ═══════════════════════════════════════════════════════════
+
+class DebugScenariosTab extends ConsumerStatefulWidget {
+  const DebugScenariosTab({required this.scrollController, super.key});
+  final ScrollController scrollController;
+
+  @override
+  ConsumerState<DebugScenariosTab> createState() => _DebugScenariosTabState();
+}
+
+class _DebugScenariosTabState extends ConsumerState<DebugScenariosTab> {
+  bool _seeding = false;
+  String? _lastResult;
+
+  Future<void> _runScenario(DebugScenario scenario) async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+
+    try {
+      final sw = Stopwatch()..start();
+      final count = await ref
+          .read(debugActionsProvider.notifier)
+          .seed(scenario);
+      sw.stop();
+
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult =
+            '✅ ${scenario.name}: $count привычек за ${sw.elapsedMilliseconds} мс';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  Future<void> _clearAll() async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+    try {
+      await ref.read(debugActionsProvider.notifier).clearAll();
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '🗑️ База очищена';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  Future<void> _resetOnboarding() async {
+    try {
+      await ref.read(debugActionsProvider.notifier).resetOnboarding();
+      if (!mounted) return;
+      setState(() {
+        _lastResult = '👋 Подсказки появятся снова при открытии экранов';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  Future<void> _seedCapsule(
+    String label,
+    Future<void> Function(DebugDataSeeder seeder) run,
+  ) async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+    try {
+      await ref.read(debugActionsProvider.notifier).seedWith(run);
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '✅ $label';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  /// Seeds a typical returning user: a few months of data plus an absence of
+  /// 10 days, so the «С возвращением!» welcome appears on next open.
+  Future<void> _seedReturningUser() async {
+    setState(() {
+      _seeding = true;
+      _lastResult = null;
+    });
+    try {
+      await ref.read(debugActionsProvider.notifier).seedReturningUser();
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '✅ UX: Вернувшийся — данные + отсутствие 10 дней';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _seeding = false;
+        _lastResult = '❌ Ошибка: $e';
+      });
+    }
+  }
+
+  /// Opens the «Итог месяца» preview — computed live, outside the window.
+  void _showMonthSummary() {
+    AppSheets.show<void>(
+      context,
+      builder: (_) => const MonthSummaryPreviewSheet(),
+    );
+  }
+
+  /// Opens the «Подсказка» preview from the stats screen.
+  void _showSuggestions() {
+    AppSheets.show<void>(
+      context,
+      builder: (_) => const TimeSuggestionsPreviewSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ListView(
+      controller: widget.scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      children: [
+        // Status bar
+        if (_seeding)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (_lastResult != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkBackground.withValues(alpha: 0.7)
+                  : AppColors.sageGreen.withValues(alpha: 0.12),
+              borderRadius: AppRadius.borderS,
+            ),
+            child: Text(
+              _lastResult!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+
+        // Reduced-motion status (why animations may be invisible)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                size: 16,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Reduced motion: '
+                  '${MediaQuery.of(context).disableAnimations ? 'вкл — анимации скрыты' : 'выкл — анимации активны'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Clear button
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding ? null : _clearAll,
+            icon: const Icon(Icons.delete_sweep, size: 18),
+            label: const Text('Очистить БД'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.dustyRose,
+              side: const BorderSide(color: AppColors.dustyRose),
+            ),
+          ),
+        ),
+
+        // Re-show onboarding tours
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _resetOnboarding,
+            icon: const Icon(Icons.tips_and_updates_outlined, size: 18),
+            label: const Text('Показать подсказки снова'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.sageGreen,
+              side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+
+        // Capsule Day-X debug helpers
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Капсула: день X создана',
+                    (s) => s.seedCapsuleDueToday(),
+                  ),
+            icon: const Icon(Icons.markunread_mailbox_outlined, size: 18),
+            label: const Text('Капсула: день X'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Капсула: закрытая создана',
+                    (s) => s.seedCapsuleLocked(),
+                  ),
+            icon: const Icon(Icons.inventory_2_outlined, size: 18),
+            label: const Text('Капсула: закрытая'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Капсулы и намерения: история создана',
+                    (s) => s.seedCapsulesAndIntentions(),
+                  ),
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('Капсулы и намерения: история'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.darkLavender,
+              side: const BorderSide(color: AppColors.darkLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Итог недели: данные созданы',
+                    (s) => s.seedWeekSummary(),
+                  ),
+            icon: const Icon(Icons.event_note_outlined, size: 18),
+            label: const Text('Итог недели (идея D)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.sageGreen,
+              side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+
+        // ── Month summary helpers ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Итог месяца: данные созданы',
+                    (s) => s.seedMonthSummary(),
+                  ),
+            icon: const Icon(Icons.event_available_outlined, size: 18),
+            label: const Text('Итог месяца: данные созданы'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _showMonthSummary,
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('Показать итог месяца'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
+
+        // ── Time suggestion helpers ──
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Совет по времени: данные созданы',
+                    (s) => s.seedTimeSuggestion(),
+                  ),
+            icon: const Icon(Icons.schedule_outlined, size: 18),
+            label: const Text('Совет по времени: данные созданы'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _showSuggestions,
+            icon: const Icon(Icons.lightbulb_outline, size: 18),
+            label: const Text('Показать подсказки'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _seedCapsule(
+                    'Архив: данные созданы',
+                    (s) => s.seedArchivedHabits(),
+                  ),
+            icon: const Icon(Icons.archive_outlined, size: 18),
+            label: const Text('Архив: данные созданы'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.dustyRose,
+              side: const BorderSide(color: AppColors.dustyRose),
+            ),
+          ),
+        ),
+
+        // Scenario cards
+        _CategoryHeader(title: 'Сценарии'),
+        for (final scenario in debugScenarios)
+          _ScenarioTile(
+            scenario: scenario,
+            enabled: !_seeding,
+            onTap: () => _runScenario(scenario),
+          ),
+
+        // UX scenarios
+        _CategoryHeader(title: 'UX сценарии'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () async {
+                    await _clearAll();
+                    await _resetOnboarding();
+                  },
+            icon: const Icon(Icons.child_care, size: 18),
+            label: const Text('UX: Новичок (пустая БД + подсказки)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.sageGreen,
+              side: const BorderSide(color: AppColors.sageGreen),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _runScenario(debugScenarioById('5-1m')!),
+            icon: const Icon(Icons.person, size: 18),
+            label: const Text('UX: Обычный (5 привычек, 1 мес)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.warmAmber,
+              side: const BorderSide(color: AppColors.warmAmber),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding
+                ? null
+                : () => _runScenario(debugScenarioById('30-12m')!),
+            icon: const Icon(Icons.workspace_premium, size: 18),
+            label: const Text('UX: Опытный (30 привычек, 12 мес)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.softLavender,
+              side: const BorderSide(color: AppColors.softLavender),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: _seeding ? null : _seedReturningUser,
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('UX: Вернувшийся (данные + отсутствие 10 дней)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.dustyRose,
+              side: const BorderSide(color: AppColors.dustyRose),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScenarioTile extends StatelessWidget {
+  const _ScenarioTile({
+    required this.scenario,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final DebugScenario scenario;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      elevation: 0,
+      color: isDark
+          ? AppColors.darkBackground.withValues(alpha: 0.6)
+          : AppColors.lightBackground.withValues(alpha: 0.6),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderS),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: Text(scenario.icon, style: const TextStyle(fontSize: 28)),
+        title: Text(
+          scenario.name,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          scenario.description,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        trailing: Icon(
+          Icons.play_circle_fill,
+          color: enabled ? AppColors.sageGreen : AppColors.coolGreyBlue,
+          size: 28,
+        ),
+        onTap: enabled ? onTap : null,
+      ),
+    );
+  }
+}
+
+// ── Category header ────────────────────────────────────────
+
+class _CategoryHeader extends StatelessWidget {
+  const _CategoryHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkTextSecondary
+              : AppColors.lightTextSecondary,
+        ),
+      ),
+    );
+  }
+}

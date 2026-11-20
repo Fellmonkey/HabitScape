@@ -76,9 +76,7 @@ class _ReminderGateState extends ConsumerState<ReminderGate> {
     // initial reconcile on mount; the provider's signature suppresses no-ops.
     ref.listen(reminderSpecsProvider, (_, next) {
       unawaited(
-        ref
-            .read(reminderSyncProvider.notifier)
-            .sync(next.specs, next.enabled),
+        ref.read(reminderSyncProvider.notifier).sync(next.specs, next.enabled),
       );
     });
     return widget.child;

@@ -16,7 +16,7 @@ class HabitTemplate {
   final TimeOfDay timeOfDay;
 }
 
-final habitTemplates = <HabitTemplate>[
+final habitTemplates = List<HabitTemplate>.unmodifiable(<HabitTemplate>[
   const HabitTemplate(
     name: 'Выпить воду',
     icon: HabitIcon.water,
@@ -47,4 +47,4 @@ final habitTemplates = <HabitTemplate>[
     frequency: DailyFrequency(),
     timeOfDay: TimeOfDay.morning,
   ),
-];
+]);

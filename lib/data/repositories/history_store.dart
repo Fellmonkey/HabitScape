@@ -85,11 +85,7 @@ class HistoryStore {
     required DateTime month,
   }) {
     final window = monthWindow(month);
-    return habitRange(
-      habitId: habitId,
-      start: window.start,
-      end: window.end,
-    );
+    return habitRange(habitId: habitId, start: window.start, end: window.end);
   }
 
   /// One habit's logs in [start, end), with the habit as the population.

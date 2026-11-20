@@ -34,10 +34,10 @@ class GreenhouseScreenState {
   }
 }
 
-final greenhouseScreenControllerProvider = NotifierProvider<
-  GreenhouseScreenController,
-  GreenhouseScreenState
->(GreenhouseScreenController.new);
+final greenhouseScreenControllerProvider =
+    NotifierProvider<GreenhouseScreenController, GreenhouseScreenState>(
+      GreenhouseScreenController.new,
+    );
 
 class GreenhouseScreenController extends Notifier<GreenhouseScreenState> {
   Timer? _groupUndoTimer;
@@ -65,7 +65,10 @@ class GreenhouseScreenController extends Notifier<GreenhouseScreenState> {
       celebratedDay: state.celebratedDay,
       dayKey: key,
     );
-    state = state.copyWith(lastProgress: progress, celebratedDay: celebrate ? key : state.celebratedDay);
+    state = state.copyWith(
+      lastProgress: progress,
+      celebratedDay: celebrate ? key : state.celebratedDay,
+    );
     return celebrate;
   }
 
@@ -84,10 +87,7 @@ class GreenhouseScreenController extends Notifier<GreenhouseScreenState> {
         .markAllDone(ids);
 
     final board = ref.read(todayBoardViewControllerProvider.notifier);
-    board.keepVisible(
-      ids,
-      ref.read(clockProvider).now().add(groupUndoWindow),
-    );
+    board.keepVisible(ids, ref.read(clockProvider).now().add(groupUndoWindow));
     _groupUndoTimer?.cancel();
     _groupUndoTimer = Timer(groupUndoWindow, () {
       if (ref.mounted) board.release(ids);

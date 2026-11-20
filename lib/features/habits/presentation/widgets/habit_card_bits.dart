@@ -35,7 +35,10 @@ class _CheckCircleState extends State<CheckCircle>
   @override
   void initState() {
     super.initState();
-    _dropController = AnimationController(vsync: this, duration: AppMotion.slow);
+    _dropController = AnimationController(
+      vsync: this,
+      duration: AppMotion.slow,
+    );
     _ringScale = Tween(begin: 0.6, end: 2.4).animate(
       CurvedAnimation(parent: _dropController, curve: AppMotion.easeOutStrong),
     );

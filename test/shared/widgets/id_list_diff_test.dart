@@ -19,7 +19,10 @@ void main() {
   test('splits large diffs into batches, small ones apply at once', () {
     expect(diff.batchSize([1, 2], [3, 4]), 4);
     expect(
-      diff.batchSize(List.generate(10, (i) => i), List.generate(10, (i) => i + 10)),
+      diff.batchSize(
+        List.generate(10, (i) => i),
+        List.generate(10, (i) => i + 10),
+      ),
       7,
     );
   });

@@ -197,7 +197,11 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
     final bytes = switch (capture) {
       Ok(:final value) => value,
       Err(:final error) => () {
-        showErrorSnackBar(context, error, prefix: 'Не удалось создать изображение');
+        showErrorSnackBar(
+          context,
+          error,
+          prefix: 'Не удалось создать изображение',
+        );
         return null;
       }(),
     };

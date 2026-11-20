@@ -86,7 +86,7 @@ List<EchoMemory> selectEchoMemories(
     }
   }
 
-  return result;
+  return List.unmodifiable(result);
 }
 
 /// Builds the card's feed: unseen memories first, and — once every date has

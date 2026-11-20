@@ -14,7 +14,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final container = ProviderContainer();
   await container.read(appStartupProvider.future);
-  runApp(UncontrolledProviderScope(container: container, child: const RythmApp()));
+  runApp(
+    UncontrolledProviderScope(container: container, child: const RythmApp()),
+  );
 }
 
 class RythmApp extends ConsumerWidget {

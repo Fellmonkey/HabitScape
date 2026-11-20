@@ -19,4 +19,3 @@ final historyStoreProvider = Provider<HistoryStore>((ref) {
 final dayNotesStreamProvider = Provider<Stream<List<DayNote>>>((ref) {
   return ref.watch(repositoriesProvider).dayNotes.watchAll();
 });
-

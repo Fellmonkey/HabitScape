@@ -13,10 +13,7 @@ class HistoryWindow {
 /// The trailing heatmap window: `[today - (days - 1), tomorrow)`.
 HistoryWindow statsWindow(DateTime now, int days) {
   final end = now.toMidnight.add(const Duration(days: 1));
-  return HistoryWindow(
-    end.subtract(Duration(days: days)),
-    end,
-  );
+  return HistoryWindow(end.subtract(Duration(days: days)), end);
 }
 
 /// The week containing [now]: Monday to the following Monday (exclusive).

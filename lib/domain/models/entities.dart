@@ -242,8 +242,7 @@ class Letter {
   /// Calendar views of the storage timestamps.
   DateTime get createdDate => dateFromUnix(createdAt);
   DateTime get deliveryDate => dateFromUnix(deliverAt);
-  DateTime? get openedDate =>
-      openedAt == null ? null : dateFromUnix(openedAt!);
+  DateTime? get openedDate => openedAt == null ? null : dateFromUnix(openedAt!);
 
   @override
   bool operator ==(Object other) =>

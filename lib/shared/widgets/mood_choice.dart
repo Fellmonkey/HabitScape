@@ -77,11 +77,7 @@ class MoodChoice extends StatelessWidget {
 /// Chip-style mood row used by the full-screen sheet. Same domain choices,
 /// different density — one reusable picker for both composers.
 class MoodChips extends StatelessWidget {
-  const MoodChips({
-    required this.selected,
-    required this.onChanged,
-    super.key,
-  });
+  const MoodChips({required this.selected, required this.onChanged, super.key});
 
   final DayMood? selected;
   final ValueChanged<DayMood> onChanged;

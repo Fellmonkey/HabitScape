@@ -9,6 +9,9 @@ abstract final class AppConstants {
   /// enforces all three.
   static const appVersion = '1.0.0';
 
+  /// Project home, used by the About card's source link.
+  static const projectUrl = 'https://github.com/Fellmonkey/HabitScape';
+
   /// Maximum number of habits a user can mark as focus.
   static const maxFocusHabits = domain_focus.maxFocusHabits;
 

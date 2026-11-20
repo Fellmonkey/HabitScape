@@ -151,7 +151,9 @@ class _HabitCardState extends ConsumerState<HabitCard>
   /// удаление». Show-once is owned by Exposure.
   Future<void> _maybeTeachFirstSkip() async {
     if (!mounted) return;
-    final show = await ref.read(habitActionsProvider.notifier).takeFirstSkipHint();
+    final show = await ref
+        .read(habitActionsProvider.notifier)
+        .takeFirstSkipHint();
     if (!mounted || !show) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -513,4 +515,3 @@ class _UndoPill extends StatelessWidget {
     );
   }
 }
-

@@ -25,9 +25,7 @@ class CapsuleCard extends ConsumerWidget {
 
     final hasOldNote = ref.watch(hasOldNoteProvider).value ?? false;
 
-    final child = switch (
-      feed.primaryCardKind(hasOldNote: hasOldNote)
-    ) {
+    final child = switch (feed.primaryCardKind(hasOldNote: hasOldNote)) {
       CapsuleCardKind.due => _DueCard(capsule: feed.due.first),
       CapsuleCardKind.upcoming => _UpcomingCard(
         capsules: feed.upcoming,
