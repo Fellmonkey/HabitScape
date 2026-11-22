@@ -7,7 +7,7 @@ abstract final class AppConstants {
   /// The version shown on the About card. Keep it in sync with `pubspec.yaml`
   /// and the newest released entry in `CHANGELOG.md`; `version_sync_test.dart`
   /// enforces all three.
-  static const appVersion = '1.0.0';
+  static const appVersion = '1.1.0';
 
   /// Project home, used by the About card's source link.
   static const projectUrl = 'https://github.com/Fellmonkey/HabitScape';
