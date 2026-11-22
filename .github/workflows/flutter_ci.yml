@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,10 +16,9 @@ jobs:
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
-        id: flutter-action
         with:
           channel: 'stable'
-          flutter-version: 3.47.x
+          flutter-version: 3.50.x
           cache: true
 
       - name: Install dependencies
@@ -31,10 +30,10 @@ jobs:
       - name: Run tests
         run: flutter test --reporter=expanded
 
-      # integration_test needs a device/emulator; it is run locally via
-      # `flutter test integration_test` and is intentionally not part of CI.
+      - name: Validate service-worker scripts
+        run: |
+          node --check web/coi_service_worker.js
+          node --check web/coi_init.js
 
-      - name: Build web (release)
-        # Compiles the PWA target including the JS-interop PNG-share adapter,
-        # so web-only code is validated on every CI run.
-        run: flutter build web --release
+      - name: Verify web wiring (service worker, bootstrap, index)
+        run: flutter test test/web/service_worker_setup_test.dart
