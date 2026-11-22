@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_database.dart';
@@ -9,24 +6,16 @@ import 'app_database.dart';
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(db.close);
-
-  // Cold-start warm-up: on web, the first query pays the cost of loading and
-  // initializing the Drift worker + sqlite3.wasm (a 1–2s blank screen). Start
-  // that work immediately so the Greenhouse's first real query hits an
-  // already-warm connection. Fire-and-forget; never blocks the UI.
-  unawaited(
-    db
-        .customSelect('SELECT 1')
-        .get()
-        .then(
-          (_) {},
-          onError: (Object error, StackTrace stack) {
-            // Warm-up is best-effort: a genuine startup failure will surface from
-            // the first real query, where the UI can show it.
-            if (kDebugMode) debugPrint('DB warm-up failed: $error');
-          },
-        ),
-  );
-
   return db;
+});
+
+/// Resolves once the connection is genuinely usable.
+///
+/// On the web the first query is what spawns the Drift worker, compiles
+/// sqlite3.wasm and opens the database. Starting that in `main` — before the
+/// first widget subscribes to a Drift stream — keeps those seconds off the
+/// critical path of the board's first paint.
+final databaseReadyProvider = FutureProvider<void>((ref) async {
+  final db = ref.watch(databaseProvider);
+  await db.customSelect('SELECT 1').get();
 });

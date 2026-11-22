@@ -165,9 +165,9 @@ CREATE TABLE letters (
   });
 
   test(
-    'v11 schema includes letters reply/reaction and weekly_intentions',
+    'v12 schema includes letters reply/reaction and weekly_intentions',
     () async {
-      expect(db.schemaVersion, 11);
+      expect(db.schemaVersion, 12);
 
       final letters = await columnNames(db, 'letters');
       expect(letters, containsAll(['reply', 'reaction']));
@@ -224,6 +224,7 @@ CREATE TABLE letters (
           .get()
           .then((rows) => rows.map((r) => r.data['name']).toList());
       expect(index, contains('idx_habit_logs_habit_date'));
+      expect(index, contains('idx_habit_logs_date'));
     },
   );
 

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/settings/today.dart';
 import '../../../data/repository_providers.dart';
-import '../../../domain/enums.dart';
 import '../../../domain/models/entities.dart';
 
 // ── Habit streams ────────────────────────────────────────────
@@ -43,14 +42,8 @@ final todayLogForHabitProvider = Provider.family<HabitLog?, int>((
   return null;
 });
 
-/// All logs ever recorded — used by the swipe-hint retry logic to detect
-/// whether the user already used the skip gesture.
-final allLogsProvider = FutureProvider<List<HabitLog>>((ref) {
-  return ref.watch(repositoriesProvider).habits.getAllLogs();
-});
-
-/// Derived yes/no for the swipe hint. The widget asks exposure only.
-final hasEverSkippedProvider = Provider<bool>((ref) {
-  final logs = ref.watch(allLogsProvider).value ?? const <HabitLog>[];
-  return logs.any((l) => l.status == LogStatus.skip);
+/// Whether the user has ever used the skip gesture. Backed by a `LIMIT 1`
+/// query — the hint only needs a boolean, not the entire log archive.
+final hasEverSkippedProvider = FutureProvider<bool>((ref) {
+  return ref.watch(repositoriesProvider).habits.hasEverSkipped();
 });

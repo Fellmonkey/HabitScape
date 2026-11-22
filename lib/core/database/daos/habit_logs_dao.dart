@@ -53,6 +53,17 @@ class HabitLogsDao extends DatabaseAccessor<AppDatabase>
     return (select(habitLogs)..orderBy([(l) => OrderingTerm.asc(l.id)])).get();
   }
 
+  /// Cheap existence check for the one-time swipe hint. Reading the whole log
+  /// table on cold start just to learn "did the user ever skip?" is wasteful
+  /// on the web, where every row crosses the worker boundary.
+  Future<bool> hasAnySkip() async {
+    final query = selectOnly(habitLogs)
+      ..addColumns([habitLogs.id])
+      ..where(habitLogs.status.equalsValue(LogStatus.skip))
+      ..limit(1);
+    return (await query.get()).isNotEmpty;
+  }
+
   /// Earliest log date for [habitId], or null when it has no logs.
   Future<int?> earliestLogDate(int habitId) async {
     final minDate = habitLogs.date.min();

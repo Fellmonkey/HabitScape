@@ -1612,6 +1612,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_habit_logs_habit_date',
     'CREATE UNIQUE INDEX idx_habit_logs_habit_date ON habit_logs (habit_id, date)',
   );
+  late final Index idxHabitLogsDate = Index(
+    'idx_habit_logs_date',
+    'CREATE INDEX idx_habit_logs_date ON habit_logs (date)',
+  );
   late final HabitsDao habitsDao = HabitsDao(this as AppDatabase);
   late final HabitLogsDao habitLogsDao = HabitLogsDao(this as AppDatabase);
   late final DayNotesDao dayNotesDao = DayNotesDao(this as AppDatabase);
@@ -1634,6 +1638,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     letters,
     weeklyIntentions,
     idxHabitLogsHabitDate,
+    idxHabitLogsDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

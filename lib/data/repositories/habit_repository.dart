@@ -35,6 +35,8 @@ class HabitRepository {
 
   Future<List<HabitLog>> getAllLogs() => _logsDao.getAllLogs();
 
+  Future<bool> hasEverSkipped() => _logsDao.hasAnySkip();
+
   Future<List<HabitLog>> getLogsForHabitInRange(
     int habitId,
     int start,

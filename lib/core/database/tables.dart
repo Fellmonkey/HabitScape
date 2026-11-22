@@ -68,12 +68,15 @@ class WeeklyIntentions extends Table {
   TextColumn get intention => text().nullable()();
 }
 
-/// Unique (habitId, date) so an upsert needs no read-before-write.
+/// The composite index serves the (habitId, date) upsert. The second index
+/// is needed because today's board and the heatmap filter on `date` alone —
+/// SQLite cannot use the right-hand column of a composite index for that.
 @TableIndex(
   name: 'idx_habit_logs_habit_date',
   columns: {#habitId, #date},
   unique: true,
 )
+@TableIndex(name: 'idx_habit_logs_date', columns: {#date})
 @UseRowClass(HabitLog)
 class HabitLogs extends Table {
   IntColumn get id => integer().autoIncrement()();

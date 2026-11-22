@@ -21,7 +21,7 @@ class SwipeHintStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final exposureAsync = ref.watch(exposureProvider);
-    final hasEverSkipped = ref.watch(hasEverSkippedProvider);
+    final hasEverSkipped = ref.watch(hasEverSkippedProvider).value ?? false;
     return exposureAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),

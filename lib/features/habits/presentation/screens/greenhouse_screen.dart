@@ -140,7 +140,9 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
         child: Stack(
           children: [
             habitsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              // A skeleton keeps the board's shape on screen during the first
+              // DB read instead of showing a lone spinner for several seconds.
+              loading: () => _buildLoadingFrame(theme),
               error: (e, _) => Center(child: Text('Ошибка: $e')),
               data: (habits) => _buildContent(
                 context,
@@ -164,6 +166,58 @@ class _GreenhouseScreenState extends ConsumerState<GreenhouseScreen>
           onPressed: () => _showCreateHabitSheet(context),
           child: const Icon(Icons.add_rounded),
         ),
+      ),
+    );
+  }
+
+  /// The board's silhouette shown while the first habit stream resolves.
+  /// No animation: on a slow device even a shimmer costs frames, and the
+  /// point is to paint something meaningful immediately.
+  Widget _buildLoadingFrame(ThemeData theme) {
+    final color = theme.colorScheme.onSurface.withValues(alpha: 0.08);
+
+    Widget block(double width, double height, {double radius = 12}) =>
+        Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        );
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                block(48, 48, radius: 24),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    block(120, 18, radius: 6),
+                    const SizedBox(height: 8),
+                    block(92, 12, radius: 6),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: block(double.infinity, 96),
+          ),
+          for (var i = 0; i < 3; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              child: block(double.infinity, 72),
+            ),
+        ],
       ),
     );
   }

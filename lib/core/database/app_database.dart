@@ -63,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// The upgrade chain as an ordered list of named steps, one per version.
   /// `onUpgrade` just runs every step whose target is ahead of the current
@@ -83,6 +83,7 @@ class AppDatabase extends _$AppDatabase {
     _MigrationStep(9, 'add letters reaction', _addLettersReaction),
     _MigrationStep(10, 'add letters reply', _addLettersReply),
     _MigrationStep(11, 'create weekly intentions', _createWeeklyIntentions),
+    _MigrationStep(12, 'index habit logs by date', _indexHabitLogsByDate),
   ];
 
   @override
@@ -92,6 +93,13 @@ class AppDatabase extends _$AppDatabase {
       for (final step in _steps) {
         if (from < step.to) await step.run(m, from);
       }
+    },
+    // SQLite leaves foreign keys off by default. Without this, the
+    // ON DELETE CASCADE on habit_logs.habit_id is a no-op and deleting a
+    // habit leaves orphaned logs. beforeOpen runs outside transactions, so
+    // it also covers the backup-import transaction.
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
     },
   );
 
@@ -161,4 +169,18 @@ class AppDatabase extends _$AppDatabase {
   /// v10 → v11: WeeklyIntentions — the week's intention.
   Future<void> _createWeeklyIntentions(Migrator m, int from) =>
       m.createTable(weeklyIntentions);
+
+  /// v11 → v12: today's board and the stats heatmap filter on `date` alone.
+  /// The unique (habitId, date) index cannot serve those queries. Legacy
+  /// databases in the migration tests may not have the table at all.
+  Future<void> _indexHabitLogsByDate(Migrator m, int from) async {
+    final exists = await m.database
+        .customSelect(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+          "AND name = 'habit_logs'",
+        )
+        .get();
+    if (exists.isEmpty) return;
+    await m.createIndex(idxHabitLogsDate);
+  }
 }
