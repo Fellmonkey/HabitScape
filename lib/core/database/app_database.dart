@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/entities.dart';
@@ -90,9 +91,30 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      for (final step in _steps) {
-        if (from < step.to) await step.run(m, from);
+      // Each step runs in its own transaction: a step either lands completely
+      // or not at all, and drift bumps user_version between steps. Without
+      // this, an interrupted upgrade would re-run the same step against an
+      // already-modified schema next launch.
+      await customStatement('PRAGMA foreign_keys = OFF');
+      await m.runMigrationSteps(
+        from: from,
+        to: to,
+        steps: (currentVersion, database) => database.transaction(() async {
+          final migrator = Migrator(database);
+          final step = _steps.firstWhere((s) => s.to == currentVersion + 1);
+          await step.run(migrator, from);
+          // Tell runMigrationSteps which schema version this step reached; it
+          // persists user_version before advancing to the next step.
+          return currentVersion + 1;
+        }),
+      );
+      if (kDebugMode) {
+        final wrongForeignKeys = await customSelect(
+          'PRAGMA foreign_key_check',
+        ).get();
+        assert(wrongForeignKeys.isEmpty, '$wrongForeignKeys');
       }
+      await customStatement('PRAGMA foreign_keys = ON');
     },
     // SQLite leaves foreign keys off by default. Without this, the
     // ON DELETE CASCADE on habit_logs.habit_id is a no-op and deleting a
