@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:hintful/hintful.dart';
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../../../domain/completion.dart';
 import '../../../onboarding/presentation/app_tours.dart';

@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';

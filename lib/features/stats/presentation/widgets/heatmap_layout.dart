@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One geometry authority for the heatmap: the painter, the hit-test and
 /// the scroll-size math all derive from this object instead of re-deriving

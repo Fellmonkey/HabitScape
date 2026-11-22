@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -9,6 +8,7 @@ import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/widgets/habit_form_sheet.dart';
 import 'package:habitscape/shared/widgets/app_sheets.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

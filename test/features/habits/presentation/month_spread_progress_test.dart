@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart'
@@ -13,6 +12,7 @@ import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/screens/month_spread_screen.dart';
 import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

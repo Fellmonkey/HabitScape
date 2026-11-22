@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../data/history_store_providers.dart';
 import '../../data/repository_providers.dart';

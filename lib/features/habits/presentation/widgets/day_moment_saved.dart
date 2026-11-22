@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';

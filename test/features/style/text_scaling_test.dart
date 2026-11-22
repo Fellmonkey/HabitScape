@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -25,6 +24,7 @@ import 'package:habitscape/features/settings/presentation/screens/settings_scree
 import 'package:habitscape/features/stats/presentation/screens/stats_screen.dart';
 import 'package:habitscape/features/week/domain/week_summary.dart';
 import 'package:habitscape/features/week/providers/week_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/src/framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

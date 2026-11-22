@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,7 @@ import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/features/capsule/domain/capsule.dart';
 import 'package:habitscape/features/capsule/providers/letter_providers.dart';
 import 'package:habitscape/features/settings/presentation/screens/settings_screen.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

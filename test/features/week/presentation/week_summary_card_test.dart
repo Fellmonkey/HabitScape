@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/keys.dart';
@@ -11,6 +10,7 @@ import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/week/domain/week_summary.dart';
 import 'package:habitscape/features/week/presentation/widgets/week_summary_card.dart';
 import 'package:habitscape/features/week/providers/week_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake actions that record the saved intention instead of hitting the DB.

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/config/app_constants.dart';
 import 'package:habitscape/core/keys.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/features/settings/presentation/widgets/about_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('the changelog row opens the release notes', (tester) async {

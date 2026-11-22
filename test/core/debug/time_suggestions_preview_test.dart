@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -11,6 +10,7 @@ import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
 import 'package:habitscape/domain/time_suggestion.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../fixtures/test_db.dart';
 import '../../fixtures/test_factories.dart';

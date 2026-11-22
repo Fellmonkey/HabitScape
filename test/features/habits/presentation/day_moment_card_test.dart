@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -10,6 +9,7 @@ import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/widgets/day_moment_card.dart';
 import 'package:habitscape/features/habits/providers/day_note_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../fixtures/test_db.dart';

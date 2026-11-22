@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
@@ -6,6 +5,7 @@ import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/habits/presentation/widgets/month_goals_card.dart';
 import 'package:habitscape/features/habits/providers/month_goal_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fake goal actions that record deletions instead of touching the DB.
 class _FakeMonthGoalActions extends MonthGoalActions {

@@ -267,8 +267,7 @@ final _freqTemplates = [
 /// Seeds the database with realistic data for a [DebugScenario].
 /// **Wipes all existing data** first.
 class DebugDataSeeder {
-  DebugDataSeeder(this.db, {Clock clock = const SystemClock()})
-    : _clock = clock;
+  DebugDataSeeder(this.db, {this._clock = const SystemClock()});
 
   final AppDatabase db;
   final Clock _clock;

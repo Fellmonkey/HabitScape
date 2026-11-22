@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
 import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/features/habits/presentation/screens/archived_habits_screen.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

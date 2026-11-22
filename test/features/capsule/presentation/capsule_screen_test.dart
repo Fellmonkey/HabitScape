@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/keys.dart';
@@ -11,6 +10,7 @@ import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/capsule/domain/capsule.dart';
 import 'package:habitscape/features/capsule/presentation/screens/capsule_screen.dart';
 import 'package:habitscape/features/capsule/providers/letter_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake [LetterActions] that records created capsules instead of touching the

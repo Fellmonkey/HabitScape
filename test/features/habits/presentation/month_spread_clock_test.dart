@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/keys.dart';
@@ -7,6 +6,7 @@ import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/domain/completion.dart';
 import 'package:habitscape/features/habits/presentation/widgets/month_spread_view.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _FixedToday extends TodayNotifier {
   _FixedToday(this.date);

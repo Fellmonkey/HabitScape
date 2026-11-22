@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/domain/completion.dart';
 import 'package:habitscape/features/stats/presentation/widgets/github_heatmap.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   /// 365 days, oldest first — same shape the stats screen feeds in.

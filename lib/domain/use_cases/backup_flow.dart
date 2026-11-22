@@ -94,16 +94,12 @@ class BackupImportFailed extends BackupImportOutcome {
 /// message.
 class BackupFlow {
   BackupFlow({
-    required BackupPort service,
-    required BackupFilePicker picker,
-    required BackupSharer sharer,
-    required BackupStatusStore statusStore,
-    required DateTime Function() clock,
-  }) : _service = service,
-       _picker = picker,
-       _sharer = sharer,
-       _statusStore = statusStore,
-       _clock = clock;
+    required this._service,
+    required this._picker,
+    required this._sharer,
+    required this._statusStore,
+    required this._clock,
+  });
 
   final BackupPort _service;
   final BackupFilePicker _picker;

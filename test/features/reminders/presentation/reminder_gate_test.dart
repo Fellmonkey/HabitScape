@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -23,6 +22,7 @@ import 'package:habitscape/features/reminders/presentation/widgets/reminder_gate
 import 'package:habitscape/features/reminders/providers/reminder_scheduler_provider.dart';
 import 'package:habitscape/features/week/domain/week_summary.dart';
 import 'package:habitscape/features/week/providers/week_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/src/framework.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

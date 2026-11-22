@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 /// − / + stepper with a centered label; clamps to [min]–[max].
 class NumberStepper extends StatelessWidget {

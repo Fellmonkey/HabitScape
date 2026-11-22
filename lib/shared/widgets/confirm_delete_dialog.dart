@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Confirms a permanent habit deletion. Returns true when the user confirms.
 Future<bool> confirmDeleteHabit(

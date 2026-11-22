@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The one SnackBar+Undo shape shared by group and detail-screen commands.
 /// The card's undo pill is the inline variant of the same action.

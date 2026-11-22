@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.14.0
 
 dependencies:
   flutter:
@@ -26,10 +26,8 @@ dependencies:
   share_plus: ^13.3.1
   file_picker: ^13.4.1
   shared_preferences: ^2.5.3
-  # hintful 2.x swaps Flutter Material for the material_ui fork (new design
-  # system) — staying on 1.x keeps the app's existing theming intact.
-  hintful: ^1.0.0
-  hintful_prefs: ^1.0.0
+  hintful: ^2.0.0
+  hintful_prefs: ^2.0.0
   url_launcher: ^6.3.1
 
   # Web DOM interop (PNG export download fallback on the Web PWA)
@@ -41,6 +39,7 @@ dependencies:
   flutter_timezone: ^5.1.1
   timezone: ^0.11.2
 
+  material_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

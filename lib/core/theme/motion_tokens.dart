@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Motion tokens — single source of truth for durations and curves.
 /// Values follow the animation bar: UI under 300ms, strong custom curves,

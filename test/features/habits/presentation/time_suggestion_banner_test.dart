@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/keys.dart';
@@ -7,6 +6,7 @@ import 'package:habitscape/core/theme/app_theme.dart';
 import 'package:habitscape/core/utils/time_bucket.dart';
 import 'package:habitscape/domain/time_suggestion.dart';
 import 'package:habitscape/features/habits/presentation/widgets/time_suggestion_banner.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../fixtures/test_factories.dart';
 

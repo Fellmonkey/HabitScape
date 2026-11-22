@@ -11,10 +11,10 @@ import '../services/changelog_parser.dart';
 /// localization is injected by the presentation layer via [sectionTitle].
 class ChangelogRepository {
   ChangelogRepository({
-    AssetBundle? bundle,
+    this._bundle,
     this.assetKey = 'CHANGELOG.md',
     this.sectionTitle,
-  }) : _bundle = bundle;
+  });
 
   final AssetBundle? _bundle;
   final String assetKey;

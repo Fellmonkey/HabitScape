@@ -5,7 +5,7 @@
 /// in and render the result; none of them own the formula.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../utils/localized_dates.dart';
 import 'russian_plural.dart';

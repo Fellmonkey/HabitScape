@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/database/app_database.dart' show AppDatabase;
@@ -10,6 +9,7 @@ import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/domain/enums.dart';
 import 'package:habitscape/features/habits/presentation/widgets/month_summary_card.dart';
 import 'package:habitscape/features/habits/providers/month_summary_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_factories.dart';

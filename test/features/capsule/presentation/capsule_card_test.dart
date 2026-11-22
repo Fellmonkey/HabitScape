@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/keys.dart';
@@ -9,6 +8,7 @@ import 'package:habitscape/domain/models/entities.dart';
 import 'package:habitscape/features/capsule/domain/capsule.dart';
 import 'package:habitscape/features/capsule/presentation/widgets/capsule_card.dart';
 import 'package:habitscape/features/capsule/providers/letter_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

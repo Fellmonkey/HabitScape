@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The one place that turns a failed command into user-visible feedback.
 /// Commands keep their own rollback logic; widgets call this instead of

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 /// Mon–Sun chips for a weekdays frequency. Always keeps at least one day
 /// selected — unselecting the last day is a no-op.

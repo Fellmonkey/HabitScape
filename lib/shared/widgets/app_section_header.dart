@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One section label used across all screens (settings, capsule, stats,
 /// month spread). A small accent icon plus a muted labelLarge title — the

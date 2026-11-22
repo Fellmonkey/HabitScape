@@ -5,7 +5,7 @@
 /// imports this file for anything that renders.
 library;
 
-import 'package:flutter/material.dart' hide TimeOfDay;
+import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../domain/enums.dart';
 import '../../domain/models/entities.dart';

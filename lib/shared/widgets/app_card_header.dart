@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Card header used by the dashboard-style cards: a 32×32 accent icon chip
 /// plus the card title. Same anatomy as the Greenhouse/WeekSummary headers.
