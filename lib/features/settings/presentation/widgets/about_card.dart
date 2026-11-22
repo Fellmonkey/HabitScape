@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/glass_card.dart';
 
 /// Brand, version, release notes and source link — the quiet closing card of
 /// Settings. Built from the same glass, sage and amber language as the rest of
@@ -25,8 +24,9 @@ class AboutCard extends StatelessWidget {
     final palette = context.palette;
     final onSurface = theme.colorScheme.onSurface;
 
-    return GlassCard(
-      padding: EdgeInsets.zero,
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           // A pair of almost-invisible light pools gives the card depth without

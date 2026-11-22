@@ -59,8 +59,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             hintKey: 'settings-export',
             minDays: 4,
             title: 'Экспорт данных',
-            description:
-                'Твои данные живут только на устройстве. Советуем сохранять резервную копию в файл — хотя бы раз в месяц.',
+            description: 'Твои данные живут только на устройстве. Советуем сохранять резервную копию в файл — хотя бы раз в месяц.',
             child: tourTarget(
               AppHintIds.settingsExport,
               SettingsTile(
@@ -81,7 +80,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onTap: () => _importBackup(context, ref),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // ── Archive section ─────────────────────────────────────
           LastBackupCard(),
@@ -101,8 +100,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             minDays: 30,
             enabled: openedAnyCapsule,
             title: 'Капсулы времени',
-            description:
-                'Ты уже открывал письма из прошлого — здесь быстрый вход к ним.',
+            description: 'Ты уже открывал письма из прошлого — здесь быстрый вход к ним.',
             child: tourTarget(
               'capsules-settings-entry',
               SettingsTile(
@@ -115,7 +113,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // ── Appearance section ─────────────────────────────────
           AppSectionHeader(title: 'Внешний вид'),
@@ -124,7 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           const SizedBox(height: 8),
           TextScaleTile(),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // ── Experience section ───────────────────────────────────
           AppSectionHeader(title: 'Ощущения'),
@@ -142,8 +140,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               key: K.settingsInstallPwa,
               icon: Icons.install_desktop_rounded,
               title: 'Установить как приложение',
-              subtitle:
-                  'Полноэкранный режим и иконка на рабочем столе — как нативное приложение.',
+              subtitle: 'Полноэкранный режим и иконка на рабочем столе — как нативное приложение.',
               onTap: () => _showSnackBar(
                 context,
                 'В Chrome: меню ⋮ → «Установить приложение». В Safari: Поделиться → «На экран “Домой”».',
@@ -162,7 +159,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onTap: () => _resetOnboarding(ref),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // ── Reminders section ────────────────────────────────────
           // Local notifications exist only on native builds — on web show an
@@ -173,13 +170,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             SettingsTile(
               icon: Icons.notifications_none_rounded,
               title: 'Напоминания',
-              subtitle:
-                  'Локальные уведомления доступны в мобильном приложении. На Web установите PWA для полноэкранного режима.',
+              subtitle: 'Локальные уведомления доступны в мобильном приложении. На Web установите PWA для полноэкранного режима.',
             ),
           ] else ...[
             const NotificationsTile(),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // ── About section ───────────────────────────────────────
           AppSectionHeader(title: 'О приложении'),
@@ -189,7 +185,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             onOpenChangelog: () => context.push('/changelog'),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -256,8 +252,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

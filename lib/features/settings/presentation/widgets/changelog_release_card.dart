@@ -4,7 +4,6 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/models/changelog.dart';
 import '../../../../shared/widgets/app_section_header.dart';
-import '../../../../shared/widgets/glass_card.dart';
 
 /// One release block: version + date, then its grouped bullet points.
 class ChangelogReleaseCard extends StatelessWidget {
@@ -26,7 +25,9 @@ class ChangelogReleaseCard extends StatelessWidget {
     final theme = Theme.of(context);
     final date = release.date;
 
-    return GlassCard(
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: Column(

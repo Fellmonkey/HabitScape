@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../core/keys.dart';
 import '../../../../core/settings/haptics.dart';
 import '../../../../core/settings/theme_mode.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Theme mode picker (system / light / dark).
 class ThemeTile extends ConsumerWidget {
@@ -14,9 +14,11 @@ class ThemeTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final mode = ref.watch(themeModeProvider);
-    return GlassCard(
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -28,10 +30,10 @@ class ThemeTile extends ConsumerWidget {
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 12),
-                Text('Тема оформления', style: theme.textTheme.titleSmall),
+                Text('Тема оформления', style: theme.textTheme.titleMedium),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<ThemeMode>(

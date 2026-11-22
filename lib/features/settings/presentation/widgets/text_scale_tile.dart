@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/settings/text_scale.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// In-app text scale picker: system-following or a fixed factor.
 /// Compact chips instead of a segmented control so labels never overflow or
@@ -23,9 +23,11 @@ class TextScaleTile extends ConsumerWidget {
     final current = ref.watch(textScaleProvider);
     final theme = Theme.of(context);
 
-    return GlassCard(
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -37,18 +39,18 @@ class TextScaleTile extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Размер текста', style: theme.textTheme.titleSmall),
+                      Text('Размер текста', style: theme.textTheme.titleMedium),
                       const SizedBox(height: 2),
                       Text(
                         'Дополнительно к системному масштабу',
-                        style: theme.textTheme.bodySmall,
+                        style: theme.textTheme.bodyMedium,
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Wrap(
               key: K.textScalePicker,
               spacing: 8,

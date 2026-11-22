@@ -5,7 +5,6 @@ import '../../../../core/formatting/formatting.dart';
 import '../../../../core/settings/today.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_helpers.dart';
-import '../../../../shared/widgets/glass_card.dart';
 import '../../providers/settings_providers.dart';
 
 /// Warns when the last backup is stale and shows the last export date.
@@ -47,28 +46,32 @@ class _BackupStatusCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accent = old ? context.palette.amber : theme.colorScheme.primary;
 
-    return GlassCard(
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        dense: true,
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.14),
             borderRadius: AppRadius.borderS,
           ),
           child: Icon(
             old ? Icons.warning_amber_rounded : Icons.cloud_done_outlined,
-            size: 20,
+            size: 18,
             color: accent,
           ),
         ),
         title: Text(
           old ? 'Давно не было резервной копии' : 'Резервная копия',
-          style: theme.textTheme.titleSmall,
+          style: theme.textTheme.titleMedium,
         ),
         subtitle: loading
-            ? Text('Проверяем…', style: theme.textTheme.bodySmall)
-            : Text(label, style: theme.textTheme.bodySmall),
+            ? Text('Проверяем…', style: theme.textTheme.bodyMedium)
+            : Text(label, style: theme.textTheme.bodyMedium),
         trailing: loading
             ? const SizedBox(
                 width: 18,

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/keys.dart';
 import '../../../../core/notifications/reminder_settings.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../reminders/providers/reminder_actions.dart';
 
 /// Opt-in toggle for local reminders. Enabling asks the OS for permission
@@ -20,17 +21,25 @@ class _NotificationsTileState extends ConsumerState<NotificationsTile> {
   @override
   Widget build(BuildContext context) {
     final enabled = ref.watch(notificationEnabledProvider).value ?? false;
-    return SwitchListTile(
-      key: K.settingsNotifications,
-      secondary: const Icon(Icons.notifications_active_outlined),
-      title: const Text('Напоминания'),
-      subtitle: Text(
-        enabled
-            ? 'Уведомления о привычках и итогах включены'
-            : 'Локальные уведомления — офлайн, на устройстве',
+    final theme = Theme.of(context);
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderL),
+      clipBehavior: Clip.antiAlias,
+      child: SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        dense: true,
+        key: K.settingsNotifications,
+        secondary: const Icon(Icons.notifications_active_outlined),
+        title: Text('Напоминания', style: theme.textTheme.titleMedium),
+        subtitle: Text(
+          enabled
+              ? 'Уведомления о привычках и итогах включены'
+              : 'Локальные уведомления — офлайн, на устройстве',
+          style: theme.textTheme.bodyMedium,
+        ),
+        value: enabled,
+        onChanged: _busy ? null : _toggle,
       ),
-      value: enabled,
-      onChanged: _busy ? null : _toggle,
     );
   }
 
