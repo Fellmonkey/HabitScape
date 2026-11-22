@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/entities.dart';
+import 'connection/connection.dart';
 import 'daos/day_notes_dao.dart';
 import 'daos/habit_logs_dao.dart';
 import 'daos/habits_dao.dart';
@@ -46,19 +45,7 @@ class _MigrationStep {
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase()
-    : super(
-        driftDatabase(
-          name: 'rhythm',
-          native: const DriftNativeOptions(
-            databaseDirectory: getApplicationDocumentsDirectory,
-          ),
-          web: DriftWebOptions(
-            sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-            driftWorker: Uri.parse('drift_worker.js'),
-          ),
-        ),
-      );
+  AppDatabase() : super(openAppDatabase());
 
   /// Test constructor creating an in-memory database.
   AppDatabase.test(super.executor);

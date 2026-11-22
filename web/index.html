@@ -44,6 +44,13 @@
 </head>
 <body>
   <!--
+    Register the COOP/COEP service worker first. It lets static hosts like
+    GitHub Pages serve a cross-origin isolated app (needed for OPFS-backed
+    SQLite). It reloads the page once on the first visit.
+  -->
+  <script src="coi_init.js"></script>
+
+  <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
     or to give the user feedback during the initialization process.
