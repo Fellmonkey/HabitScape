@@ -10,7 +10,7 @@ import '../domain/echo.dart';
 /// dates the user has already seen via «Ещё». The clock and the seen list come
 /// from the exposure module, not from this provider.
 final echoFeedProvider = StreamProvider<EchoFeed>((ref) {
-  final notesStream = ref.watch(dayNotesStreamProvider);
+  final notesStream = ref.watch(echoCandidatesStreamProvider);
   final exposureFuture = ref.watch(exposureProvider.future);
 
   return notesStream.asyncMap((notes) async {

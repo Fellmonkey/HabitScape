@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/settings/today.dart';
 import '../../../core/utils/date_helpers.dart';
-import '../../../data/history_store_providers.dart';
 import '../../../data/repository_providers.dart';
 import '../../../domain/models/entities.dart';
 import '../domain/capsule.dart';
@@ -45,9 +44,7 @@ final hasOldNoteProvider = StreamProvider<bool>((ref) {
   final cutoff = dateFromUnix(
     ref.watch(todayProvider),
   ).subtract(const Duration(days: AppConstants.staleNoteAfterDays)).unixSeconds;
-  return ref
-      .watch(dayNotesStreamProvider)
-      .map((notes) => notes.any((n) => n.date <= cutoff));
+  return ref.watch(repositoriesProvider).dayNotes.watchHasOldNote(cutoff);
 });
 
 // ── Actions ──────────────────────────────────────────────────

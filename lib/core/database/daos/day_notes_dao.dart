@@ -74,12 +74,34 @@ class DayNotesDao extends DatabaseAccessor<AppDatabase>
     return (select(dayNotes)..orderBy([(n) => OrderingTerm.asc(n.date)])).get();
   }
 
-  /// Watches every note — used by the echo card, which needs the whole
-  /// archive and must refresh after today's note is saved.
-  Stream<List<DayNote>> watchAllNotes() {
-    return (select(
-      dayNotes,
-    )..orderBy([(n) => OrderingTerm.asc(n.date)])).watch();
+  /// Whether the archive is non-empty, as a cheap count — not a full-table
+  /// read. Used by one-shot facts like "has the user ever written a note".
+  Future<bool> hasAnyNote() async {
+    final count = dayNotes.id.count();
+    final row = await (selectOnly(dayNotes)..addColumns([count])).getSingle();
+    return (row.read(count) ?? 0) > 0;
+  }
+
+  /// Watches the candidates the echo card can surface: notes that actually
+  /// carry a moment, newest first, capped. Drift stream queries re-run on
+  /// every write to the table, so they should stay small — pulling the whole
+  /// archive over the worker boundary on each note change is wasteful.
+  Stream<List<DayNote>> watchEchoCandidates({int limit = 365}) {
+    return (select(dayNotes)
+          ..where((n) => n.moment.isNotNull() & n.moment.equals('').not())
+          ..orderBy([(n) => OrderingTerm.desc(n.date)])
+          ..limit(limit))
+        .watch();
+  }
+
+  /// Watches whether any note is at or before [cutoff] — an existence check,
+  /// not a download of the archive.
+  Stream<bool> watchHasOldNote(int cutoff) {
+    final query = selectOnly(dayNotes)
+      ..addColumns([dayNotes.id])
+      ..where(dayNotes.date.isSmallerOrEqualValue(cutoff))
+      ..limit(1);
+    return query.watch().map((rows) => rows.isNotEmpty);
   }
 
   /// Deletes all day notes (for import).

@@ -19,7 +19,12 @@ class DayNoteRepository {
 
   Future<List<DayNote>> getAll() => _dao.getAllNotes();
 
-  Stream<List<DayNote>> watchAll() => _dao.watchAllNotes();
+  Stream<List<DayNote>> watchEchoCandidates({int limit = 365}) =>
+      _dao.watchEchoCandidates(limit: limit);
+
+  Stream<bool> watchHasOldNote(int cutoff) => _dao.watchHasOldNote(cutoff);
+
+  Future<bool> hasAnyNote() => _dao.hasAnyNote();
 
   Future<void> upsert(
     int timestamp, {

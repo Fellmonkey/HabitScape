@@ -29,10 +29,10 @@ final dayNoteProvider = FutureProvider.autoDispose.family<DayNote?, int>((
 });
 
 /// One-shot "has the user ever written a day note" fact. Owned by the feature
-/// so presentation never reaches into the data layer's providers.
-final hasAnyDayNoteProvider = FutureProvider<bool>((ref) async {
-  final notes = await ref.watch(repositoriesProvider).dayNotes.getAll();
-  return notes.isNotEmpty;
+/// so presentation never reaches into the data layer's providers. Backed by a
+/// count query, not a full-table read.
+final hasAnyDayNoteProvider = FutureProvider<bool>((ref) {
+  return ref.watch(repositoriesProvider).dayNotes.hasAnyNote();
 });
 
 /// Commands for day notes — the write surface beside the read providers.

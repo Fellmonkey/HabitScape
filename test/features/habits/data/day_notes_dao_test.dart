@@ -107,5 +107,46 @@ void main() {
 
       expect(await db.dayNotesDao.getAllNotes(), isEmpty);
     });
+
+    test('hasAnyNote reflects the archive as a cheap count', () async {
+      expect(await db.dayNotesDao.hasAnyNote(), isFalse);
+
+      // A note without a moment still counts as an archive entry.
+      await db.dayNotesDao.upsertNote(jan1);
+      expect(await db.dayNotesDao.hasAnyNote(), isTrue);
+
+      await db.dayNotesDao.deleteAllNotes();
+      expect(await db.dayNotesDao.hasAnyNote(), isFalse);
+    });
+
+    test(
+      'watchEchoCandidates returns only moment-bearing notes, newest first',
+      () async {
+        await db.dayNotesDao.upsertNote(jan1, moment: 'День 1');
+        await db.dayNotesDao.upsertNote(jan2); // no moment — excluded
+        await db.dayNotesDao.upsertNote(jan1 + 86400 * 30, moment: 'День 2');
+
+        final candidates = await db.dayNotesDao.watchEchoCandidates().first;
+        expect(candidates.map((n) => n.moment), ['День 2', 'День 1']);
+      },
+    );
+
+    test('watchEchoCandidates respects the limit', () async {
+      await db.dayNotesDao.upsertNote(jan1, moment: 'День 1');
+      await db.dayNotesDao.upsertNote(jan2, moment: 'День 2');
+
+      final candidates = await db.dayNotesDao
+          .watchEchoCandidates(limit: 1)
+          .first;
+      expect(candidates.single.moment, 'День 2');
+    });
+
+    test('watchHasOldNote detects notes at or before the cutoff', () async {
+      await db.dayNotesDao.upsertNote(jan1, moment: 'День 1');
+      await db.dayNotesDao.upsertNote(jan2, moment: 'День 2');
+
+      expect(await db.dayNotesDao.watchHasOldNote(jan1).first, isTrue);
+      expect(await db.dayNotesDao.watchHasOldNote(jan1 - 1).first, isFalse);
+    });
   });
 }
