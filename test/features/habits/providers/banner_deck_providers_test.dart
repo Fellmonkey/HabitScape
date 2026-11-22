@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/settings/exposure.dart';
 import 'package:habitscape/core/settings/today.dart';
 import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/features/habits/providers/banner_deck_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_harness.dart';
 
 void main() {
@@ -14,8 +16,13 @@ void main() {
 
   ProviderContainer containerWith(Map<String, Object> values) {
     SharedPreferences.setMockInitialValues(values);
+    // Dismiss reads weekSummaryProvider, which reaches the database. Use a
+    // test DB so this suite stays isolated when coverde runs suites in one VM.
+    final db = createTestDatabase();
+    addTearDown(db.close);
     return ProviderContainer(
       overrides: [
+        databaseProvider.overrideWithValue(db),
         todayProvider.overrideWith(() => FixedToday(today.unixSeconds)),
       ],
     );

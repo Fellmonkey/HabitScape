@@ -14,18 +14,20 @@ dependencies:
   flutter_riverpod: ^3.2.1
 
   # Database
-  drift: ^2.22.1
-  drift_flutter: ^0.2.7
-  sqlite3_flutter_libs: ^0.5.41
+  drift: ^2.35.4
+  drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0+eol
 
   # Routing
-  go_router: ^17.1.0
+  go_router: ^18.1.4
 
   # Utils
   path_provider: ^2.1.5
-  share_plus: ^12.0.1
-  file_picker: ^10.3.10
+  share_plus: ^13.3.1
+  file_picker: ^13.4.1
   shared_preferences: ^2.5.3
+  # hintful 2.x swaps Flutter Material for the material_ui fork (new design
+  # system) — staying on 1.x keeps the app's existing theming intact.
   hintful: ^1.0.0
   hintful_prefs: ^1.0.0
   url_launcher: ^6.3.1
@@ -35,19 +37,23 @@ dependencies:
 
   # Local scheduled notifications (Android, offline, opt-in). No backend:
   # the app is serverless by design, so FCM/Web Push are out of scope.
-  flutter_local_notifications: ^19.0.0
-  flutter_timezone: ^4.0.0
-  timezone: ^0.10.0
+  flutter_local_notifications: ^23.0.3
+  flutter_timezone: ^5.1.1
+  timezone: ^0.11.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  drift_dev: ^2.22.1
+  drift_dev: ^2.35.3
   build_runner: ^2.4.13
-  sqlite3: ^2.7.3
+  sqlite3: ^3.9.1
   integration_test:
     sdk: flutter
+
+  # Test runner optimizer: gathers all *_test.dart files into a single entry
+  # point (fewer VM spawns) and can split them into shards for local runs.
+  coverde: ^0.4.1
 
   riverpod: any
 flutter:

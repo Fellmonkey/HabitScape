@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habitscape/core/database/database_provider.dart';
 import 'package:habitscape/core/settings/exposure.dart';
 import 'package:habitscape/core/settings/shared_prefs.dart';
 import 'package:habitscape/core/settings/today.dart';
@@ -7,6 +8,7 @@ import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/features/habits/providers/welcome_back_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../fixtures/test_db.dart';
 import '../../../fixtures/test_harness.dart';
 
 void main() {
@@ -15,8 +17,13 @@ void main() {
 
   ProviderContainer containerFor(Map<String, Object> values) {
     SharedPreferences.setMockInitialValues(values);
+    // Eligibility checks count habits through the database. Keep this suite
+    // isolated when coverde runs several suites in the same VM.
+    final db = createTestDatabase();
+    addTearDown(db.close);
     return ProviderContainer(
       overrides: [
+        databaseProvider.overrideWithValue(db),
         todayProvider.overrideWith(() => FixedToday(today.unixSeconds)),
       ],
     );

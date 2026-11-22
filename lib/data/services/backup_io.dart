@@ -14,19 +14,18 @@ class PlatformBackupFilePicker implements BackupFilePicker {
 
   @override
   Future<BackupPick> pick() async {
-    final result = await FilePicker.platform.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
-      withData: true,
     );
 
-    if (result == null || result.files.isEmpty) {
-      return const BackupPickCancelled();
-    }
+    if (files.isEmpty) return const BackupPickCancelled();
 
-    final bytes = result.files.first.bytes;
-    if (bytes == null) return const BackupPickUnreadable();
-    return BackupPickReady(bytes);
+    try {
+      return BackupPickReady(await files.first.readAsBytes());
+    } catch (_) {
+      return const BackupPickUnreadable();
+    }
   }
 }
 

@@ -1681,7 +1681,7 @@ final class $$HabitsTableReferences
   static MultiTypedResultKey<$HabitLogsTable, List<HabitLog>>
   _habitLogsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.habitLogs,
-    aliasName: $_aliasNameGenerator(db.habits.id, db.habitLogs.habitId),
+    aliasName: 'habits__id__habit_logs__habit_id',
   );
 
   $$HabitLogsTableProcessedTableManager get habitLogsRefs {
@@ -1989,8 +1989,10 @@ class $$HabitsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$HabitsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$HabitsTable, Habit>(table),
+                  $$HabitsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({habitLogsRefs = false}) {
@@ -2001,14 +2003,19 @@ class $$HabitsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (habitLogsRefs)
-                    await $_getPrefetchedData<Habit, $HabitsTable, HabitLog>(
+                    await $_getPrefetchedDataByColumns<
+                      Habit,
+                      $HabitsTable,
+                      HabitLog,
+                      $HabitLogsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$HabitsTableReferences
                           ._habitLogsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$HabitsTableReferences(db, table, p0).habitLogsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.habitId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'habit_id',
                       typedResults: items,
                     ),
                 ];
@@ -2054,9 +2061,8 @@ final class $$HabitLogsTableReferences
     extends BaseReferences<_$AppDatabase, $HabitLogsTable, HabitLog> {
   $$HabitLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $HabitsTable _habitIdTable(_$AppDatabase db) => db.habits.createAlias(
-    $_aliasNameGenerator(db.habitLogs.habitId, db.habits.id),
-  );
+  static $HabitsTable _habitIdTable(_$AppDatabase db) =>
+      db.habits.createAlias('habit_logs__habit_id__habits__id');
 
   $$HabitsTableProcessedTableManager get habitId {
     final $_column = $_itemColumn<int>('habit_id')!;
@@ -2284,7 +2290,7 @@ class $$HabitLogsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$HabitLogsTable, HabitLog>(table),
                   $$HabitLogsTableReferences(db, table, e),
                 ),
               )
@@ -2518,7 +2524,16 @@ class $$DayNotesTableTableManager
                 timeQuality: timeQuality,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$DayNotesTable, DayNote>(table),
+                  BaseReferences<_$AppDatabase, $DayNotesTable, DayNote>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -2690,7 +2705,16 @@ class $$MonthlyGoalsTableTableManager
                 isDone: isDone,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$MonthlyGoalsTable, MonthlyGoal>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $MonthlyGoalsTable,
+                    MonthlyGoal
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -2938,7 +2962,16 @@ class $$LettersTableTableManager
                 reply: reply,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LettersTable, Letter>(table),
+                  BaseReferences<_$AppDatabase, $LettersTable, Letter>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -3097,7 +3130,16 @@ class $$WeeklyIntentionsTableTableManager
                 intention: intention,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$WeeklyIntentionsTable, WeeklyIntention>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $WeeklyIntentionsTable,
+                    WeeklyIntention
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

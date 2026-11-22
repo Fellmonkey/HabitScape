@@ -55,7 +55,7 @@ class LocalNotificationsReminderScheduler implements ReminderScheduler {
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     );
     await _plugin.initialize(
-      settings,
+      settings: settings,
       onDidReceiveNotificationResponse: (response) {
         _tapHandler?.call(response.payload);
       },
@@ -66,8 +66,8 @@ class LocalNotificationsReminderScheduler implements ReminderScheduler {
   Future<void> _ensureTimeZone() async {
     try {
       tz_data.initializeTimeZones();
-      final name = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(name));
+      final timezone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezone.identifier));
     } catch (_) {
       // Keep the default location; scheduling still works, just in UTC.
     }
@@ -138,11 +138,11 @@ class LocalNotificationsReminderScheduler implements ReminderScheduler {
   Future<void> scheduleDaily(ReminderSpec spec) async {
     await initialize();
     await _plugin.zonedSchedule(
-      spec.id,
-      spec.title,
-      spec.body,
-      _nextInstanceOf(spec.hour, spec.minute),
-      _detailsFor(spec),
+      id: spec.id,
+      title: spec.title,
+      body: spec.body,
+      scheduledDate: _nextInstanceOf(spec.hour, spec.minute),
+      notificationDetails: _detailsFor(spec),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: spec.payload,
@@ -162,11 +162,11 @@ class LocalNotificationsReminderScheduler implements ReminderScheduler {
       spec.minute,
     );
     await _plugin.zonedSchedule(
-      spec.id,
-      spec.title,
-      spec.body,
-      scheduled,
-      _detailsFor(spec),
+      id: spec.id,
+      title: spec.title,
+      body: spec.body,
+      scheduledDate: scheduled,
+      notificationDetails: _detailsFor(spec),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: spec.payload,
     );
@@ -175,7 +175,7 @@ class LocalNotificationsReminderScheduler implements ReminderScheduler {
   @override
   Future<void> cancel(int id) async {
     await initialize();
-    await _plugin.cancel(id);
+    await _plugin.cancel(id: id);
   }
 
   @override
