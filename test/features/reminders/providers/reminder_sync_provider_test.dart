@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habitscape/core/notifications/reminder_scheduler.dart'
@@ -102,15 +103,24 @@ void main() {
   });
 
   test('failed apply keeps the signature so the next call retries', () async {
-    scheduler.failNextSchedule = true;
-    await sync.sync([spec(1)], true);
-    expect(container.read(reminderSyncProvider).error, isA<StateError>());
-    expect(container.read(reminderSyncProvider).signature, isNull);
+    // The provider reports this deliberate failure through debugPrint;
+    // silence it so the expected error does not pollute the test output.
+    final originalDebugPrint = debugPrint;
+    debugPrint = (message, {wrapWidth}) {};
 
-    await sync.sync([spec(1)], true);
-    expect(container.read(reminderSyncProvider).error, isNull);
-    expect(container.read(reminderSyncProvider).signature, isNotNull);
-    expect(scheduler.scheduled, {1: spec(1).signature});
+    try {
+      scheduler.failNextSchedule = true;
+      await sync.sync([spec(1)], true);
+      expect(container.read(reminderSyncProvider).error, isA<StateError>());
+      expect(container.read(reminderSyncProvider).signature, isNull);
+
+      await sync.sync([spec(1)], true);
+      expect(container.read(reminderSyncProvider).error, isNull);
+      expect(container.read(reminderSyncProvider).signature, isNotNull);
+      expect(scheduler.scheduled, {1: spec(1).signature});
+    } finally {
+      debugPrint = originalDebugPrint;
+    }
   });
 
   test('rapid sync calls are serialized', () async {

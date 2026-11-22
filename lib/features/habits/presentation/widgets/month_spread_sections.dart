@@ -1,8 +1,6 @@
-import 'package:hintful/hintful.dart';
 import 'package:material_ui/material_ui.dart' hide TimeOfDay;
 
 import '../../../../domain/completion.dart';
-import '../../../onboarding/presentation/app_tours.dart';
 import 'month_calendar_grid.dart';
 import 'month_goals_card.dart';
 import 'month_moment_row.dart';
@@ -36,25 +34,13 @@ List<Widget> buildSpreadSections(
       padding: style.summaryInsets,
       child: MonthSummarySection(summary: summary),
     ),
-    if (style.wrapGridInHint)
-      HintTarget(
-        id: AppHintIds.spreadGrid,
-        child: MonthCalendarGrid(
-          days: days,
-          today: today,
-          onDayTap: onDayTap,
-          gridKey: style.gridKey,
-          debugDayKeys: style.debugDayKeys,
-        ),
-      )
-    else
-      MonthCalendarGrid(
-        days: days,
-        today: today,
-        onDayTap: onDayTap,
-        gridKey: style.gridKey,
-        debugDayKeys: style.debugDayKeys,
-      ),
+    MonthCalendarGrid(
+      days: days,
+      today: today,
+      onDayTap: onDayTap,
+      gridKey: style.gridKey,
+      debugDayKeys: style.debugDayKeys,
+    ),
     if (style.includeGoals)
       MonthGoalsCard(monthTs: monthTs, readOnly: style.goalsReadOnly),
     if (moments.isNotEmpty) ...[

@@ -132,28 +132,35 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
         behavior: HitTestBehavior.opaque,
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
-        child: AnimatedSwitcher(
-          duration: AppMotion.travel,
-          switchInCurve: AppMotion.easeInOutStrong,
-          switchOutCurve: AppMotion.easeInOutStrong,
-          transitionBuilder: (child, animation) => SlideTransition(
-            position: Tween(
-              begin: Offset(_slideDir * 0.18, 0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-          child: KeyedSubtree(
-            key: ValueKey(_monthTs),
-            child: daysAsync.when(
-              // Hidden body avoids a layout flash while data loads.
-              loading: () => const SizedBox.shrink(),
-              error: (e, _) => Center(child: Text('Ошибка: $e')),
-              data: (days) => MonthSpreadView(
-                days: days,
-                monthTs: _monthTs,
-                summary: summary,
-                onDayTap: _openDay,
+        // One stable hint target for the whole body: the month switcher keeps
+        // the outgoing month mounted during the slide, so two targets with the
+        // same id would briefly coexist — hoisting it here keeps a single
+        // registration (and the tour spotlight covers the swipe gesture).
+        child: tourTarget(
+          AppHintIds.spreadGrid,
+          AnimatedSwitcher(
+            duration: AppMotion.travel,
+            switchInCurve: AppMotion.easeInOutStrong,
+            switchOutCurve: AppMotion.easeInOutStrong,
+            transitionBuilder: (child, animation) => SlideTransition(
+              position: Tween(
+                begin: Offset(_slideDir * 0.18, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(_monthTs),
+              child: daysAsync.when(
+                // Hidden body avoids a layout flash while data loads.
+                loading: () => const SizedBox.shrink(),
+                error: (e, _) => Center(child: Text('Ошибка: $e')),
+                data: (days) => MonthSpreadView(
+                  days: days,
+                  monthTs: _monthTs,
+                  summary: summary,
+                  onDayTap: _openDay,
+                ),
               ),
             ),
           ),
@@ -218,8 +225,7 @@ class _MonthSpreadScreenState extends ConsumerState<MonthSpreadScreen>
   }
 
   void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

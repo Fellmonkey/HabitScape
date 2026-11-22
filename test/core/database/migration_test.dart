@@ -5,13 +5,18 @@ import 'package:habitscape/core/utils/date_helpers.dart';
 import 'package:habitscape/domain/enums.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-import '../../fixtures/test_db.dart';
+import '../../fixtures/test_db.dart'
+    show createTestDatabase, silenceDriftMultiInstanceWarning;
 import '../../fixtures/test_factories.dart';
 
 /// Guards the named migration steps in `app_database.dart`: one step per
 /// schema version, each pinned by a test that starts from a real sqlite3
 /// database in the legacy state.
 void main() {
+  // Many tests here open an `AppDatabase` in one process — each with its own
+  // in-memory executor, so drift's multi-instance warning does not apply.
+  silenceDriftMultiInstanceWarning();
+
   late AppDatabase db;
 
   setUp(() async {
